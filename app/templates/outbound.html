@@ -1,0 +1,288 @@
+{% extends "base.html" %}
+
+{% block title %}Lập Phiếu Xuất Kho - Chống Tồn Âm - SmartLogis AI{% endblock %}
+{% block header_title %}LẬP PHIẾU XUẤT KHO & KIỂM SOÁT CHỐNG TỒN ÂM (ACID LOCKING){% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-6">
+
+  <!-- BANNER CẢNH BÁO VI PHẠM TỒN ÂM -->
+  <div id="negative-warning-banner" class="hidden p-4 rounded-xl bg-rose-50 border-2 border-rose-500 text-rose-800 text-xs shadow-sm flex items-start gap-3">
+    <div class="w-8 h-8 rounded-lg bg-rose-600 text-white flex items-center justify-center flex-shrink-0 text-base">
+      <i class="fa-solid fa-ban"></i>
+    </div>
+    <div>
+      <div class="font-bold text-rose-900 text-sm">CẢNH BÁO VI PHẠM TỒN KHO ÂM: KHÔNG THỂ XUẤT HÀNG!</div>
+      <div id="negative-warning-detail" class="mt-1 leading-relaxed">
+        Phát hiện mặt hàng có số lượng yêu cầu xuất vượt quá số lượng tồn khả dụng trong kho. Nút xác nhận giao dịch đã bị vô hiệu hóa để bảo vệ tính toàn vẹn CSDL.
+      </div>
+    </div>
+  </div>
+
+  <div id="alert-banner" class="hidden p-4 rounded-xl text-xs font-semibold flex items-center gap-3"></div>
+
+  <!-- THÔNG TIN ĐẦU PHIẾU XUẤT (MASTER) -->
+  <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+    <div class="text-sm font-bold text-slate-900 pb-3 border-b border-slate-100 flex items-center gap-2 mb-4">
+      <i class="fa-solid fa-clipboard-list text-sky-600"></i>
+      <span>Thông Tin Đầu Phiếu Xuất Kho</span>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Mã Phiếu Xuất</label>
+        <input type="text" readonly value="PX-AUTO-GENERATED"
+          class="w-full px-3 py-2 bg-slate-100 border border-slate-300 rounded-lg text-xs font-bold text-slate-600">
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Ngày Lập Phiếu</label>
+        <input type="date" id="out-ngay" value="2026-09-04"
+          class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-800">
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Đơn Vị / Người Nhận (*)</label>
+        <input type="text" id="out-nguoinhan" value="Đội thi công Công trình Tân Thịnh (Khu A)"
+          class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-sky-500">
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Thủ Kho Thực Hiện</label>
+        <input type="text" readonly value="{{ user.HoTen if user else 'Thủ kho' }}"
+          class="w-full px-3 py-2 bg-slate-100 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700">
+      </div>
+    </div>
+
+    <div class="mt-4">
+      <label class="block text-xs font-semibold text-slate-600 mb-1">Lý Do / Mục Đích Xuất Kho</label>
+      <input type="text" id="out-lydo" value="Xuất vật tư sơn chống rỉ và phụ kiện thi công kết cấu dầm cầu"
+        class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-800">
+    </div>
+  </div>
+
+  <!-- BẢNG THẨM ĐỊNH TỒN KHO & DANH SÁCH HÀNG XUẤT -->
+  <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+    <div class="text-sm font-bold text-slate-900 pb-3 border-b border-slate-100 flex items-center justify-between mb-4">
+      <div class="flex items-center gap-2">
+        <i class="fa-solid fa-shield-halved text-sky-600"></i>
+        <span>Thẩm Định Tồn Kho & Chi Tiết Hàng Xuất (Real-time Validation)</span>
+      </div>
+      <button onclick="addRowXuat()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg text-xs transition border border-slate-300 flex items-center gap-1.5">
+        <i class="fa-solid fa-plus text-sky-600"></i> Thêm Mặt Hàng Xuất
+      </button>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-xs border-collapse" id="tbl-xuat">
+        <thead>
+          <tr class="bg-slate-100 text-slate-700 uppercase font-bold text-[11px] border-b border-slate-200">
+            <th class="py-2.5 px-3 w-10 text-center">STT</th>
+            <th class="py-2.5 px-3 w-56">Mặt Hàng (*)</th>
+            <th class="py-2.5 px-3 w-16 text-center">ĐVT</th>
+            <th class="py-2.5 px-3 w-28 text-center">Tồn Khả Dụng</th>
+            <th class="py-2.5 px-3 w-32">Số Lượng Xuất</th>
+            <th class="py-2.5 px-3 w-28 text-center">Tồn Dự Kiến</th>
+            <th class="py-2.5 px-3 w-48 text-center">Trạng Thái Thẩm Định</th>
+            <th class="py-2.5 px-3 w-12 text-center">Xóa</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100" id="body-xuat">
+        </tbody>
+      </table>
+    </div>
+
+    <!-- KHỐI HÀNH ĐỘNG & BẢO VỆ GIAO DỊCH -->
+    <div class="mt-6 pt-4 border-t border-slate-200 flex items-center justify-between">
+      <div class="text-xs text-slate-500">
+        <i class="fa-solid fa-lock text-sky-600"></i>
+        Hệ thống tự động sử dụng câu lệnh <span class="font-mono font-bold text-slate-700">SELECT ... FOR UPDATE</span> để khóa dòng dữ liệu khi bấm lưu.
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button onclick="submitPhieuXuat()" id="btn-submit-xuat"
+          class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs transition shadow-md shadow-emerald-600/20 flex items-center gap-2">
+          <i class="fa-solid fa-check"></i>
+          <span>Xác Nhận Xuất Kho (ACID Transaction)</span>
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+  let availableItems = [];
+
+  async function loadItems() {
+    try {
+      const res = await fetch('/api/v1/kho/items');
+      availableItems = await res.json();
+
+      addRowXuat('HH-001', 20);
+      addRowXuat('HH-008', 25); // HH-008 Tồn 10, Xuất 25 -> Cảnh báo tồn âm mẫu!
+      addRowXuat('HH-015', 150);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  function addRowXuat(selectedHH = '', defaultQty = 1) {
+    const tbody = document.getElementById('body-xuat');
+    const rowIdx = tbody.children.length + 1;
+    const tr = document.createElement('tr');
+    tr.className = 'hover:bg-slate-50 transition border-b';
+
+    let options = availableItems.map(item => 
+      `<option value="${item.MaHH}" ${item.MaHH === selectedHH ? 'selected' : ''}>${item.MaHH} - ${item.TenHH}</option>`
+    ).join('');
+
+    tr.innerHTML = `
+      <td class="py-3 px-3 text-center text-slate-500 font-semibold">${rowIdx}</td>
+      <td class="py-3 px-3">
+        <select class="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs sel-hh" onchange="handleHHChange(this)">
+          ${options}
+        </select>
+      </td>
+      <td class="py-3 px-3 text-center text-slate-500 lbl-dvt">-</td>
+      <td class="py-3 px-3 text-center font-bold text-slate-800 lbl-ton">-</td>
+      <td class="py-3 px-3">
+        <input type="number" min="1" value="${defaultQty}" class="w-full px-2 py-1.5 border border-slate-300 rounded text-xs inp-qty" oninput="validateAllRows()">
+      </td>
+      <td class="py-3 px-3 text-center font-bold lbl-du-kien">-</td>
+      <td class="py-3 px-3 text-center lbl-status">-</td>
+      <td class="py-3 px-3 text-center">
+        <button onclick="removeRow(this)" class="text-rose-500 hover:text-rose-700 p-1 font-bold">&times;</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+    handleHHChange(tr.querySelector('.sel-hh'));
+    validateAllRows();
+  }
+
+  function handleHHChange(sel) {
+    const tr = sel.closest('tr');
+    const selectedItem = availableItems.find(i => i.MaHH === sel.value);
+    if (selectedItem) {
+      tr.querySelector('.lbl-dvt').innerText = selectedItem.TenDVT || selectedItem.MaDVT;
+      tr.querySelector('.lbl-ton').innerText = selectedItem.SoLuongTon;
+    }
+    validateAllRows();
+  }
+
+  function removeRow(btn) {
+    const tbody = document.getElementById('body-xuat');
+    if (tbody.children.length <= 1) {
+      alert('Phiếu xuất phải có tối thiểu 1 mặt hàng.');
+      return;
+    }
+    btn.closest('tr').remove();
+    Array.from(tbody.children).forEach((tr, i) => {
+      tr.children[0].innerText = i + 1;
+    });
+    validateAllRows();
+  }
+
+  function validateAllRows() {
+    const tbody = document.getElementById('body-xuat');
+    const warningBanner = document.getElementById('negative-warning-banner');
+    const warningDetail = document.getElementById('negative-warning-detail');
+    const submitBtn = document.getElementById('btn-submit-xuat');
+
+    let hasNegativeStock = false;
+    let errorDetails = [];
+
+    Array.from(tbody.children).forEach(tr => {
+      const sel = tr.querySelector('.sel-hh');
+      const item = availableItems.find(i => i.MaHH === sel.value);
+      const tonKhaDung = item ? item.SoLuongTon : 0;
+      const qtyInput = tr.querySelector('.inp-qty');
+      const slXuat = parseInt(qtyInput.value) || 0;
+      const tonDuKien = tonKhaDung - slXuat;
+
+      const lblDuKien = tr.querySelector('.lbl-du-kien');
+      const lblStatus = tr.querySelector('.lbl-status');
+
+      lblDuKien.innerText = tonDuKien;
+
+      if (tonDuKien < 0) {
+        hasNegativeStock = true;
+        errorDetails.push(`Mặt hàng [${item ? item.MaHH : ''}] ${item ? item.TenHH : ''}: Tồn ${tonKhaDung}, yêu cầu xuất ${slXuat} (Thiếu ${Math.abs(tonDuKien)} ${item ? item.TenDVT : ''})`);
+
+        tr.className = 'bg-rose-50/80 border-l-4 border-l-rose-600 transition';
+        qtyInput.className = 'w-full px-2 py-1.5 border-2 border-rose-500 bg-rose-50 text-rose-900 font-bold rounded text-xs inp-qty';
+        lblDuKien.className = 'py-3 px-3 text-center font-extrabold text-rose-600 lbl-du-kien';
+        lblStatus.innerHTML = `<span class="bg-rose-100 text-rose-800 font-bold px-2 py-1 rounded text-[11px] flex items-center justify-center gap-1"><i class="fa-solid fa-triangle-exclamation"></i> LỖI: TỒN ÂM (${tonDuKien})</span>`;
+      } else {
+        tr.className = 'hover:bg-slate-50 transition border-b';
+        qtyInput.className = 'w-full px-2 py-1.5 border border-slate-300 rounded text-xs inp-qty';
+        lblDuKien.className = 'py-3 px-3 text-center font-bold text-emerald-600 lbl-du-kien';
+        lblStatus.innerHTML = `<span class="bg-emerald-100 text-emerald-800 font-bold px-2 py-1 rounded text-[11px] flex items-center justify-center gap-1"><i class="fa-solid fa-check"></i> ĐỦ HÀNG XUẤT</span>`;
+      }
+    });
+
+    if (hasNegativeStock) {
+      warningBanner.classList.remove('hidden');
+      warningDetail.innerHTML = errorDetails.join('<br>');
+      submitBtn.disabled = true;
+      submitBtn.className = 'px-6 py-2.5 bg-slate-400 text-white font-bold rounded-lg text-xs cursor-not-allowed opacity-70 flex items-center gap-2';
+      submitBtn.innerHTML = '<i class="fa-solid fa-lock"></i> <span>Khóa Xuất Kho (Phát Hiện Tồn Âm)</span>';
+    } else {
+      warningBanner.classList.add('hidden');
+      submitBtn.disabled = false;
+      submitBtn.className = 'px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs transition shadow-md shadow-emerald-600/20 flex items-center gap-2';
+      submitBtn.innerHTML = '<i class="fa-solid fa-check"></i> <span>Xác Nhận Xuất Kho (ACID Transaction)</span>';
+    }
+  }
+
+  async function submitPhieuXuat() {
+    const nguoiNhan = document.getElementById('out-nguoinhan').value.trim();
+    const lyDo = document.getElementById('out-lydo').value.trim();
+    const tbody = document.getElementById('body-xuat');
+    const btn = document.getElementById('btn-submit-xuat');
+    const alertBox = document.getElementById('alert-banner');
+
+    if (!nguoiNhan) {
+      alert('Vui lòng nhập tên người hoặc đơn vị nhận hàng.');
+      return;
+    }
+
+    const items = [];
+    Array.from(tbody.children).forEach(tr => {
+      const ma_hh = tr.querySelector('.sel-hh').value;
+      const qty = parseInt(tr.querySelector('.inp-qty').value) || 0;
+      items.push({ MaHH: ma_hh, SoLuongXuat: qty });
+    });
+
+    btn.disabled = true;
+    btn.innerText = 'Đang thực thi Database Transaction with_for_update()...';
+
+    try {
+      const res = await fetch('/api/v1/kho/phieu-xuat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ NguoiNhan: nguoiNhan, LyDoXuat: lyDo, items: items })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Lỗi xuất kho.');
+
+      alertBox.className = 'p-4 rounded-xl text-xs font-semibold flex items-center gap-3 bg-emerald-50 border border-emerald-300 text-emerald-800';
+      alertBox.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600 text-base"></i> Xuất kho thành công! Mã chứng từ: <b>${data.MaPX}</b>. Tồn kho đã trừ và ghi sổ thẻ kho.`;
+      alertBox.classList.remove('hidden');
+
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 1500);
+    } catch (err) {
+      alertBox.className = 'p-4 rounded-xl text-xs font-semibold flex items-center gap-3 bg-rose-50 border border-rose-300 text-rose-800';
+      alertBox.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-rose-600 text-base"></i> ${err.message}`;
+      alertBox.classList.remove('hidden');
+      btn.disabled = false;
+      btn.innerText = 'Xác Nhận Xuất Kho (ACID Transaction)';
+    }
+  }
+
+  window.addEventListener('DOMContentLoaded', loadItems);
+</script>
+{% endblock %}\n

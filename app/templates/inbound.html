@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+
+{% block title %}Lập Phiếu Nhập Kho - SmartLogis AI{% endblock %}
+{% block header_title %}LẬP PHIẾU NHẬP KHO (INBOUND RECEIPT & ACID TRANSACTION){% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-6">
+
+  <!-- Hộp thông báo lỗi hoặc thành công -->
+  <div id="alert-banner" class="hidden p-4 rounded-xl text-xs font-semibold flex items-center gap-3"></div>
+
+  <!-- PHẦN 1: THÔNG TIN CHỨNG TỪ NHẬP (MASTER) -->
+  <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+    <div class="text-sm font-bold text-slate-900 pb-3 border-b border-slate-100 flex items-center gap-2 mb-4">
+      <i class="fa-solid fa-pen-to-square text-sky-600"></i>
+      <span>Thông Tin Đầu Phiếu Nhập Kho</span>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Mã Phiếu Nhập</label>
+        <input type="text" id="in-ma-pn" readonly value="PN-AUTO-GENERATED"
+          class="w-full px-3 py-2 bg-slate-100 border border-slate-300 rounded-lg text-xs font-bold text-slate-600">
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Ngày Lập Phiếu</label>
+        <input type="date" id="in-ngay" value="2026-09-04"
+          class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-800">
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Nhà Cung Cấp (*)</label>
+        <select id="in-ncc" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-sky-500">
+          <option value="NCC-01">NCC-01: Công ty CP Thép Việt Đức</option>
+          <option value="NCC-02">NCC-02: Công ty TNHH Nhựa Tiền Phong</option>
+          <option value="NCC-03">NCC-03: Tập đoàn Xi măng Vicem</option>
+          <option value="NCC-04">NCC-04: Công ty CP Kim Tín</option>
+          <option value="NCC-05">NCC-05: Công ty Sơn Hải Phòng</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Người Lập Phiếu</label>
+        <input type="text" readonly value="{{ user.HoTen if user else 'Thủ kho' }}"
+          class="w-full px-3 py-2 bg-slate-100 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700">
+      </div>
+    </div>
+
+    <div class="mt-4">
+      <label class="block text-xs font-semibold text-slate-600 mb-1">Ghi Chú Nhập Kho</label>
+      <input type="text" id="in-ghichu" placeholder="Ví dụ: Nhập bổ sung nguyên vật tư Quý 3..."
+        class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-800">
+    </div>
+  </div>
+
+  <!-- PHẦN 2: BẢNG CHI TIẾT HÀNG NHẬP (DETAIL) -->
+  <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+    <div class="text-sm font-bold text-slate-900 pb-3 border-b border-slate-100 flex items-center justify-between mb-4">
+      <div class="flex items-center gap-2">
+        <i class="fa-solid fa-list-check text-sky-600"></i>
+        <span>Danh Sách Mặt Hàng Nhập Kho</span>
+      </div>
+      <button onclick="addRowNhap()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg text-xs transition border border-slate-300 flex items-center gap-1.5">
+        <i class="fa-solid fa-plus text-sky-600"></i> Thêm Dòng Mặt Hàng
+      </button>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-xs border-collapse" id="tbl-nhap">
+        <thead>
+          <tr class="bg-slate-100 text-slate-700 uppercase font-bold text-[11px] border-b border-slate-200">
+            <th class="py-2.5 px-3 w-12 text-center">STT</th>
+            <th class="py-2.5 px-3 w-64">Mặt Hàng (*)</th>
+            <th class="py-2.5 px-3 w-20 text-center">ĐVT</th>
+            <th class="py-2.5 px-3 w-32">Số Lượng Nhập</th>
+            <th class="py-2.5 px-3 w-40">Đơn Giá Nhập (VNĐ)</th>
+            <th class="py-2.5 px-3 w-40 text-right">Thành Tiền (VNĐ)</th>
+            <th class="py-2.5 px-3 w-16 text-center">Xóa</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100" id="body-nhap">
+        </tbody>
+      </table>
+    </div>
+
+    <!-- KHỐI TỔNG KẾT TIỀN & HÀNH ĐỘNG -->
+    <div class="mt-6 pt-4 border-t border-slate-200 flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-6 text-xs text-slate-600">
+        <div>Tổng số mặt hàng: <b id="lbl-tong-sku" class="text-slate-900">0</b></div>
+        <div>Tổng số lượng: <b id="lbl-tong-sl" class="text-slate-900">0</b></div>
+      </div>
+
+      <div class="flex items-center gap-4">
+        <div class="text-right">
+          <div class="text-xs text-slate-500 font-semibold uppercase">Tổng Giá Trị Nhập Kho:</div>
+          <div class="text-2xl font-extrabold text-sky-600" id="lbl-tong-tien">0 VNĐ</div>
+        </div>
+
+        <button onclick="submitPhieuNhap()" id="btn-submit-nhap"
+          class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs transition shadow-md shadow-emerald-600/20 flex items-center gap-2">
+          <i class="fa-solid fa-floppy-disk"></i>
+          <span>Xác Nhận Lưu Phiếu & Cập Nhật Tồn Kho (ACID)</span>
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+  let availableItems = [];
+
+  async function loadItems() {
+    try {
+      const res = await fetch('/api/v1/kho/items');
+      availableItems = await res.json();
+      
+      const params = new URLSearchParams(window.location.search);
+      const preselect = params.get('ma_hh');
+      addRowNhap(preselect || 'HH-001', 50, 1250000);
+      if (!preselect) {
+        addRowNhap('HH-004', 120, 85000);
+        addRowNhap('HH-035', 30, 110000);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  function addRowNhap(selectedHH = '', defaultQty = 1, defaultPrice = 0) {
+    const tbody = document.getElementById('body-nhap');
+    const rowIdx = tbody.children.length + 1;
+    const tr = document.createElement('tr');
+    tr.className = 'hover:bg-slate-50 transition';
+
+    let options = availableItems.map(item => 
+      `<option value="${item.MaHH}" ${item.MaHH === selectedHH ? 'selected' : ''}>${item.MaHH} - ${item.TenHH}</option>`
+    ).join('');
+
+    tr.innerHTML = `
+      <td class="py-3 px-3 text-center text-slate-500 font-semibold">${rowIdx}</td>
+      <td class="py-3 px-3">
+        <select class="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs sel-hh" onchange="handleHHChange(this)">
+          ${options}
+        </select>
+      </td>
+      <td class="py-3 px-3 text-center text-slate-500 lbl-dvt">Cuộn</td>
+      <td class="py-3 px-3">
+        <input type="number" min="1" value="${defaultQty}" class="w-full px-2 py-1.5 border border-slate-300 rounded text-xs inp-qty" oninput="calculateTotals()">
+      </td>
+      <td class="py-3 px-3">
+        <input type="number" min="0" value="${defaultPrice}" class="w-full px-2 py-1.5 border border-slate-300 rounded text-xs inp-price" oninput="calculateTotals()">
+      </td>
+      <td class="py-3 px-3 text-right font-bold text-slate-800 lbl-subtotal">0</td>
+      <td class="py-3 px-3 text-center">
+        <button onclick="removeRow(this)" class="text-rose-500 hover:text-rose-700 p-1 font-bold">&times;</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+    const sel = tr.querySelector('.sel-hh');
+    handleHHChange(sel);
+    calculateTotals();
+  }
+
+  function handleHHChange(sel) {
+    const tr = sel.closest('tr');
+    const selectedItem = availableItems.find(i => i.MaHH === sel.value);
+    if (selectedItem) {
+      tr.querySelector('.lbl-dvt').innerText = selectedItem.TenDVT || selectedItem.MaDVT;
+    }
+  }
+
+  function removeRow(btn) {
+    const tbody = document.getElementById('body-nhap');
+    if (tbody.children.length <= 1) {
+      alert('Phiếu nhập phải có tối thiểu 1 mặt hàng.');
+      return;
+    }
+    btn.closest('tr').remove();
+    Array.from(tbody.children).forEach((tr, i) => {
+      tr.children[0].innerText = i + 1;
+    });
+    calculateTotals();
+  }
+
+  function calculateTotals() {
+    const tbody = document.getElementById('body-nhap');
+    let totalQty = 0;
+    let grandTotal = 0;
+
+    Array.from(tbody.children).forEach(tr => {
+      const qty = parseInt(tr.querySelector('.inp-qty').value) || 0;
+      const price = parseFloat(tr.querySelector('.inp-price').value) || 0;
+      const subtotal = qty * price;
+      tr.querySelector('.lbl-subtotal').innerText = subtotal.toLocaleString('vi-VN') + ' đ';
+      totalQty += qty;
+      grandTotal += subtotal;
+    });
+
+    document.getElementById('lbl-tong-sku').innerText = tbody.children.length;
+    document.getElementById('lbl-tong-sl').innerText = totalQty.toLocaleString('vi-VN');
+    document.getElementById('lbl-tong-tien').innerText = grandTotal.toLocaleString('vi-VN') + ' VNĐ';
+  }
+
+  async function submitPhieuNhap() {
+    const ncc = document.getElementById('in-ncc').value;
+    const ghichu = document.getElementById('in-ghichu').value;
+    const tbody = document.getElementById('body-nhap');
+    const btn = document.getElementById('btn-submit-nhap');
+    const alertBox = document.getElementById('alert-banner');
+
+    const items = [];
+    Array.from(tbody.children).forEach(tr => {
+      const ma_hh = tr.querySelector('.sel-hh').value;
+      const qty = parseInt(tr.querySelector('.inp-qty').value) || 0;
+      const price = parseFloat(tr.querySelector('.inp-price').value) || 0;
+      items.push({ MaHH: ma_hh, SoLuongNhap: qty, DonGiaNhap: price });
+    });
+
+    btn.disabled = true;
+    btn.innerText = 'Đang xử lý Transaction...';
+
+    try {
+      const res = await fetch('/api/v1/kho/phieu-nhap', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ MaNCC: ncc, GhiChu: ghichu, items: items })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Lỗi lập phiếu nhập kho.');
+
+      alertBox.className = 'p-4 rounded-xl text-xs font-semibold flex items-center gap-3 bg-emerald-50 border border-emerald-300 text-emerald-800';
+      alertBox.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600 text-base"></i> Giao dịch thành công! Mã phiếu: <b>${data.MaPN}</b>. Tồn kho đã được cộng dồn và ghi sổ thẻ kho.`;
+      alertBox.classList.remove('hidden');
+
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 1500);
+    } catch (err) {
+      alertBox.className = 'p-4 rounded-xl text-xs font-semibold flex items-center gap-3 bg-rose-50 border border-rose-300 text-rose-800';
+      alertBox.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-rose-600 text-base"></i> Lỗi: ${err.message}`;
+      alertBox.classList.remove('hidden');
+      btn.disabled = false;
+      btn.innerText = 'Xác Nhận Lưu Phiếu & Cập Nhật Tồn Kho (ACID)';
+    }
+  }
+
+  window.addEventListener('DOMContentLoaded', loadItems);
+</script>
+{% endblock %}\n
