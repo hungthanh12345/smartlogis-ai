@@ -27,11 +27,11 @@ def api_get_the_kho(
 @router.get("/export/excel")
 def api_export_excel(
     db: Session = Depends(get_db),
-    current_user: NguoiDung = Depends(require_role(["Admin", "Ketoan"]))
+    current_user: NguoiDung = Depends(require_role(["Admin", "Thukho", "Ketoan"]))
 ):
     """
     KẾT XUẤT BÁO CÁO EXCEL THỰC TẾ (OPENPYXL ENGINE):
-    Chỉ dành cho vai trò Admin và Kế toán (Phân quyền RBAC).
+    Dành cho vai trò Admin và Thủ kho kiêm Kế toán (Phân quyền RBAC).
     Truy vấn trực tiếp số liệu tồn kho, định mức tối thiểu từ CSDL PostgreSQL/SQLite.
     Sinh file Excel (.xlsx) chuẩn biểu mẫu kế toán và trả về luồng tải tệp tin cho trình duyệt.
     """

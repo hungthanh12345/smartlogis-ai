@@ -1,4 +1,4 @@
-﻿# ĐẶC TẢ USE CASE CHI TIẾT (USE CASE SPECIFICATIONS)
+# ĐẶC TẢ USE CASE CHI TIẾT (USE CASE SPECIFICATIONS)
 ## DỰ ÁN: HỆ THỐNG QUẢN LÝ KHO TÍCH HỢP AI (SMARTLOGIS AI V2.0)
 
 ---
@@ -8,31 +8,30 @@
 | Tác nhân (Actor) | Mô tả vai trò | Trách nhiệm chính trong hệ thống |
 | :--- | :--- | :--- |
 | **Admin (Quản trị viên)** | Người quản lý toàn quyền hệ thống | Quản trị tài khoản người dùng, cấu hình tham số kho, theo dõi toàn diện Dashboard và khuyến nghị AI. |
-| **Thủ kho (Warehouse Staff)** | Người trực tiếp vận hành tại kho vật lý | Tiếp nhận hàng nhập, tạo phiếu nhập kho, kiểm tra tồn và lập phiếu xuất kho vật tư. |
-| **Kế toán (Accountant)** | Người kiểm soát số liệu và luân chuyển tài chính | Tra cứu sổ thẻ kho, đối soát tính toàn vẹn chứng từ, kiểm tra cảnh báo tồn tối thiểu và xuất báo cáo. |
+| **Thủ kho kiêm Kế toán (Storekeeper & Accountant)** | Người vận hành kho toàn diện và đối soát | Khai báo danh mục, lập phiếu nhập kho, lập phiếu xuất kho chống tồn âm, theo dõi sổ thẻ kho và xuất báo cáo tổng hợp. |
 | **Trợ lý AI (Gemini AI)** | Hệ thống dịch vụ thông minh bên ngoài | Tiếp nhận dữ liệu tồn kho đã làm sạch, xử lý Grounded Prompting và sinh khuyến nghị phân tích chiến lược. |
 
 ---
 
 ## 2. MA TRẬN PHÂN QUYỀN USE CASE (USE CASE MATRIX)
 
-| Mã UC | Tên Use Case | Admin | Thủ kho | Kế toán | Trợ lý AI |
-| :---: | :--- | :---: | :---: | :---: | :---: |
-| **UC01** | Đăng nhập & Quản lý phiên làm việc (JWT) | ✔ | ✔ | ✔ | |
-| **UC02** | Quản trị Danh mục hàng hóa & Nhà cung cấp | ✔ | ✔ | | |
-| **UC03** | Lập Phiếu Nhập Kho & Cập nhật tồn kho (Inbound) | ✔ | ✔ | | |
-| **UC04** | Lập Phiếu Xuất Kho & Phòng tỏa tồn âm (Outbound) | ✔ | ✔ | | |
-| **UC05** | Tra cứu Sổ Thẻ Kho lũy kế chi tiết | ✔ | ✔ | ✔ | |
-| **UC06** | Giám sát Dashboard KPI & Cảnh báo tồn kho min | ✔ | ✔ | ✔ | |
-| **UC07** | Tham vấn Trợ lý AI phân tích & Lập kế hoạch bổ sung | ✔ | ✔ | ✔ | ✔ *(Xử lý)* |
-| **UC08** | Xuất Báo cáo Nhập - Xuất - Tồn (Excel / PDF) | ✔ | | ✔ | |
+| Mã UC | Tên Use Case | Admin | Thủ kho kiêm Kế toán | Trợ lý AI |
+| :---: | :--- | :---: | :---: | :---: |
+| **UC01** | Đăng nhập & Quản lý phiên làm việc (JWT) | ✔ | ✔ | |
+| **UC02** | Quản trị Danh mục hàng hóa & Nhà cung cấp | ✔ | ✔ | |
+| **UC03** | Lập Phiếu Nhập Kho & Cập nhật tồn kho (Inbound) | ✔ | ✔ | |
+| **UC04** | Lập Phiếu Xuất Kho & Phòng tỏa tồn âm (Outbound) | ✔ | ✔ | |
+| **UC05** | Tra cứu Sổ Thẻ Kho lũy kế chi tiết | ✔ | ✔ | |
+| **UC06** | Giám sát Dashboard KPI & Cảnh báo tồn kho min | ✔ | ✔ | |
+| **UC07** | Tham vấn Trợ lý AI phân tích & Lập kế hoạch bổ sung | ✔ | ✔ | ✔ *(Xử lý)* |
+| **UC08** | Xuất Báo cáo Nhập - Xuất - Tồn (Excel / PDF) | ✔ | ✔ | |
 
 ---
 
 ## 3. ĐẶC TẢ CHI TIẾT CÁC USE CASE TIÊU BIỂU
 
 ### 3.1. UC01: Đăng nhập & Xác thực Hệ thống
-* **Tác nhân:** Toàn bộ người dùng (Admin, Thủ kho, Kế toán).
+* **Tác nhân:** Toàn bộ người dùng (Admin, Thủ kho kiêm Kế toán).
 * **Mục tiêu:** Cấp quyền truy cập hệ thống phù hợp với vai trò của người dùng.
 * **Tiền điều kiện:** Người dùng đã có tài khoản đang kích hoạt (KichHoat = True).
 * **Luồng chính (Basic Flow):**
@@ -49,11 +48,11 @@
 ---
 
 ### 3.2. UC03: Lập Phiếu Nhập Kho (Inbound Transaction)
-* **Tác nhân:** Thủ kho, Admin.
+* **Tác nhân:** Thủ kho kiêm Kế toán, Admin.
 * **Mục tiêu:** Nhập hàng hóa từ Nhà cung cấp vào kho, tự động tăng tồn kho và ghi thẻ kho.
-* **Tiền điều kiện:** Người dùng đã đăng nhập với quyền Thủ kho hoặc Admin.
+* **Tiền điều kiện:** Người dùng đã đăng nhập với quyền Thủ kho kiêm Kế toán hoặc Admin.
 * **Luồng chính (Basic Flow):**
-  1. Thủ kho chọn chức năng **Lập Phiếu Nhập Kho** trên thanh Menu.
+  1. Thủ kho kiêm Kế toán chọn chức năng **Lập Phiếu Nhập Kho** trên thanh Menu.
   2. Chọn Nhà cung cấp từ danh sách đối tác và nhập ghi chú.
   3. Chọn các mặt hàng cần nhập, điền Số lượng nhập ($>0$) và Đơn giá mua.
   4. Hệ thống tự động tính Thành tiền từng dòng và Tổng giá trị phiếu nhập.
@@ -68,7 +67,7 @@
 ---
 
 ### 3.3. UC04: Lập Phiếu Xuất Kho & Kiểm Soát Chống Tồn Âm (Outbound Transaction)
-* **Tác nhân:** Thủ kho, Admin.
+* **Tác nhân:** Thủ kho kiêm Kế toán, Admin.
 * **Mục tiêu:** Xuất vật tư phục vụ công trình / khách hàng và đảm bảo tuyệt đối không bị tồn âm.
 * **Tiền điều kiện:** Người dùng đã đăng nhập.
 * **Luồng chính (Basic Flow):**
@@ -76,7 +75,7 @@
   2. Nhập Người nhận / Đơn vị tiếp nhận và Lý do xuất kho.
   3. Chọn mặt hàng cần xuất: Hệ thống tải số lượng tồn khả dụng thời gian thực.
   4. Nhập số lượng xuất:
-     * *Tầng Frontend Validation:* Nếu \ lượng\ xuất \le Tồn\ khả\ dụng$, nút xuất sáng và hợp lệ.
+     * *Tầng Frontend Validation:* Nếu số lượng xuất $\le$ Tồn khả dụng, nút xuất sáng và hợp lệ.
   5. Bấm nút **Xác nhận Xuất Kho**.
   6. Backend tiếp nhận request và bắt đầu một **Database Transaction**:
      * Áp dụng khóa bi quan with_for_update() trên dòng tồn kho của mặt hàng.
@@ -93,7 +92,7 @@
 ---
 
 ### 3.4. UC05: Tra Cứu Sổ Thẻ Kho Lũy Kế
-* **Tác nhân:** Thủ kho, Kế toán, Admin.
+* **Tác nhân:** Thủ kho kiêm Kế toán, Admin.
 * **Mục tiêu:** Kiểm tra lịch sử vào - ra của từng SKU để đối soát số lượng thực tế với sổ sách.
 * **Luồng chính:**
   1. Người dùng chọn chức năng **Tra Cứu Thẻ Kho**.
@@ -108,7 +107,7 @@
 ---
 
 ### 3.5. UC07: Tham Vấn Trợ Lý AI Gemini (Grounded Advisory)
-* **Tác nhân:** Admin, Kế toán, Thủ kho.
+* **Tác nhân:** Admin, Thủ kho kiêm Kế toán.
 * **Mục tiêu:** Nhận báo cáo phân tích rủi ro kho và gợi ý kế hoạch nhập hàng tự động.
 * **Luồng chính:**
   1. Người dùng truy cập Dashboard hoặc gửi yêu cầu phân tích kho.

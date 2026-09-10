@@ -60,7 +60,7 @@ def reset_and_seed_database(force_reset: bool = False):
             print("[INFO] He thong da co du lieu. Su dung co '--reset' neu muon nap lai tu dau.")
             return
 
-        print("[*] Dang khoi tao danh sach Nguoi dung (RBAC: Admin, Thukho, Ketoan)...")
+        print("[*] Dang khoi tao danh sach Nguoi dung (RBAC: Admin, Thukho kiem Ketoan)...")
         users = [
             NguoiDung(
                 TenDangNhap="admin",
@@ -72,14 +72,14 @@ def reset_and_seed_database(force_reset: bool = False):
             NguoiDung(
                 TenDangNhap="thukho",
                 MatKhau=get_password_hash("thukho123"),
-                HoTen="Hoàng Tiến Đạt (Thủ Kho Trưởng)",
+                HoTen="Hoàng Tiến Đạt (Thủ Kho Kiêm Kế Toán)",
                 VaiTro="Thukho",
                 KichHoat=True
             ),
             NguoiDung(
                 TenDangNhap="ketoan",
                 MatKhau=get_password_hash("ketoan123"),
-                HoTen="Hoàng Tiến Đạt (Kế Toán Kho)",
+                HoTen="Hoàng Tiến Đạt (Kế Toán Kho - Dự phòng)",
                 VaiTro="Ketoan",
                 KichHoat=True
             ),

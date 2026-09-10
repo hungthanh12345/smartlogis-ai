@@ -65,9 +65,9 @@ def api_get_all_items(
 def api_create_item(
     item_in: HangHoaCreate,
     db: Session = Depends(get_db),
-    current_user: NguoiDung = Depends(require_role(["Admin", "Thukho"]))
+    current_user: NguoiDung = Depends(require_role(["Admin", "Thukho", "Ketoan"]))
 ):
-    """Thêm mới mặt hàng vào danh mục và tự động khởi tạo tồn kho (Chỉ Admin & Thủ kho)."""
+    """Thêm mới mặt hàng vào danh mục và tự động khởi tạo tồn kho (Admin & Thủ kho kiêm Kế toán)."""
     item = create_hang_hoa(db, item_in)
     ton = item.ton_kho.SoLuongTon if item.ton_kho else 0
     ws_manager.broadcast_sync({
@@ -94,9 +94,9 @@ def api_update_item(
     ma_hh: str,
     item_in: HangHoaUpdate,
     db: Session = Depends(get_db),
-    current_user: NguoiDung = Depends(require_role(["Admin", "Thukho"]))
+    current_user: NguoiDung = Depends(require_role(["Admin", "Thukho", "Ketoan"]))
 ):
-    """Cập nhật thông tin mặt hàng (Chỉ Admin & Thủ kho)."""
+    """Cập nhật thông tin mặt hàng (Admin & Thủ kho kiêm Kế toán)."""
     item = update_hang_hoa(db, ma_hh, item_in)
     ton = item.ton_kho.SoLuongTon if item.ton_kho else 0
     ws_manager.broadcast_sync({
@@ -122,9 +122,9 @@ def api_update_item(
 def api_delete_item(
     ma_hh: str,
     db: Session = Depends(get_db),
-    current_user: NguoiDung = Depends(require_role(["Admin", "Thukho"]))
+    current_user: NguoiDung = Depends(require_role(["Admin", "Thukho", "Ketoan"]))
 ):
-    """Xóa mặt hàng (Chỉ Admin & Thủ kho, chỉ cho phép khi chưa phát sinh phiếu nhập/xuất kho)."""
+    """Xóa mặt hàng (Admin & Thủ kho kiêm Kế toán, chỉ cho phép khi chưa phát sinh phiếu nhập/xuất kho)."""
     delete_hang_hoa(db, ma_hh)
     ws_manager.broadcast_sync({
         "type": "INVENTORY_UPDATED",
@@ -187,9 +187,9 @@ def api_get_supplier_detail(
 def api_create_supplier(
     ncc_in: NhaCungCapCreate,
     db: Session = Depends(get_db),
-    current_user: NguoiDung = Depends(require_role(["Admin", "Thukho"]))
+    current_user: NguoiDung = Depends(require_role(["Admin", "Thukho", "Ketoan"]))
 ):
-    """Thêm mới đối tác nhà cung cấp (Chỉ Admin & Thủ kho)."""
+    """Thêm mới đối tác nhà cung cấp (Admin & Thủ kho kiêm Kế toán)."""
     return create_nha_cung_cap(db, ncc_in)
 
 @router.put("/suppliers/{ma_ncc}", response_model=NhaCungCapOut)
@@ -197,18 +197,18 @@ def api_update_supplier(
     ma_ncc: str,
     ncc_in: NhaCungCapUpdate,
     db: Session = Depends(get_db),
-    current_user: NguoiDung = Depends(require_role(["Admin", "Thukho"]))
+    current_user: NguoiDung = Depends(require_role(["Admin", "Thukho", "Ketoan"]))
 ):
-    """Cập nhật thông tin nhà cung cấp (Chỉ Admin & Thủ kho)."""
+    """Cập nhật thông tin nhà cung cấp (Admin & Thủ kho kiêm Kế toán)."""
     return update_nha_cung_cap(db, ma_ncc, ncc_in)
 
 @router.delete("/suppliers/{ma_ncc}")
 def api_delete_supplier(
     ma_ncc: str,
     db: Session = Depends(get_db),
-    current_user: NguoiDung = Depends(require_role(["Admin", "Thukho"]))
+    current_user: NguoiDung = Depends(require_role(["Admin", "Thukho", "Ketoan"]))
 ):
-    """Xóa nhà cung cấp (Chỉ Admin & Thủ kho, chỉ khi chưa có phiếu nhập liên kết)."""
+    """Xóa nhà cung cấp (Admin & Thủ kho kiêm Kế toán, chỉ khi chưa có phiếu nhập liên kết)."""
     delete_nha_cung_cap(db, ma_ncc)
     return {"status": "success", "message": f"Đã xóa thành công nhà cung cấp [{ma_ncc}]."}
 

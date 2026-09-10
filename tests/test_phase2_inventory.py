@@ -242,13 +242,12 @@ def test_outbound_concurrency_race_condition():
 
 def test_rbac_matrix():
     """
-    Kiểm thử Ma trận phân quyền (Role-Based Access Control):
-    - Kế toán (Ketoan):
-      + Được xem danh mục, kho, lập phiếu nhập, lập phiếu xuất, xem thẻ kho.
-      + BỊ CẤM (HTTP 403) khi cố Tạo/Sửa/Xóa Hàng hóa (SKU).
-      + BỊ CẤM (HTTP 403) khi cố Tạo/Sửa/Xóa Nhà cung cấp.
-    - Thủ kho (Thukho):
-      + Được toàn quyền thực hiện các nghiệp vụ quản lý kho, SKU, NCC.
+    Kiểm thử Ma trận phân quyền Hợp nhất (Role-Based Access Control):
+    - Thủ kho kiêm Kế toán (Thukho / Ketoan):
+      + Được toàn quyền thực hiện các nghiệp vụ quản lý kho, Master Data SKU, NCC.
+      + Được lập phiếu nhập, phiếu xuất, xem thẻ kho.
+      + Được xuất báo cáo Excel tổng hợp tồn kho (/api/v1/reports/export/excel).
+    - Khách chưa đăng nhập: Bị từ chối (HTTP 401).
     """
     client = TestClient(app)
     admin_token = get_auth_token(client, "admin", "admin123")
@@ -259,90 +258,91 @@ def test_rbac_matrix():
     ketoan_headers = {"Authorization": f"Bearer {ketoan_token}"}
     thukho_headers = {"Authorization": f"Bearer {thukho_token}"}
 
-    # 1. Kế toán ĐƯỢC PHÉP xem danh mục hàng và nhà cung cấp
-    res = client.get("/api/v1/kho/items", headers=ketoan_headers)
+    # 1. Thủ kho & Kế toán ĐƯỢC PHÉP xem danh mục hàng và nhà cung cấp
+    res = client.get("/api/v1/kho/items", headers=thukho_headers)
     assert res.status_code == 200
 
-    res = client.get("/api/v1/kho/suppliers", headers=ketoan_headers)
+    res = client.get("/api/v1/kho/suppliers", headers=thukho_headers)
     assert res.status_code == 200
 
-    # 2. Kế toán BỊ CẤM (403) khi cố TẠO HÀNG HÓA
-    res = client.post(
-        "/api/v1/kho/items",
-        json={
-            "MaHH": "HH-FORBIDDEN",
-            "TenHH": "Hàng hóa cấm",
-            "MaNhom": "NH-THEP",
-            "MaDVT": "Bao",
-            "TonToiThieu": 5,
-            "SoLuongBanDau": 10
-        },
-        headers=ketoan_headers
-    )
-    assert res.status_code == 403, f"Kế toán không được phép tạo hàng hóa, nhưng nhận: {res.status_code}"
+    # 2. Khách chưa đăng nhập BỊ CHẶN (HTTP 401)
+    fresh_client = TestClient(app)
+    res_unauth = fresh_client.post("/api/v1/kho/items", json={
+        "MaHH": "HH-UNAUTH", "TenHH": "Unauth", "MaNhom": "NH-THEP", "MaDVT": "Bao", "TonToiThieu": 5
+    })
+    assert res_unauth.status_code == 401
 
-    # 3. Kế toán BỊ CẤM (403) khi cố TẠO NHÀ CUNG CẤP
-    res = client.post(
-        "/api/v1/kho/suppliers",
-        json={
-            "MaNCC": "NCC-FORBIDDEN",
-            "TenNCC": "Đối tác cấm",
-            "DiaChi": "HN",
-            "SoDienThoai": "0123456789"
-        },
-        headers=ketoan_headers
-    )
-    assert res.status_code == 403, f"Kế toán không được phép tạo nhà cung cấp, nhưng nhận: {res.status_code}"
-
-    # 4. Kế toán ĐƯỢC PHÉP lập phiếu nhập kho
-    # Tạo trước 1 SKU bằng quyền Admin
+    # 3. Thủ kho kiêm Kế toán ĐƯỢC PHÉP tạo hàng hóa
     test_sku = f"HH-RBAC-{uuid.uuid4().hex[:6].upper()}"
     create_res = client.post(
         "/api/v1/kho/items",
         json={
             "MaHH": test_sku,
-            "TenHH": "Hàng kiểm tra RBAC",
+            "TenHH": "Hàng kiểm tra RBAC Hợp Nhất",
             "MaNhom": "NH-THEP",
             "MaDVT": "Bao",
             "TonToiThieu": 5,
             "SoLuongBanDau": 10
         },
-        headers=admin_headers
+        headers=thukho_headers
     )
-    assert create_res.status_code == 201, f"Tạo SKU thử nghiệm thất bại: {create_res.text}"
+    assert create_res.status_code == 201, f"Thủ kho phải được phép tạo SKU: {create_res.text}"
+
+    # 4. Thủ kho kiêm Kế toán ĐƯỢC PHÉP tạo Nhà cung cấp
+    test_ncc = f"NCC-{uuid.uuid4().hex[:4].upper()}"
+    res_ncc = client.post(
+        "/api/v1/kho/suppliers",
+        json={
+            "MaNCC": test_ncc,
+            "TenNCC": "Đối tác RBAC Hợp Nhất",
+            "DiaChi": "HN",
+            "SoDienThoai": "0123456789"
+        },
+        headers=thukho_headers
+    )
+    assert res_ncc.status_code == 201, f"Thủ kho phải được phép tạo nhà cung cấp: {res_ncc.text}"
 
     try:
-        # Kế toán lập phiếu nhập thành công
+        # 5. Thủ kho kiêm Kế toán lập phiếu nhập thành công
         inbound_payload = {
-            "MaNCC": "NCC-01",
-            "GhiChu": "Phiếu do Kế toán lập",
+            "MaNCC": test_ncc,
+            "GhiChu": "Phiếu do Thủ kho kiêm Kế toán lập",
             "items": [{"MaHH": test_sku, "SoLuongNhap": 15, "DonGiaNhap": 20000.0}]
         }
-        res_inb = client.post("/api/v1/kho/phieu-nhap", json=inbound_payload, headers=ketoan_headers)
-        assert res_inb.status_code == 201, f"Kế toán phải được phép lập phiếu nhập: {res_inb.text}"
+        res_inb = client.post("/api/v1/kho/phieu-nhap", json=inbound_payload, headers=thukho_headers)
+        assert res_inb.status_code == 201, f"Thủ kho phải được phép lập phiếu nhập: {res_inb.text}"
 
-        # Kế toán lập phiếu xuất thành công
+        # 6. Thủ kho kiêm Kế toán lập phiếu xuất thành công
         outbound_payload = {
             "NguoiNhan": "Công ty Bê tông Việt",
-            "LyDoXuat": "Xuất do Kế toán duyệt",
+            "LyDoXuat": "Xuất do Thủ kho kiêm Kế toán duyệt",
             "items": [{"MaHH": test_sku, "SoLuongXuat": 5}]
         }
-        res_out = client.post("/api/v1/kho/phieu-xuat", json=outbound_payload, headers=ketoan_headers)
-        assert res_out.status_code == 201, f"Kế toán phải được phép lập phiếu xuất: {res_out.text}"
+        res_out = client.post("/api/v1/kho/phieu-xuat", json=outbound_payload, headers=thukho_headers)
+        assert res_out.status_code == 201, f"Thủ kho phải được phép lập phiếu xuất: {res_out.text}"
 
-        # Kế toán xem được thẻ kho
-        res_tk = client.get(f"/api/v1/kho/the-kho/{test_sku}", headers=ketoan_headers)
+        # 7. Thủ kho kiêm Kế toán xem được thẻ kho
+        res_tk = client.get(f"/api/v1/kho/the-kho/{test_sku}", headers=thukho_headers)
         assert res_tk.status_code == 200
 
-        # Kế toán xem được danh sách phiếu nhập và xuất
-        res_list_pn = client.get("/api/v1/kho/phieu-nhap", headers=ketoan_headers)
+        # 8. Thủ kho kiêm Kế toán xem được danh sách phiếu nhập và xuất
+        res_list_pn = client.get("/api/v1/kho/phieu-nhap", headers=thukho_headers)
         assert res_list_pn.status_code == 200
 
-        res_list_px = client.get("/api/v1/kho/phieu-xuat", headers=ketoan_headers)
+        res_list_px = client.get("/api/v1/kho/phieu-xuat", headers=thukho_headers)
         assert res_list_px.status_code == 200
+
+        # 9. Thủ kho kiêm Kế toán ĐƯỢC PHÉP xuất file Excel Báo cáo tồn kho
+        res_excel = client.get("/api/v1/reports/export/excel", headers=thukho_headers)
+        assert res_excel.status_code == 200, f"Thủ kho phải xuất được Excel, nhưng nhận: {res_excel.status_code}"
+
+        # 10. Tài khoản Ketoan (tương thích ngược) cũng xuất được Excel
+        res_excel_kt = client.get("/api/v1/reports/export/excel", headers=ketoan_headers)
+        assert res_excel_kt.status_code == 200
 
     finally:
         client.delete(f"/api/v1/kho/items/{test_sku}", headers=admin_headers)
+        client.delete(f"/api/v1/kho/suppliers/{test_ncc}", headers=admin_headers)
 
 
 def test_database_level_negative_stock_constraints():

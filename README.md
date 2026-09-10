@@ -26,7 +26,7 @@
   - **Tầng CSDL:** Ràng buộc `CHECK (SoLuongTon >= 0)` kết hợp SQLite Triggers chống can thiệp trực tiếp vào CSDL.
 - **Quy trình Nhập - Xuất kho chuẩn mực:**
   - Tự động ghi nhận Master-Detail chứng từ, cập nhật số dư khả dụng và ghi sổ **Thẻ kho (TheKho)** trong cùng 1 Transaction nguyên tử (ACID).
-- **Phân quyền RBAC 3 vai trò:** **Admin**, **Thủ kho (Thukho)**, **Kế toán (Ketoan)**. Kế toán được tạo và tra cứu chứng từ nhưng không được can thiệp sửa đổi số lượng tồn kho ban đầu.
+- **Phân quyền RBAC chuẩn hóa:** **Admin (Quản trị viên)** và **Thủ kho kiêm Kế toán (Thukho)**. Hỗ trợ toàn diện quản trị danh mục, lập chứng từ nhập/xuất ACID, tra cứu thẻ kho lũy kế và xuất báo cáo kế toán Excel. Duy trì tài khoản `ketoan` để tương thích ngược.
 
 ### 1.2. Trợ Lý AI Điều Hành Kho (Google Gemini LLM)
 - **Module Data Sanitizer (Khử Nhạy Cảm 100%):** Tự động loại bỏ hoàn toàn các thông tin giá vốn bí mật (`DonGiaNhap`, `ThanhTien`, `GiaVon`) trước khi gửi context cho AI.

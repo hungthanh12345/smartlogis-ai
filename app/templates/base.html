@@ -170,7 +170,13 @@
           <div class="text-left hidden sm:block">
             <div class="text-xs font-bold text-slate-800 dark:text-slate-100 leading-tight">{{ user.HoTen }}</div>
             <div class="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
-              <span class="bg-sky-50 dark:bg-sky-950 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 px-1.5 py-0.2 rounded font-medium">{{ user.VaiTro }}</span>
+              {% if user.VaiTro == 'Admin' %}
+              <span class="bg-rose-50 dark:bg-rose-950 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 px-1.5 py-0.2 rounded font-medium">Quản Trị Viên</span>
+              {% elif user.VaiTro in ['Thukho', 'Ketoan'] %}
+              <span class="bg-sky-50 dark:bg-sky-950 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 px-1.5 py-0.2 rounded font-medium">Thủ Kho Kiêm Kế Toán</span>
+              {% else %}
+              <span class="bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-1.5 py-0.2 rounded font-medium">{{ user.VaiTro }}</span>
+              {% endif %}
               <span class="text-slate-400 font-mono">@{{ user.TenDangNhap }}</span>
             </div>
           </div>

@@ -1,4 +1,4 @@
-﻿# ĐẶC TẢ YÊU CẦU HỆ THỐNG (SYSTEM REQUIREMENTS SPECIFICATION)
+# ĐẶC TẢ YÊU CẦU HỆ THỐNG (SYSTEM REQUIREMENTS SPECIFICATION)
 ## DỰ ÁN: HỆ THỐNG QUẢN LÝ KHO TÍCH HỢP AI (SMARTLOGIS AI V2.0)
 
 ---
@@ -34,10 +34,9 @@ Các hệ thống quản lý kho truyền thống thường gặp các thách th
 ### FR1: Phân hệ Xác thực & Phân quyền người dùng (Auth Module)
 * **FR1.1:** Đăng nhập hệ thống bằng Tên đăng nhập và Mật khẩu. Mật khẩu được mã hóa một chiều bằng thuật toán **Bcrypt Hash**.
 * **FR1.2:** Cấp mã định danh **JWT (JSON Web Token)** với hạn sử dụng và lưu trữ an toàn qua HttpOnly Cookie.
-* **FR1.3:** Phân quyền truy cập dựa trên 3 vai trò (RBAC):
+* **FR1.3:** Phân quyền truy cập dựa trên 2 vai trò chuẩn (RBAC):
   * **Admin (Quản trị viên):** Toàn quyền cấu hình, quản lý người dùng, xem toàn bộ báo cáo và cấu hình AI.
-  * **Thủ kho:** Quản lý danh mục hàng hóa, lập phiếu nhập kho, phiếu xuất kho, theo dõi thẻ kho.
-  * **Kế toán:** Tra cứu lịch sử thẻ kho lũy kế, đối soát số liệu, xem cảnh báo tồn và xuất báo cáo.
+  * **Thủ kho kiêm Kế toán:** Quản lý danh mục hàng hóa, đối tác NCC, lập phiếu nhập kho, lập phiếu xuất kho chống tồn âm, theo dõi sổ thẻ kho và xuất báo cáo Excel tổng hợp tồn kho.
 * **FR1.4:** Cho phép đăng ký tài khoản mới và đăng xuất an toàn (thu hồi phiên làm việc tức thì).
 
 ### FR2: Phân hệ Quản lý Danh mục Kho (Master Data)
