@@ -1,17 +1,50 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" class="h-full">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- Google Fonts: Be Vietnam Pro & Plus Jakarta Sans (Tối ưu hóa hiển thị tiếng Việt) -->
+  <title>Đăng Nhập - SmartLogis AI Warehouse</title>
+
+  <!-- Script khởi tạo Theme tức thời chống giật FOUC -->
+  <script>
+    (function() {
+      try {
+        const theme = localStorage.getItem('smartlogis_theme');
+        if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      } catch (e) {}
+    })();
+  </script>
+
+  <!-- Google Fonts: Be Vietnam Pro & Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
+      darkMode: 'class',
       theme: {
         extend: {
+          colors: {
+            slate: {
+              750: '#293548',
+              850: '#1e293b',
+              900: '#0f172a',
+              950: '#0f172a', // Màu tối sáng hơn, không bị đen ngòm khó nhìn
+            },
+            brand: {
+              50: '#f0f9ff',
+              100: '#e0f2fe',
+              500: '#0ea5e9',
+              600: '#0284c7',
+              700: '#0369a1',
+            }
+          },
           fontFamily: {
             sans: ['"Be Vietnam Pro"', '"Plus Jakarta Sans"', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
           }
@@ -19,96 +52,234 @@
       }
     }
   </script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <style>
-    *, ::before, ::after {
-      font-family: 'Be Vietnam Pro', 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-    }
-    body {
-      font-family: 'Be Vietnam Pro', 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    }
-  </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous">
+  <link rel="stylesheet" href="/static/css/style.css?v=20260909_6">
 </head>
-<body class="bg-slate-900 text-slate-100 flex items-center justify-center min-h-screen p-4">
+<body class="min-h-screen bg-slate-100/70 dark:bg-slate-900 text-slate-800 dark:text-slate-100 flex flex-col antialiased transition-colors duration-200 selection:bg-sky-500 selection:text-white">
 
-  <div class="w-full max-w-md bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl p-8">
-    <div class="text-center mb-8">
-      <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-sky-500/10 text-sky-400 border border-sky-500/20 text-3xl mb-4">
-        <i class="fa-solid fa-boxes-stacked"></i>
-      </div>
-      <h1 class="text-2xl font-bold text-white tracking-wide">SmartLogis AI</h1>
-      <p class="text-xs text-sky-400 font-semibold mt-1">HỆ THỐNG QUẢN LÝ KHO TÍCH HỢP AI V2.0</p>
-      <p class="text-xs text-slate-400 mt-2">Bảo vệ tính toàn vẹn CSDL bằng giao dịch ACID & AI Advisory</p>
-    </div>
+  <div class="min-h-screen flex flex-col lg:flex-row w-full">
 
-    <!-- Alert message -->
-    <div id="error-box" class="hidden mb-5 p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
-      <i class="fa-solid fa-triangle-exclamation text-rose-400"></i>
-      <span id="error-message"></span>
-    </div>
+    <!-- ========================================================================= -->
+    <!-- CỘT BÊN TRÁI: HÌNH ẢNH MINH HỌA KHO THÔNG MINH & GIỚI THIỆU HỆ THỐNG -->
+    <!-- ========================================================================= -->
+    <div class="lg:w-7/12 xl:w-3/5 hidden lg:flex relative flex-col justify-between p-10 xl:p-14 overflow-hidden bg-slate-900 text-white">
+      <!-- Ảnh nền Kho Thông Minh độ phân giải cao -->
+      <img src="/static/images/warehouse_login_banner.jpg" 
+           alt="Smart Logistics Warehouse AI" 
+           class="absolute inset-0 w-full h-full object-cover object-center transform scale-105 transition duration-1000 ease-out">
+      
+      <!-- Lớp phủ Gradient mờ tinh tế bảo đảm độ tương phản chữ -->
+      <div class="absolute inset-0 bg-gradient-to-t from-slate-950/95 via-slate-900/65 to-slate-900/40 backdrop-blur-[1.5px]"></div>
 
-    <form id="login-form" onsubmit="handleLoginSubmit(event)" class="space-y-4">
-      <div>
-        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Tên Đăng Nhập</label>
-        <div class="relative">
-          <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500 text-sm">
-            <i class="fa-regular fa-user"></i>
-          </span>
-          <input type="text" id="username" required placeholder="Nhập tên đăng nhập"
-            class="w-full pl-9 pr-3 py-2.5 bg-slate-900 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition">
+      <!-- Header thương hiệu trên Banner -->
+      <div class="relative z-10 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-600 to-sky-400 flex items-center justify-center text-white text-2xl shadow-lg shadow-sky-500/30">
+            <i class="fa-solid fa-boxes-stacked"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl font-extrabold tracking-wide text-white">SmartLogis AI</span>
+              <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-400/30 uppercase tracking-wider">v2.0 Enterprise</span>
+            </div>
+            <p class="text-xs text-slate-300">Hệ Thống Quản Lý Kho Vận Thông Minh & AI Advisory</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800/80 backdrop-blur-md border border-slate-700/80 text-xs font-semibold text-emerald-400">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span>Hệ thống trực tuyến 24/7</span>
         </div>
       </div>
 
-      <div>
-        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Mật Khẩu</label>
-        <div class="relative">
-          <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500 text-sm">
-            <i class="fa-solid fa-lock"></i>
+      <!-- Nội dung giới thiệu & 3 Khối tính năng cốt lõi -->
+      <div class="relative z-10 my-auto py-10 space-y-6">
+        <div>
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-500/15 border border-sky-400/30 text-sky-300 text-xs font-bold tracking-wide uppercase mb-3">
+            <i class="fa-solid fa-microchip"></i> Next-Gen Warehouse Architecture
           </span>
-          <input type="password" id="password" required placeholder="••••••••"
-            class="w-full pl-9 pr-3 py-2.5 bg-slate-900 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition">
+          <h2 class="text-3xl xl:text-4xl font-black text-white leading-tight drop-shadow-md">
+            Quản Trị Kho Vận Hiện Đại<br>
+            <span class="text-transparent bg-clip-text bg-gradient-to-r from-sky-400 via-teal-300 to-emerald-400">
+              Chính Xác Tuyệt Đối Cùng Trí Tuệ Nhân Tạo
+            </span>
+          </h2>
+          <p class="text-sm text-slate-300 mt-3 max-w-xl leading-relaxed drop-shadow-xs">
+            Hệ thống quản lý kho tập trung thời gian thực, bảo toàn giao dịch ACID toàn vẹn, ngăn chặn 100% rủi ro tồn kho âm và tích hợp trợ lý Gemini AI khuyến nghị nhập xuất tối ưu.
+          </p>
+        </div>
+
+        <!-- 3 Thẻ tính năng công nghệ -->
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-3.5 max-w-2xl">
+          <div class="p-3.5 rounded-2xl bg-slate-800/70 backdrop-blur-md border border-slate-700/80 shadow-lg">
+            <div class="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-sm mb-2 font-bold">
+              <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <div class="text-xs font-bold text-white">Zero Negative Stock</div>
+            <div class="text-[11px] text-slate-300 mt-1 leading-snug">Khóa dòng bi quan SELECT FOR UPDATE chống Race Condition tuyệt đối.</div>
+          </div>
+
+          <div class="p-3.5 rounded-2xl bg-slate-800/70 backdrop-blur-md border border-slate-700/80 shadow-lg">
+            <div class="w-8 h-8 rounded-xl bg-sky-500/20 text-sky-400 flex items-center justify-center text-sm mb-2 font-bold">
+              <i class="fa-solid fa-robot"></i>
+            </div>
+            <div class="text-xs font-bold text-white">Gemini AI Advisory</div>
+            <div class="text-[11px] text-slate-300 mt-1 leading-snug">Khử 100% giá nhập nhạy cảm, gợi ý bổ sung tồn min tự động.</div>
+          </div>
+
+          <div class="p-3.5 rounded-2xl bg-slate-800/70 backdrop-blur-md border border-slate-700/80 shadow-lg">
+            <div class="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-sm mb-2 font-bold">
+              <i class="fa-solid fa-bolt"></i>
+            </div>
+            <div class="text-xs font-bold text-white">Realtime WebSocket</div>
+            <div class="text-[11px] text-slate-300 mt-1 leading-snug">Đồng bộ biến động thẻ kho tức thời giữa mọi thiết bị thủ kho & admin.</div>
+          </div>
         </div>
       </div>
 
-      <button type="submit" id="btn-login"
-        class="w-full py-2.5 bg-sky-600 hover:bg-sky-500 text-white font-semibold rounded-lg text-sm transition shadow-lg shadow-sky-600/20 flex items-center justify-center gap-2">
-        <span>Đăng Nhập Vào Hệ Thống</span>
-        <i class="fa-solid fa-arrow-right"></i>
-      </button>
-    </form>
-
-    <!-- Quick test buttons -->
-    <div class="mt-6 pt-5 border-t border-slate-700">
-      <div class="text-[11px] font-semibold text-slate-400 mb-2 text-center uppercase tracking-wider">Tài khoản demo sẵn có:</div>
-      <div class="grid grid-cols-3 gap-2">
-        <button onclick="fillDemo('admin', 'admin123')" class="px-2 py-1.5 bg-slate-700/50 hover:bg-slate-700 text-slate-300 rounded text-xs text-center border border-slate-600 transition">
-          <div class="font-bold text-sky-300">Admin</div>
-          <div class="text-[10px] text-slate-400">admin / 123</div>
-        </button>
-        <button onclick="fillDemo('thukho', 'thukho123')" class="px-2 py-1.5 bg-slate-700/50 hover:bg-slate-700 text-slate-300 rounded text-xs text-center border border-slate-600 transition">
-          <div class="font-bold text-emerald-300">Thủ kho</div>
-          <div class="text-[10px] text-slate-400">thukho / 123</div>
-        </button>
-        <button onclick="fillDemo('ketoan', 'ketoan123')" class="px-2 py-1.5 bg-slate-700/50 hover:bg-slate-700 text-slate-300 rounded text-xs text-center border border-slate-600 transition">
-          <div class="font-bold text-amber-300">Kế toán</div>
-          <div class="text-[10px] text-slate-400">ketoan / 123</div>
-        </button>
+      <!-- Footer trên Banner -->
+      <div class="relative z-10 pt-4 border-t border-slate-700/60 flex items-center justify-between text-xs text-slate-400">
+        <div>Tác giả sáng lập: <b class="text-slate-200">Nguyễn Thành Hưng</b> & <b class="text-slate-200">Hoàng Tiến Đạt</b></div>
+        <div>Chuẩn CSDL ACID & SQLite WAL</div>
       </div>
     </div>
 
-    <div class="mt-5 text-center text-xs text-slate-400">
-      Chưa có tài khoản? <a href="/register" class="text-sky-400 hover:underline font-semibold">Đăng ký mới tại đây</a>
+    <!-- ========================================================================= -->
+    <!-- CỘT BÊN PHẢI: MÀN HÌNH ĐĂNG NHẬP (ĐÃ DỊCH SANG BÊN PHẢI THEO YÊU CẦU) -->
+    <!-- ========================================================================= -->
+    <div class="w-full lg:w-5/12 xl:w-2/5 flex flex-col justify-between p-6 sm:p-10 lg:p-12 xl:p-14 bg-white dark:bg-slate-850 border-l border-slate-200/80 dark:border-slate-800 transition-colors">
+      
+      <!-- Topbar cột phải: Logo thu nhỏ (mobile) & Nút Theme Switcher -->
+      <div class="flex items-center justify-between pb-6">
+        <!-- Logo hiển thị trên màn hình nhỏ hoặc mobile -->
+        <div class="flex items-center gap-2.5 lg:hidden">
+          <div class="w-9 h-9 rounded-xl bg-sky-600 text-white flex items-center justify-center text-lg shadow-sm">
+            <i class="fa-solid fa-boxes-stacked"></i>
+          </div>
+          <div>
+            <span class="font-extrabold text-sm text-slate-900 dark:text-white">SmartLogis AI</span>
+            <span class="text-[10px] block text-sky-600 dark:text-sky-400 font-bold">v2.0</span>
+          </div>
+        </div>
+        <div class="hidden lg:block text-xs font-semibold text-slate-400 dark:text-slate-400">
+          Cổng Xác Thực An Toàn
+        </div>
+
+        <!-- Nút chuyển đổi Dark / Light Mode hoàn thiện 100% -->
+        <button type="button" id="themeToggleBtn" onclick="toggleDarkMode()"
+          class="theme-toggle-btn flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-amber-300 border border-slate-200 dark:border-slate-700 transition shadow-xs cursor-pointer"
+          title="Chuyển đổi Giao diện Sáng / Tối">
+          <i class="fa-solid fa-moon text-sky-600 text-sm"></i>
+          <span class="text-xs font-bold text-slate-700 dark:text-amber-300">Giao diện Tối</span>
+        </button>
+      </div>
+
+      <!-- Thân Form Đăng Nhập ở trung tâm cột phải -->
+      <div class="my-auto py-4 max-w-md w-full mx-auto">
+        <div class="mb-6">
+          <h1 class="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Đăng Nhập Hệ Thống</h1>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            Vui lòng nhập thông tin xác thực để truy cập bảng điều khiển kho
+          </p>
+        </div>
+
+        <!-- Hộp thông báo lỗi -->
+        <div id="error-box" class="hidden mb-4 p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/70 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2.5">
+          <i class="fa-solid fa-circle-exclamation text-rose-500 text-sm flex-shrink-0"></i>
+          <span id="error-message" class="leading-tight font-medium"></span>
+        </div>
+
+        <!-- Form Đăng Nhập -->
+        <form id="login-form" onsubmit="handleLoginSubmit(event)" class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Tên Đăng Nhập</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400 text-sm pointer-events-none">
+                <i class="fa-regular fa-user"></i>
+              </span>
+              <input type="text" id="username" required placeholder="Nhập tên tài khoản (VD: admin)"
+                class="w-full pl-10 pr-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:bg-white dark:focus:bg-slate-800 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Mật Khẩu</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400 text-sm pointer-events-none">
+                <i class="fa-solid fa-lock"></i>
+              </span>
+              <input type="password" id="password" required placeholder="••••••••"
+                class="w-full pl-10 pr-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:bg-white dark:focus:bg-slate-800 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition">
+            </div>
+          </div>
+
+          <button type="submit" id="btn-login"
+            style="background-color: #0284c7; color: #ffffff;"
+            class="w-full py-2.5 bg-sky-600 hover:bg-sky-500 active:bg-sky-700 text-white font-bold rounded-xl text-xs sm:text-sm transition shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer mt-2">
+            <span>Đăng Nhập Vào Hệ Thống</span>
+            <i class="fa-solid fa-arrow-right text-xs"></i>
+          </button>
+        </form>
+
+        <!-- Khối tài khoản Demo 1-Click theo đúng tên tác giả yêu cầu -->
+        <div class="mt-6 pt-5 border-t border-slate-200 dark:border-slate-800">
+          <div class="text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-2.5 text-center uppercase tracking-wider flex items-center justify-center gap-1.5">
+            <i class="fa-solid fa-users text-sky-600 dark:text-sky-400"></i>
+            <span>Tài khoản demo sẵn có:</span>
+          </div>
+          
+          <div class="grid grid-cols-3 gap-2">
+            <!-- Tài khoản Admin: Nguyễn Thành Hưng -->
+            <button type="button" onclick="fillDemo('admin', 'admin123')"
+              class="p-2.5 bg-slate-50 hover:bg-sky-50/70 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 rounded-xl text-xs text-center border border-slate-200 dark:border-slate-700 hover:border-sky-400 dark:hover:border-sky-500 transition cursor-pointer group shadow-2xs">
+              <div class="font-bold text-sky-700 dark:text-sky-400 group-hover:text-sky-800 dark:group-hover:text-sky-300 truncate">Nguyễn Thành Hưng</div>
+              <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium">Quản Trị Viên</div>
+            </button>
+
+            <!-- Tài khoản Thủ kho: Hoàng Tiến Đạt -->
+            <button type="button" onclick="fillDemo('thukho', 'thukho123')"
+              class="p-2.5 bg-slate-50 hover:bg-emerald-50/70 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 rounded-xl text-xs text-center border border-slate-200 dark:border-slate-700 hover:border-emerald-400 dark:hover:border-emerald-500 transition cursor-pointer group shadow-2xs">
+              <div class="font-bold text-emerald-700 dark:text-emerald-400 group-hover:text-emerald-800 dark:group-hover:text-emerald-300 truncate">Hoàng Tiến Đạt</div>
+              <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium">Thủ Kho Trưởng</div>
+            </button>
+
+            <!-- Tài khoản Kế toán: Hoàng Tiến Đạt (Chỉ để tên Hoàng Tiến Đạt theo đúng yêu cầu) -->
+            <button type="button" onclick="fillDemo('ketoan', 'ketoan123')"
+              class="p-2.5 bg-slate-50 hover:bg-amber-50/70 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 rounded-xl text-xs text-center border border-slate-200 dark:border-slate-700 hover:border-amber-400 dark:hover:border-amber-500 transition cursor-pointer group shadow-2xs">
+              <div class="font-bold text-amber-700 dark:text-amber-400 group-hover:text-amber-800 dark:group-hover:text-amber-300 truncate">Hoàng Tiến Đạt</div>
+              <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium">Kế Toán Kho</div>
+            </button>
+          </div>
+        </div>
+
+        <div class="mt-6 text-center text-xs text-slate-500 dark:text-slate-400 flex items-center justify-center gap-1.5">
+          <i class="fa-solid fa-shield-halved text-sky-500"></i>
+          <span>Cổng kho nội bộ — Tài khoản do Quản Trị Viên cấp phát</span>
+        </div>
+      </div>
+
+      <!-- Footer cột phải -->
+      <div class="pt-4 border-t border-slate-200/80 dark:border-slate-800 text-center lg:text-left flex flex-col sm:flex-row items-center justify-between text-[11px] text-slate-400 dark:text-slate-500 gap-2">
+        <span>&copy; 2026 SmartLogis AI. Mọi quyền được bảo lưu.</span>
+        <span class="flex items-center gap-1.5">
+          <i class="fa-solid fa-lock text-emerald-500"></i>
+          <span>Bảo mật dữ liệu 256-bit</span>
+        </span>
+      </div>
+
     </div>
+
   </div>
 
+  <script src="/static/js/app.js?v=20260909_6"></script>
   <script>
+    // Điền nhanh thông tin tài khoản demo
     function fillDemo(u, p) {
       document.getElementById('username').value = u;
       document.getElementById('password').value = p;
     }
 
+    // Xử lý gửi biểu mẫu đăng nhập
     async function handleLoginSubmit(e) {
       e.preventDefault();
       const u = document.getElementById('username').value.trim();
@@ -119,7 +290,7 @@
 
       errorBox.classList.add('hidden');
       btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang xác thực...';
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Đang xác thực thông tin...</span>';
 
       try {
         const res = await fetch('/api/v1/auth/login', {
@@ -129,7 +300,7 @@
         });
         const data = await res.json();
         if (!res.ok) {
-          throw new Error(data.detail || 'Đăng nhập thất bại.');
+          throw new Error(data.detail || 'Đăng nhập thất bại. Vui lòng kiểm tra lại tài khoản hoặc mật khẩu.');
         }
         localStorage.setItem('access_token', data.access_token);
         localStorage.setItem('user_info', JSON.stringify(data.user));
@@ -139,9 +310,16 @@
         errorMsg.innerText = err.message;
       } finally {
         btn.disabled = false;
-        btn.innerHTML = '<span>Đăng Nhập Vào Hệ Thống</span> <i class="fa-solid fa-arrow-right"></i>';
+        btn.innerHTML = '<span>Đăng Nhập Vào Hệ Thống</span> <i class="fa-solid fa-arrow-right text-xs"></i>';
       }
     }
+
+    // Tự động khởi tạo giao diện theme khi trang tải xong
+    document.addEventListener('DOMContentLoaded', () => {
+      if (typeof initTheme === 'function') {
+        initTheme();
+      }
+    });
   </script>
 </body>
-</html>\n
+</html>

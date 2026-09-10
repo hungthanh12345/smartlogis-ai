@@ -7,71 +7,84 @@
 <div class="max-w-5xl mx-auto space-y-6">
 
   <!-- Hộp thông báo lỗi hoặc thành công -->
-  <div id="alert-banner" class="hidden p-4 rounded-xl text-xs font-semibold flex items-center gap-3"></div>
+  <div id="alert-banner" class="hidden p-4 rounded-2xl text-xs font-semibold flex items-center gap-3"></div>
 
   <!-- PHẦN 1: THÔNG TIN CHỨNG TỪ NHẬP (MASTER) -->
-  <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-    <div class="text-sm font-bold text-slate-900 pb-3 border-b border-slate-100 flex items-center gap-2 mb-4">
-      <i class="fa-solid fa-pen-to-square text-sky-600"></i>
+  <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-6 shadow-xs transition">
+    <div class="text-sm font-bold text-slate-900 dark:text-white pb-3 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2 mb-4">
+      <span class="w-6 h-6 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center text-xs">
+        <i class="fa-solid fa-pen-to-square"></i>
+      </span>
       <span>Thông Tin Đầu Phiếu Nhập Kho</span>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
       <div>
-        <label class="block text-xs font-semibold text-slate-600 mb-1">Mã Phiếu Nhập</label>
-        <input type="text" id="in-ma-pn" readonly value="PN-AUTO-GENERATED"
-          class="w-full px-3 py-2 bg-slate-100 border border-slate-300 rounded-lg text-xs font-bold text-slate-600">
+        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Mã Phiếu Nhập</label>
+        <input type="text" id="in-ma-pn" readonly value="PN-TỰ-ĐỘNG-TẠO"
+          class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono font-bold text-slate-600 dark:text-slate-300">
       </div>
 
       <div>
-        <label class="block text-xs font-semibold text-slate-600 mb-1">Ngày Lập Phiếu</label>
-        <input type="date" id="in-ngay" value="2026-09-04"
-          class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-800">
+        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Ngày Lập Phiếu</label>
+        <input type="date" id="in-ngay"
+          class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500">
       </div>
 
       <div>
-        <label class="block text-xs font-semibold text-slate-600 mb-1">Nhà Cung Cấp (*)</label>
-        <select id="in-ncc" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-sky-500">
-          <option value="NCC-01">NCC-01: Công ty CP Thép Việt Đức</option>
-          <option value="NCC-02">NCC-02: Công ty TNHH Nhựa Tiền Phong</option>
-          <option value="NCC-03">NCC-03: Tập đoàn Xi măng Vicem</option>
-          <option value="NCC-04">NCC-04: Công ty CP Kim Tín</option>
-          <option value="NCC-05">NCC-05: Công ty Sơn Hải Phòng</option>
+        <div class="flex items-center justify-between mb-1.5">
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400">Nhà Cung Cấp (*)</label>
+          <a href="/nha-cung-cap" target="_blank" class="text-[11px] text-sky-600 dark:text-sky-400 hover:underline font-medium flex items-center gap-1">
+            <i class="fa-solid fa-plus-circle"></i> Quản lý NCC
+          </a>
+        </div>
+        <select id="in-ncc" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 cursor-pointer">
+          {% if suppliers %}
+            {% for s in suppliers %}
+            <option value="{{ s.MaNCC }}">{{ s.MaNCC }}: {{ s.TenNCC }}</option>
+            {% endfor %}
+          {% else %}
+            <option value="">-- Chưa có nhà cung cấp nào trong CSDL --</option>
+          {% endif %}
         </select>
       </div>
 
       <div>
-        <label class="block text-xs font-semibold text-slate-600 mb-1">Người Lập Phiếu</label>
+        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Người Lập Phiếu</label>
         <input type="text" readonly value="{{ user.HoTen if user else 'Thủ kho' }}"
-          class="w-full px-3 py-2 bg-slate-100 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700">
+          class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200">
       </div>
     </div>
 
     <div class="mt-4">
-      <label class="block text-xs font-semibold text-slate-600 mb-1">Ghi Chú Nhập Kho</label>
-      <input type="text" id="in-ghichu" placeholder="Ví dụ: Nhập bổ sung nguyên vật tư Quý 3..."
-        class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-800">
+      <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Ghi Chú Nhập Kho</label>
+      <input type="text" id="in-ghichu" placeholder="Ví dụ: Nhập bổ sung nguyên vật tư định kỳ..."
+        class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500">
     </div>
   </div>
 
   <!-- PHẦN 2: BẢNG CHI TIẾT HÀNG NHẬP (DETAIL) -->
-  <div class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-    <div class="text-sm font-bold text-slate-900 pb-3 border-b border-slate-100 flex items-center justify-between mb-4">
+  <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-6 shadow-xs transition">
+    <div class="text-sm font-bold text-slate-900 dark:text-white pb-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between mb-4">
       <div class="flex items-center gap-2">
-        <i class="fa-solid fa-list-check text-sky-600"></i>
+        <span class="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs">
+          <i class="fa-solid fa-list-check"></i>
+        </span>
         <span>Danh Sách Mặt Hàng Nhập Kho</span>
       </div>
-      <button onclick="addRowNhap()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg text-xs transition border border-slate-300 flex items-center gap-1.5">
-        <i class="fa-solid fa-plus text-sky-600"></i> Thêm Dòng Mặt Hàng
+      <button type="button" onclick="addRowNhap()"
+        class="px-3.5 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 font-semibold rounded-xl text-xs transition border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 cursor-pointer">
+        <i class="fa-solid fa-plus text-emerald-600 dark:text-emerald-400"></i>
+        <span>Thêm Dòng Mặt Hàng</span>
       </button>
     </div>
 
     <div class="overflow-x-auto">
       <table class="w-full text-left text-xs border-collapse" id="tbl-nhap">
         <thead>
-          <tr class="bg-slate-100 text-slate-700 uppercase font-bold text-[11px] border-b border-slate-200">
+          <tr class="bg-slate-100/80 dark:bg-slate-850 text-slate-700 dark:text-slate-300 uppercase font-bold text-[11px] border-b border-slate-200 dark:border-slate-800">
             <th class="py-2.5 px-3 w-12 text-center">STT</th>
-            <th class="py-2.5 px-3 w-64">Mặt Hàng (*)</th>
+            <th class="py-2.5 px-3 min-w-[240px]">Mặt Hàng (*)</th>
             <th class="py-2.5 px-3 w-20 text-center">ĐVT</th>
             <th class="py-2.5 px-3 w-32">Số Lượng Nhập</th>
             <th class="py-2.5 px-3 w-40">Đơn Giá Nhập (VNĐ)</th>
@@ -79,28 +92,28 @@
             <th class="py-2.5 px-3 w-16 text-center">Xóa</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-slate-100" id="body-nhap">
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-200" id="body-nhap">
         </tbody>
       </table>
     </div>
 
     <!-- KHỐI TỔNG KẾT TIỀN & HÀNH ĐỘNG -->
-    <div class="mt-6 pt-4 border-t border-slate-200 flex flex-col md:flex-row items-center justify-between gap-4">
-      <div class="flex items-center gap-6 text-xs text-slate-600">
-        <div>Tổng số mặt hàng: <b id="lbl-tong-sku" class="text-slate-900">0</b></div>
-        <div>Tổng số lượng: <b id="lbl-tong-sl" class="text-slate-900">0</b></div>
+    <div class="mt-6 pt-4 border-t border-slate-200 dark:border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-6 text-xs text-slate-600 dark:text-slate-400">
+        <div>Tổng số mặt hàng: <b id="lbl-tong-sku" class="text-slate-900 dark:text-white font-mono">0</b></div>
+        <div>Tổng số lượng: <b id="lbl-tong-sl" class="text-slate-900 dark:text-white font-mono">0</b></div>
       </div>
 
       <div class="flex items-center gap-4">
         <div class="text-right">
-          <div class="text-xs text-slate-500 font-semibold uppercase">Tổng Giá Trị Nhập Kho:</div>
-          <div class="text-2xl font-extrabold text-sky-600" id="lbl-tong-tien">0 VNĐ</div>
+          <div class="text-[11px] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">Tổng Giá Trị Nhập Kho:</div>
+          <div class="text-2xl font-black text-sky-600 dark:text-sky-400" id="lbl-tong-tien">0 VNĐ</div>
         </div>
 
-        <button onclick="submitPhieuNhap()" id="btn-submit-nhap"
-          class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs transition shadow-md shadow-emerald-600/20 flex items-center gap-2">
+        <button type="button" onclick="submitPhieuNhap()" id="btn-submit-nhap"
+          class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-md flex items-center gap-2 cursor-pointer whitespace-nowrap">
           <i class="fa-solid fa-floppy-disk"></i>
-          <span>Xác Nhận Lưu Phiếu & Cập Nhật Tồn Kho (ACID)</span>
+          <span>Xác Nhận Lưu Phiếu (ACID)</span>
         </button>
       </div>
     </div>
@@ -109,8 +122,21 @@
 
 </div>
 
+{% endblock %}
+
+{% block extra_scripts %}
 <script>
   let availableItems = [];
+
+  // Tự động gán ngày hiện tại
+  document.addEventListener('DOMContentLoaded', () => {
+    const d = new Date();
+    const formatted = d.toISOString().split('T')[0];
+    const inpNgay = document.getElementById('in-ngay');
+    if (inpNgay && !inpNgay.value) {
+      inpNgay.value = formatted;
+    }
+  });
 
   async function loadItems() {
     try {
@@ -119,13 +145,18 @@
       
       const params = new URLSearchParams(window.location.search);
       const preselect = params.get('ma_hh');
-      addRowNhap(preselect || 'HH-001', 50, 1250000);
-      if (!preselect) {
-        addRowNhap('HH-004', 120, 85000);
-        addRowNhap('HH-035', 30, 110000);
+      const preselectSupplier = params.get('supplier');
+      if (preselectSupplier) {
+        const selNcc = document.getElementById('in-ncc');
+        if (selNcc) selNcc.value = preselectSupplier;
+      }
+
+      if (availableItems.length > 0) {
+        const defaultSKU = preselect || availableItems[0].MaHH;
+        addRowNhap(defaultSKU, 20, 150000);
       }
     } catch (e) {
-      console.error(e);
+      console.error('[Inbound] Lỗi nạp danh mục hàng:', e);
     }
   }
 
@@ -133,73 +164,78 @@
     const tbody = document.getElementById('body-nhap');
     const rowIdx = tbody.children.length + 1;
     const tr = document.createElement('tr');
-    tr.className = 'hover:bg-slate-50 transition';
+    tr.className = 'hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition';
 
     let options = availableItems.map(item => 
       `<option value="${item.MaHH}" ${item.MaHH === selectedHH ? 'selected' : ''}>${item.MaHH} - ${item.TenHH}</option>`
     ).join('');
 
     tr.innerHTML = `
-      <td class="py-3 px-3 text-center text-slate-500 font-semibold">${rowIdx}</td>
+      <td class="py-3 px-3 text-center text-slate-400 font-mono font-semibold">${rowIdx}</td>
       <td class="py-3 px-3">
-        <select class="w-full px-2 py-1.5 bg-white border border-slate-300 rounded text-xs sel-hh" onchange="handleHHChange(this)">
+        <select class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs sel-hh text-slate-800 dark:text-slate-100" onchange="handleHHChange(this)">
           ${options}
         </select>
       </td>
-      <td class="py-3 px-3 text-center text-slate-500 lbl-dvt">Cuộn</td>
+      <td class="py-3 px-3 text-center font-medium text-slate-600 dark:text-slate-400 cell-dvt">--</td>
       <td class="py-3 px-3">
-        <input type="number" min="1" value="${defaultQty}" class="w-full px-2 py-1.5 border border-slate-300 rounded text-xs inp-qty" oninput="calculateTotals()">
+        <input type="number" min="1" value="${defaultQty}" class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-mono font-bold inp-qty text-slate-800 dark:text-slate-100" oninput="calculateTotal()">
       </td>
       <td class="py-3 px-3">
-        <input type="number" min="0" value="${defaultPrice}" class="w-full px-2 py-1.5 border border-slate-300 rounded text-xs inp-price" oninput="calculateTotals()">
+        <input type="number" min="0" step="500" value="${defaultPrice}" class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-mono font-bold inp-price text-slate-800 dark:text-slate-100" oninput="calculateTotal()">
       </td>
-      <td class="py-3 px-3 text-right font-bold text-slate-800 lbl-subtotal">0</td>
+      <td class="py-3 px-3 text-right font-mono font-bold text-sky-600 dark:text-sky-400 cell-total">0 VNĐ</td>
       <td class="py-3 px-3 text-center">
-        <button onclick="removeRow(this)" class="text-rose-500 hover:text-rose-700 p-1 font-bold">&times;</button>
+        <button type="button" onclick="removeRow(this)" class="w-7 h-7 rounded-lg bg-rose-50 dark:bg-rose-950/80 hover:bg-rose-100 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 flex items-center justify-center transition cursor-pointer">
+          <i class="fa-solid fa-trash text-[11px]"></i>
+        </button>
       </td>
     `;
+
     tbody.appendChild(tr);
     const sel = tr.querySelector('.sel-hh');
     handleHHChange(sel);
-    calculateTotals();
-  }
-
-  function handleHHChange(sel) {
-    const tr = sel.closest('tr');
-    const selectedItem = availableItems.find(i => i.MaHH === sel.value);
-    if (selectedItem) {
-      tr.querySelector('.lbl-dvt').innerText = selectedItem.TenDVT || selectedItem.MaDVT;
-    }
+    calculateTotal();
   }
 
   function removeRow(btn) {
+    const row = btn.closest('tr');
+    row.remove();
     const tbody = document.getElementById('body-nhap');
-    if (tbody.children.length <= 1) {
-      alert('Phiếu nhập phải có tối thiểu 1 mặt hàng.');
-      return;
-    }
-    btn.closest('tr').remove();
-    Array.from(tbody.children).forEach((tr, i) => {
-      tr.children[0].innerText = i + 1;
+    Array.from(tbody.children).forEach((tr, idx) => {
+      tr.children[0].innerText = idx + 1;
     });
-    calculateTotals();
+    calculateTotal();
   }
 
-  function calculateTotals() {
-    const tbody = document.getElementById('body-nhap');
+  function handleHHChange(selectEl) {
+    const val = selectEl.value;
+    const found = availableItems.find(i => i.MaHH === val);
+    const row = selectEl.closest('tr');
+    if (found && row) {
+      row.querySelector('.cell-dvt').innerText = found.TenDVT || found.MaDVT || '--';
+    }
+  }
+
+  function calculateTotal() {
+    let totalSKUs = 0;
     let totalQty = 0;
     let grandTotal = 0;
 
-    Array.from(tbody.children).forEach(tr => {
+    const rows = document.querySelectorAll('#body-nhap tr');
+    rows.forEach(tr => {
       const qty = parseInt(tr.querySelector('.inp-qty').value) || 0;
       const price = parseFloat(tr.querySelector('.inp-price').value) || 0;
-      const subtotal = qty * price;
-      tr.querySelector('.lbl-subtotal').innerText = subtotal.toLocaleString('vi-VN') + ' đ';
+      const rowTotal = qty * price;
+
+      tr.querySelector('.cell-total').innerText = rowTotal.toLocaleString('vi-VN') + ' VNĐ';
+
+      totalSKUs++;
       totalQty += qty;
-      grandTotal += subtotal;
+      grandTotal += rowTotal;
     });
 
-    document.getElementById('lbl-tong-sku').innerText = tbody.children.length;
+    document.getElementById('lbl-tong-sku').innerText = totalSKUs;
     document.getElementById('lbl-tong-sl').innerText = totalQty.toLocaleString('vi-VN');
     document.getElementById('lbl-tong-tien').innerText = grandTotal.toLocaleString('vi-VN') + ' VNĐ';
   }
@@ -210,6 +246,11 @@
     const tbody = document.getElementById('body-nhap');
     const btn = document.getElementById('btn-submit-nhap');
     const alertBox = document.getElementById('alert-banner');
+
+    if (tbody.children.length === 0) {
+      alert('Vui lòng thêm ít nhất 1 mặt hàng vào phiếu nhập.');
+      return;
+    }
 
     const items = [];
     Array.from(tbody.children).forEach(tr => {
@@ -231,22 +272,22 @@
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || 'Lỗi lập phiếu nhập kho.');
 
-      alertBox.className = 'p-4 rounded-xl text-xs font-semibold flex items-center gap-3 bg-emerald-50 border border-emerald-300 text-emerald-800';
-      alertBox.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600 text-base"></i> Giao dịch thành công! Mã phiếu: <b>${data.MaPN}</b>. Tồn kho đã được cộng dồn và ghi sổ thẻ kho.`;
+      alertBox.className = 'p-4 rounded-2xl text-xs font-semibold flex items-center gap-3 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300';
+      alertBox.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600 dark:text-emerald-400 text-base"></i> Giao dịch thành công! Mã phiếu: <b>${data.MaPN}</b>. Tồn kho đã được cập nhật thời gian thực.`;
       alertBox.classList.remove('hidden');
 
       setTimeout(() => {
         window.location.href = '/dashboard';
-      }, 1500);
+      }, 1200);
     } catch (err) {
-      alertBox.className = 'p-4 rounded-xl text-xs font-semibold flex items-center gap-3 bg-rose-50 border border-rose-300 text-rose-800';
-      alertBox.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-rose-600 text-base"></i> Lỗi: ${err.message}`;
+      alertBox.className = 'p-4 rounded-2xl text-xs font-semibold flex items-center gap-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-300';
+      alertBox.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-rose-600 dark:text-rose-400 text-base"></i> Lỗi: ${err.message}`;
       alertBox.classList.remove('hidden');
       btn.disabled = false;
-      btn.innerText = 'Xác Nhận Lưu Phiếu & Cập Nhật Tồn Kho (ACID)';
+      btn.innerText = 'Xác Nhận Lưu Phiếu (ACID)';
     }
   }
 
   window.addEventListener('DOMContentLoaded', loadItems);
 </script>
-{% endblock %}\n
+{% endblock %}

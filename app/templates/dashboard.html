@@ -6,45 +6,68 @@
 {% block content %}
 <div class="space-y-6">
 
-  <!-- CỤM 4 THẺ CHỈ SỐ KPI THỜI GIAN THỰC -->
-  <div class="grid grid-cols-1 md:grid-cols-4 gap-5">
+  <!-- CỤM 4 THẺ CHỈ SỐ KPI THỜI GIAN THỰC (PHONG CÁCH KIOTVIET & NHANH.VN) -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
     
     <!-- KPI 1: Tổng Danh Mục SKU -->
-    <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow transition">
-      <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Tổng Danh Mục Hàng (SKU)</div>
-      <div class="text-3xl font-extrabold text-slate-900 mt-2">{{ kpis.tong_sku }}</div>
-      <div class="text-xs text-emerald-600 mt-2 flex items-center gap-1.5 font-medium">
-        <i class="fa-solid fa-circle-check"></i> Đang hoạt động: {{ kpis.tong_sku }} SKU
+    <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5 shadow-xs hover:shadow-md transition">
+      <div class="flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+        <span>Tổng Danh Mục Hàng</span>
+        <span class="w-8 h-8 rounded-xl bg-sky-50 dark:bg-sky-950/70 text-sky-600 dark:text-sky-400 flex items-center justify-center text-sm">
+          <i class="fa-solid fa-boxes-stacked"></i>
+        </span>
+      </div>
+      <div class="text-3xl font-black text-slate-900 dark:text-white mt-2" id="kpi_tong_sku">{{ kpis.tong_sku }}</div>
+      <div class="text-xs text-emerald-600 dark:text-emerald-400 mt-2 flex items-center gap-1.5 font-semibold">
+        <i class="fa-solid fa-circle-check text-[11px]"></i>
+        <span>Đang hoạt động: {{ kpis.tong_sku }} SKU</span>
       </div>
     </div>
 
-    <!-- KPI 2: Cảnh Báo Tồn Tối Thiểu (Đỏ cảnh báo) -->
-    <div class="bg-white border border-slate-200 border-l-4 border-l-rose-500 rounded-xl p-5 shadow-sm hover:shadow transition">
-      <div class="text-[11px] font-bold text-rose-600 uppercase tracking-wider flex items-center justify-between">
-        <span>Cảnh Báo Tồn Tối Thiểu</span>
-        <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+    <!-- KPI 2: Cảnh Báo Tồn Tối Thiểu (Orange-Red Alert) -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 border-l-4 border-l-rose-500 dark:border-l-rose-500 rounded-2xl p-5 shadow-xs hover:shadow-md transition">
+      <div class="flex items-center justify-between text-[11px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider">
+        <span class="flex items-center gap-1.5">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          <span>Cảnh Báo Tồn Min</span>
+        </span>
+        <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping"></span>
       </div>
-      <div class="text-3xl font-extrabold text-rose-600 mt-2">{{ kpis.canh_bao_ton_min }}</div>
-      <div class="text-xs text-rose-700 mt-2 font-semibold flex items-center gap-1">
-        <i class="fa-solid fa-triangle-exclamation"></i> Cần nhập bổ sung ngay
+      <div class="text-3xl font-black text-rose-600 dark:text-rose-400 mt-2" id="kpi_canh_bao">{{ kpis.canh_bao_ton_min }}</div>
+      <div class="text-xs text-rose-600 dark:text-rose-400 mt-2 font-bold flex items-center gap-1">
+        <i class="fa-solid fa-truck-fast text-[11px]"></i>
+        <span>Cần nhập bổ sung ngay</span>
       </div>
     </div>
 
     <!-- KPI 3: Tổng Giá Trị Xuất Tháng -->
-    <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow transition">
-      <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Tổng Giá Trị Xuất (Tháng 09)</div>
-      <div class="text-3xl font-extrabold text-slate-900 mt-2">{{ "{:,.1f}".format(kpis.tong_gia_tri_xuat_thang / 1000000) }} Tr</div>
-      <div class="text-xs text-emerald-600 mt-2 flex items-center gap-1.5 font-medium">
-        <i class="fa-solid fa-arrow-trend-up"></i> Tăng 8.5% so với tháng trước
+    <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5 shadow-xs hover:shadow-md transition">
+      <div class="flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+        <span>Tổng Giá Trị Xuất (Tháng 09)</span>
+        <span class="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-sm">
+          <i class="fa-solid fa-coins"></i>
+        </span>
+      </div>
+      <div class="text-3xl font-black text-slate-900 dark:text-white mt-2">{{ "{:,.1f}".format(kpis.tong_gia_tri_xuat_thang / 1000000) }} Tr</div>
+      <div class="text-xs text-emerald-600 dark:text-emerald-400 mt-2 flex items-center gap-1.5 font-semibold">
+        <i class="fa-solid fa-arrow-trend-up text-[11px]"></i>
+        <span>Tăng 8.5% so với tháng trước</span>
       </div>
     </div>
 
     <!-- KPI 4: Giao Dịch Trong Tháng -->
-    <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow transition">
-      <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Giao Dịch Trong Kỳ</div>
-      <div class="text-3xl font-extrabold text-slate-900 mt-2">{{ kpis.tong_giao_dich_thang }}</div>
-      <div class="text-xs text-slate-500 mt-2 flex items-center gap-1">
-        <span>{{ kpis.tong_phieu_nhap }} Phiếu Nhập</span> / <span>{{ kpis.tong_phieu_xuat }} Phiếu Xuất</span>
+    <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5 shadow-xs hover:shadow-md transition">
+      <div class="flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+        <span>Giao Dịch Trong Kỳ</span>
+        <span class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-sm">
+          <i class="fa-solid fa-receipt"></i>
+        </span>
+      </div>
+      <div class="text-3xl font-black text-slate-900 dark:text-white mt-2" id="kpi_giao_dich">{{ kpis.tong_giao_dich_thang }}</div>
+      <div class="text-xs text-slate-500 dark:text-slate-400 mt-2 flex items-center gap-1 font-medium">
+        <span class="text-sky-600 dark:text-sky-400 font-bold">{{ kpis.tong_phieu_nhap }} Nhập</span>
+        <span>/</span>
+        <span class="text-emerald-600 dark:text-emerald-400 font-bold">{{ kpis.tong_phieu_xuat }} Xuất</span>
       </div>
     </div>
 
@@ -54,64 +77,82 @@
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
     <!-- CỘT TRÁI: BẢNG CẢNH BÁO TỒN TỐI THIỂU (Chiếm 2/3) -->
-    <div class="lg:col-span-2 bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden flex flex-col">
-      <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-        <div class="flex items-center gap-2">
-          <i class="fa-solid fa-bell text-rose-500"></i>
-          <h2 class="text-sm font-bold text-slate-800">
-            Danh Sách Mặt Hàng Chạm Hoặc Dưới Ngưỡng Tồn Min <span class="text-xs text-slate-500 font-normal">(SoLuongTon &le; TonToiThieu)</span>
+    <div class="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-xs overflow-hidden flex flex-col transition">
+      <!-- Header Bảng -->
+      <div class="px-5 py-4 border-b border-slate-200/80 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 bg-slate-50/70 dark:bg-slate-900">
+        <div class="flex items-center gap-2.5">
+          <span class="w-7 h-7 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center text-sm">
+            <i class="fa-solid fa-bell"></i>
+          </span>
+          <h2 class="text-sm font-bold text-slate-800 dark:text-slate-100">
+            Mặt Hàng Chạm Hoặc Dưới Tồn Min <span class="text-xs text-slate-400 dark:text-slate-500 font-normal font-mono">(Tồn &le; Min)</span>
           </h2>
         </div>
-        <span class="text-xs bg-rose-100 text-rose-700 font-bold px-2.5 py-1 rounded-full">
-          {{ alerts|length }} mặt hàng cảnh báo
-        </span>
+        <div class="flex items-center gap-2.5">
+          <a href="/api/v1/reports/export/excel"
+             style="background-color: #059669; color: #ffffff;"
+             class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold rounded-lg text-xs shadow-xs hover:shadow-md transition cursor-pointer whitespace-nowrap"
+             download>
+            <i class="fa-solid fa-file-excel"></i>
+            <span>Xuất Excel</span>
+          </a>
+          <span id="badge-alert-count" class="text-xs font-bold px-2.5 py-1 rounded-full bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-800">
+            {{ alerts|length }} mặt hàng cảnh báo
+          </span>
+        </div>
       </div>
 
+      <!-- Bảng dữ liệu phong cách KiotViet -->
       <div class="overflow-x-auto flex-1">
         <table class="w-full text-left text-xs border-collapse">
           <thead>
-            <tr class="bg-slate-100 text-slate-600 uppercase text-[11px] font-bold border-b border-slate-200">
+            <tr class="bg-slate-100/70 dark:bg-slate-850 text-slate-600 dark:text-slate-300 uppercase text-[11px] font-bold border-b border-slate-200/80 dark:border-slate-800">
               <th class="py-3 px-4">Mã SKU</th>
               <th class="py-3 px-4">Tên Hàng Hóa</th>
               <th class="py-3 px-3 text-center">ĐVT</th>
               <th class="py-3 px-3 text-center">Tồn Thực Tế</th>
               <th class="py-3 px-3 text-center">Ngưỡng Min</th>
               <th class="py-3 px-4 text-center">Tình Trạng</th>
-              <th class="py-3 px-4 text-right">Thao Tác</th>
+              <th class="py-3 px-4 text-center">Thao Tác</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-100">
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-200" id="body-stock-alerts">
             {% for item in alerts %}
-            <tr class="hover:bg-slate-50 transition">
-              <td class="py-3 px-4 font-bold text-slate-900">{{ item.MaHH }}</td>
-              <td class="py-3 px-4 font-medium text-slate-800">{{ item.TenHH }}</td>
-              <td class="py-3 px-3 text-center text-slate-500">{{ item.MaDVT }}</td>
-              <td class="py-3 px-3 text-center font-extrabold {% if item.MucDo == 'danger' %}text-rose-600{% else %}text-amber-600{% endif %}">
+            <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition">
+              <td class="py-3 px-4 font-mono font-bold text-sky-700 dark:text-sky-400">{{ item.MaHH }}</td>
+              <td class="py-3 px-4 font-semibold text-slate-900 dark:text-white">{{ item.TenHH }}</td>
+              <td class="py-3 px-3 text-center text-slate-500 dark:text-slate-400">{{ item.MaDVT }}</td>
+              <td class="py-3 px-3 text-center font-black {% if item.MucDo == 'danger' %}text-rose-600 dark:text-rose-400{% else %}text-amber-600 dark:text-amber-400{% endif %}">
                 {{ item.SoLuongTon }}
               </td>
-              <td class="py-3 px-3 text-center text-slate-600">{{ item.TonToiThieu }}</td>
+              <td class="py-3 px-3 text-center text-slate-600 dark:text-slate-400 font-mono">{{ item.TonToiThieu }}</td>
               <td class="py-3 px-4 text-center">
                 {% if item.MucDo == 'danger' %}
-                <span class="inline-flex items-center gap-1 bg-rose-100 text-rose-800 font-bold px-2 py-0.5 rounded text-[11px]">
-                  <i class="fa-solid fa-circle-exclamation text-[10px]"></i> Nguy cấp (Thiếu {{ item.ThieuHut }})
+                <span class="inline-flex items-center gap-1.5 bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 px-2.5 py-0.5 rounded-full text-[11px] font-bold">
+                  <span class="w-1.5 h-1.5 rounded-full bg-rose-600 dark:bg-rose-400"></span>
+                  <span>Nguy cấp (Thiếu {{ item.ThieuHut }})</span>
                 </span>
                 {% else %}
-                <span class="inline-flex items-center gap-1 bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded text-[11px]">
-                  <i class="fa-solid fa-circle-pause text-[10px]"></i> Cận ngưỡng min
+                <span class="inline-flex items-center gap-1.5 bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 px-2.5 py-0.5 rounded-full text-[11px] font-bold">
+                  <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                  <span>Cận ngưỡng min</span>
                 </span>
                 {% endif %}
               </td>
-              <td class="py-3 px-4 text-right">
-                <a href="/inbound?ma_hh={{ item.MaHH }}" class="inline-flex items-center gap-1 px-2.5 py-1 bg-sky-600 hover:bg-sky-700 text-white font-semibold rounded text-[11px] transition shadow-sm">
-                  <i class="fa-solid fa-plus text-[10px]"></i> Nhập hàng
+              <td class="py-3 px-4 text-center">
+                <a href="/inbound?ma_hh={{ item.MaHH }}"
+                   style="background-color: #0284c7; color: #ffffff;"
+                   class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-sky-600 hover:bg-sky-500 active:bg-sky-700 text-white font-bold rounded-lg text-xs transition shadow-xs hover:shadow-md cursor-pointer whitespace-nowrap">
+                  <i class="fa-solid fa-plus text-[10px]"></i>
+                  <span>Nhập hàng</span>
                 </a>
               </td>
             </tr>
             {% else %}
             <tr>
-              <td colspan="7" class="py-8 text-center text-slate-400">
-                <i class="fa-solid fa-circle-check text-2xl text-emerald-500 mb-2"></i>
-                <div>Tuyệt vời! Hiện không có mặt hàng nào bị thiếu hụt hoặc chạm ngưỡng tồn min.</div>
+              <td colspan="7" class="py-10 text-center text-slate-400 dark:text-slate-500">
+                <i class="fa-solid fa-circle-check text-3xl text-emerald-500 mb-2.5"></i>
+                <div class="font-semibold text-slate-600 dark:text-slate-400">Tuyệt vời! Hiện không có mặt hàng nào bị thiếu hụt hoặc chạm ngưỡng tồn min.</div>
               </td>
             </tr>
             {% endfor %}
@@ -122,34 +163,53 @@
 
     <!-- CỘT PHẢI: KHỐI TRỢ LÝ AI GEMINI ADVISORY (Chiếm 1/3) -->
     <div class="space-y-4">
-      <div class="bg-gradient-to-br from-sky-50 via-slate-50 to-emerald-50 border border-sky-200 rounded-xl p-5 shadow-sm">
+      <div class="bg-gradient-to-br from-sky-50/80 via-white to-emerald-50/50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-900 border border-sky-200/80 dark:border-slate-800 rounded-2xl p-5 shadow-xs relative overflow-hidden transition">
         
+        <!-- Loading Overlay khi gọi AI -->
+        <div id="aiLoadingOverlay" class="absolute inset-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xs flex flex-col items-center justify-center gap-2 z-10 hidden transition-all">
+          <div class="w-8 h-8 border-3 border-sky-600 border-t-transparent rounded-full animate-spin"></div>
+          <span class="text-xs font-bold text-sky-900 dark:text-sky-300 animate-pulse">Gemini LLM đang tổng hợp & phân tích kho...</span>
+        </div>
+
         <!-- Header widget -->
-        <div class="flex items-center justify-between pb-3 border-b border-sky-200/60">
+        <div class="flex items-center justify-between pb-3 border-b border-sky-200/60 dark:border-slate-800">
           <div class="flex items-center gap-2">
-            <span class="bg-sky-600 text-white text-[10px] font-bold px-2 py-0.5 rounded tracking-wide uppercase">
-              <i class="fa-solid fa-robot"></i> Gemini AI Advisory
+            <span class="bg-gradient-to-r from-sky-600 to-sky-500 text-white text-[10px] font-extrabold px-2.5 py-0.5 rounded-full tracking-wider uppercase flex items-center gap-1.5 shadow-xs">
+              <i class="fa-solid fa-robot"></i> SmartLogis AI
             </span>
           </div>
-          <span class="text-[11px] text-slate-500 font-medium">Grounded LLM</span>
+          {% if ai_advisory.is_fallback %}
+          <span class="text-[10px] bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 font-bold px-2 py-0.5 rounded-full border border-amber-300 dark:border-amber-800 flex items-center gap-1">
+            <i class="fa-solid fa-microchip"></i> Local Grounded
+          </span>
+          {% else %}
+          <span class="text-[10px] bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 font-bold px-2 py-0.5 rounded-full border border-emerald-300 dark:border-emerald-800 flex items-center gap-1">
+            <i class="fa-solid fa-cloud"></i> Gemini Live
+          </span>
+          {% endif %}
         </div>
 
         <div class="mt-3">
-          <h3 class="text-xs font-bold text-sky-900">Khuyến Nghị & Cảnh Báo Bất Thường</h3>
-          <p class="text-[11px] text-slate-600 mt-1">
-            Dữ liệu kho đã được module Data Sanitizer lọc bỏ thông tin giá vốn bí mật trước khi phân tích:
+          <div class="flex items-center justify-between">
+            <h3 class="text-xs font-bold text-slate-800 dark:text-slate-100">Khuyến Nghị & Cảnh Báo Vận Hành</h3>
+            <span class="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Chuẩn 30 Ngày</span>
+          </div>
+          <p class="text-[11px] text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
+            Dữ liệu kho đã được module <b>Data Sanitizer</b> khử 100% giá nhập nhạy cảm trước khi đưa vào ngữ cảnh AI:
           </p>
         </div>
 
-        <!-- AI Insight cards -->
-        <div class="mt-4 space-y-3">
+        <!-- AI Insight cards (Khắc phục hoàn toàn lỗi hiển thị icon FontAwesome) -->
+        <div class="mt-3 space-y-2.5" id="aiInsightsContainer">
           {% for insight in ai_advisory.insights %}
-          <div class="bg-white border border-slate-200/80 rounded-lg p-3 shadow-xs border-l-4 {% if loop.index == 1 %}border-l-amber-500{% elif loop.index == 2 %}border-l-sky-500{% else %}border-l-emerald-500{% endif %}">
-            <div class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-              <span>{{ insight.icon }}</span>
+          <div class="bg-white dark:bg-slate-850 border border-slate-200/80 dark:border-slate-750 rounded-xl p-3 shadow-2xs border-l-4 {% if loop.index == 1 %}border-l-amber-500{% elif loop.index == 2 %}border-l-rose-500{% else %}border-l-emerald-500{% endif %}">
+            <div class="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+              <span class="w-5 h-5 flex items-center justify-center rounded-md bg-slate-100 dark:bg-slate-800 text-xs flex-shrink-0">
+                <i class="{{ insight.icon }}"></i>
+              </span>
               <span>{{ insight.title }}</span>
             </div>
-            <div class="text-[11px] text-slate-600 mt-1 leading-relaxed">
+            <div class="text-[11px] text-slate-600 dark:text-slate-300 mt-1.5 leading-relaxed">
               {{ insight.content }}
             </div>
           </div>
@@ -157,27 +217,31 @@
         </div>
 
         <!-- Quick actions -->
-        <div class="mt-4 pt-3 border-t border-sky-200/60 flex items-center justify-between">
-          <button onclick="window.location.reload()" class="text-xs text-sky-700 hover:text-sky-900 font-semibold flex items-center gap-1">
-            <i class="fa-solid fa-rotate text-[10px]"></i> Cập nhật phân tích AI
+        <div class="mt-4 pt-3 border-t border-sky-200/60 dark:border-slate-800 flex items-center justify-between gap-2">
+          <button type="button" onclick="requestLiveAIAnalysis()"
+            class="text-xs text-sky-700 dark:text-sky-400 hover:text-sky-900 dark:hover:text-sky-200 font-semibold flex items-center gap-1.5 bg-white dark:bg-slate-800 hover:bg-sky-50 dark:hover:bg-slate-700 px-3 py-1.5 rounded-lg border border-sky-200 dark:border-slate-700 transition shadow-2xs cursor-pointer">
+            <i class="fa-solid fa-rotate text-[10px]" id="refreshIcon"></i>
+            <span>Phân tích lại</span>
           </button>
-          <a href="/outbound" class="text-xs text-slate-600 hover:text-slate-800 font-medium">
-            Xuất kho an toàn &rarr;
-          </a>
+          <button type="button" onclick="openAIReportModal()"
+            class="text-xs px-3.5 py-1.5 bg-sky-600 hover:bg-sky-500 active:bg-sky-700 text-white font-bold rounded-lg transition shadow-xs flex items-center gap-1.5 cursor-pointer">
+            <i class="fa-solid fa-file-waveform text-[10px]"></i>
+            <span>Báo cáo 3 phần</span>
+          </button>
         </div>
 
       </div>
 
       <!-- Khối ghi chú bảo toàn ACID -->
-      <div class="bg-white border border-slate-200 rounded-xl p-4 text-xs text-slate-600 shadow-sm flex items-start gap-3">
-        <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0 mt-0.5">
-          <i class="fa-solid fa-shield-halved"></i>
+      <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 text-xs text-slate-600 dark:text-slate-400 shadow-xs flex items-start gap-3 transition">
+        <div class="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-400 flex items-center justify-center flex-shrink-0 mt-0.5">
+          <i class="fa-solid fa-shield-halved text-sm"></i>
         </div>
         <div>
-          <div class="font-bold text-slate-800">Cơ Chế Bảo Vệ 2 Tầng (Zero Negative Stock)</div>
-          <div class="text-[11px] text-slate-500 mt-0.5">
-            1. Tầng Backend: Khóa dòng bi quan <code class="bg-slate-100 text-rose-600 px-1 py-0.2 rounded font-mono">with_for_update()</code> chống Race Condition.<br>
-            2. Tầng CSDL: Ràng buộc <code class="bg-slate-100 text-sky-700 px-1 py-0.2 rounded font-mono">CHECK (SoLuongTon &ge; 0)</code> ngăn chặn tồn âm tuyệt đối.
+          <div class="font-bold text-slate-800 dark:text-slate-200">Cơ Chế Bảo Vệ 2 Tầng (Zero Negative Stock)</div>
+          <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+            1. Tầng Backend: Atomic SQL Decrement chống Race Condition tuyệt đối.<br>
+            2. Tầng CSDL: Ràng buộc <code class="bg-slate-100 dark:bg-slate-800 text-sky-700 dark:text-sky-400 px-1 py-0.2 rounded font-mono">CHECK (SoLuongTon &ge; 0)</code> kết hợp Triggers ngăn chặn tồn âm.
           </div>
         </div>
       </div>
@@ -187,4 +251,358 @@
   </div>
 
 </div>
-{% endblock %}\n
+
+<!-- MODAL BÁO CÁO TOÀN DIỆN GEMINI AI (CHUẨN 3 PHẦN GIAI ĐOẠN 3) -->
+<div id="aiReportModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+  <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col border border-slate-200 dark:border-slate-800 overflow-hidden animate-in fade-in zoom-in duration-150">
+    
+    <!-- Modal Header -->
+    <div class="px-6 py-4 bg-gradient-to-r from-sky-800 via-slate-900 to-sky-900 text-white flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-sky-500/20 text-sky-300 flex items-center justify-center border border-sky-400/30">
+          <i class="fa-solid fa-brain"></i>
+        </div>
+        <div>
+          <h3 class="font-bold text-sm tracking-wide">Báo Cáo Điều Hành Kho Thông Minh (Gemini AI Engine)</h3>
+          <p class="text-[11px] text-sky-300" id="modalAiModelName">Mô hình: {{ ai_advisory.model_name }}</p>
+        </div>
+      </div>
+      <button type="button" onclick="closeAIReportModal()" class="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition cursor-pointer">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <!-- Modal Content (Scrollable) -->
+    <div class="p-6 overflow-y-auto space-y-6 text-slate-700 dark:text-slate-300 text-xs leading-relaxed" id="modalReportContent">
+      
+      <!-- PHẦN 1 -->
+      <div class="bg-sky-50/70 dark:bg-slate-850 border border-sky-200/80 dark:border-slate-800 rounded-xl p-4">
+        <h4 class="font-bold text-sky-950 dark:text-sky-300 text-sm flex items-center gap-2 mb-2">
+          <span class="w-5 h-5 rounded-full bg-sky-600 text-white text-[11px] flex items-center justify-center font-bold">1</span>
+          Phần 1: Tình Trạng Tồn Kho Tổng Quan
+        </h4>
+        <div class="grid grid-cols-3 gap-3 mb-3">
+          <div class="bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-sky-100 dark:border-slate-800 text-center">
+            <span class="text-[11px] text-slate-500 dark:text-slate-400">Tổng Số SKU</span>
+            <div class="text-base font-black text-slate-800 dark:text-white" id="modalTotalSkus">{{ kpis.tong_sku }}</div>
+          </div>
+          <div class="bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-amber-100 dark:border-slate-800 text-center">
+            <span class="text-[11px] text-amber-600 dark:text-amber-400 font-semibold">Chạm / Dưới Tồn Min</span>
+            <div class="text-base font-black text-amber-600 dark:text-amber-400" id="modalLowStockCount">{{ kpis.so_luong_canh_bao }}</div>
+          </div>
+          <div class="bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-slate-100 dark:border-slate-800 text-center">
+            <span class="text-[11px] text-slate-500 dark:text-slate-400">Tồn Đọng > 60 Ngày</span>
+            <div class="text-base font-black text-slate-700 dark:text-slate-300" id="modalDeadStockCount">--</div>
+          </div>
+        </div>
+        <p class="text-slate-600 dark:text-slate-400 text-[11px]" id="modalOverviewText">
+          Toàn bộ dữ liệu được đối soát theo thời gian thực kết hợp kiểm soát toàn vẹn giao dịch ACID.
+        </p>
+      </div>
+
+      <!-- PHẦN 2 -->
+      <div class="bg-amber-50/70 dark:bg-slate-850 border border-amber-200/80 dark:border-slate-800 rounded-xl p-4">
+        <h4 class="font-bold text-amber-950 dark:text-amber-300 text-sm flex items-center gap-2 mb-2">
+          <span class="w-5 h-5 rounded-full bg-amber-600 text-white text-[11px] flex items-center justify-center font-bold">2</span>
+          Phần 2: Cảnh Báo & Gợi Ý Nhập Hàng Khẩn Cấp
+        </h4>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs bg-white dark:bg-slate-900 border border-amber-200/60 dark:border-slate-800 rounded-lg overflow-hidden">
+            <thead class="bg-amber-100/60 dark:bg-slate-800 text-amber-900 dark:text-amber-200 uppercase text-[10px] font-bold">
+              <tr>
+                <th class="p-2">Mã HH</th>
+                <th class="p-2">Tên Mặt Hàng</th>
+                <th class="p-2 text-center">Tồn Hiện Tại</th>
+                <th class="p-2 text-center">Tồn Min</th>
+                <th class="p-2 text-center">Thiếu Hụt</th>
+                <th class="p-2 text-center">Tốc Độ Xuất/Ngày</th>
+                <th class="p-2 text-center text-emerald-700 dark:text-emerald-400">Đề Xuất Nhập</th>
+                <th class="p-2 text-center">Mức Độ</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-amber-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300" id="modalRestockTableBody">
+              {% for it in ai_advisory.structured_report.phan_2_canh_bao_va_de_xuat_nhap %}
+              <tr class="hover:bg-amber-50/50 dark:hover:bg-slate-800/40">
+                <td class="p-2 font-mono font-bold text-slate-700 dark:text-slate-300">{{ it.ma_hh }}</td>
+                <td class="p-2 font-semibold text-slate-800 dark:text-slate-100">{{ it.ten_hh }}</td>
+                <td class="p-2 text-center font-bold text-rose-600 dark:text-rose-400">{{ it.ton_hien_tai }}</td>
+                <td class="p-2 text-center text-slate-500 dark:text-slate-400">{{ it.ton_toi_thieu }}</td>
+                <td class="p-2 text-center text-rose-600 dark:text-rose-400">{{ it.thieu_hut }}</td>
+                <td class="p-2 text-center text-slate-600 dark:text-slate-400">{{ it.burn_rate_ngay }}</td>
+                <td class="p-2 text-center font-bold text-emerald-700 dark:text-emerald-400">+{{ it.so_luong_de_xuat_nhap }}</td>
+                <td class="p-2 text-center">
+                  <span class="px-1.5 py-0.5 rounded text-[9px] font-bold {% if it.muc_do == 'KHAN_CAP' %}bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300 border border-rose-200 dark:border-rose-800{% else %}bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300 border border-amber-200 dark:border-amber-800{% endif %}">
+                    {{ it.muc_do }}
+                  </span>
+                </td>
+              </tr>
+              {% else %}
+              <tr>
+                <td colspan="8" class="p-4 text-center text-slate-400 dark:text-slate-500 italic">Không có mặt hàng nào cần đề xuất nhập khẩn cấp.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- PHẦN 3 -->
+      <div class="bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl p-4">
+        <h4 class="font-bold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-2 mb-2">
+          <span class="w-5 h-5 rounded-full bg-slate-700 text-white text-[11px] flex items-center justify-center font-bold">3</span>
+          Phần 3: Tóm Tắt Biến Động Bất Thường & Tồn Đọng Lâu
+        </h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="bg-white dark:bg-slate-900 p-3 rounded-lg border border-slate-200/80 dark:border-slate-800">
+            <div class="font-bold text-rose-700 dark:text-rose-400 mb-1.5 flex items-center gap-1.5">
+              <i class="fa-solid fa-fire"></i>
+              <span>Xuất Tăng Đột Biến (High Burn Rate)</span>
+            </div>
+            <ul class="space-y-1 text-[11px] text-slate-600 dark:text-slate-400" id="modalHighBurnList">
+              {% for item in ai_advisory.structured_report.phan_3_bien_dong_bat_thuong.xuat_dot_bien %}
+              <li class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-1">
+                <span><b>{{ item.ma_hh }}</b> - {{ item.ten_hh }}</span>
+                <span class="text-rose-600 dark:text-rose-400 font-bold">{{ item.burn_rate_ngay or item.tong_xuat_30d or item.so_luong_xuat_30_ngay or 'Cao' }} đv/ngày</span>
+              </li>
+              {% else %}
+              <li class="italic text-slate-400">Không ghi nhận mặt hàng xuất đột biến.</li>
+              {% endfor %}
+            </ul>
+          </div>
+          <div class="bg-white dark:bg-slate-900 p-3 rounded-lg border border-slate-200/80 dark:border-slate-800">
+            <div class="font-bold text-amber-700 dark:text-amber-400 mb-1.5 flex items-center gap-1.5">
+              <i class="fa-solid fa-box-archive"></i>
+              <span>Tồn Kho Lâu Không Xuất (> 60 Ngày)</span>
+            </div>
+            <ul class="space-y-1 text-[11px] text-slate-600 dark:text-slate-400" id="modalDeadStockList">
+              {% for item in ai_advisory.structured_report.phan_3_bien_dong_bat_thuong.hang_ton_lau_60_ngay %}
+              <li class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-1">
+                <span><b>{{ item.ma_hh }}</b> - {{ item.ten_hh }}</span>
+                <span class="text-amber-600 dark:text-amber-400 font-bold">Tồn: {{ item.ton_kho_u_dong or item.ton_kho_hien_tai or '--' }} ({{ item.so_ngay_khong_xuat or '>60' }} ngày)</span>
+              </li>
+              {% else %}
+              <li class="italic text-slate-400">Không có hàng tồn lâu vượt 60 ngày.</li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Modal Footer -->
+    <div class="px-6 py-3 bg-slate-100 dark:bg-slate-850 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
+      <span class="text-[11px] text-slate-500 dark:text-slate-400">Khử 100% giá nhập nhạy cảm (Module Data Sanitizer)</span>
+      <button type="button" onclick="closeAIReportModal()" class="px-4 py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-semibold transition cursor-pointer">
+        Đóng Báo Cáo
+      </button>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  function openAIReportModal() {
+    document.getElementById('aiReportModal').classList.remove('hidden');
+  }
+
+  function closeAIReportModal() {
+    document.getElementById('aiReportModal').classList.add('hidden');
+  }
+
+  // Gọi API phân tích AI Live & hiển thị icon FontAwesome chuẩn xác
+  async function requestLiveAIAnalysis() {
+    const overlay = document.getElementById('aiLoadingOverlay');
+    const refreshIcon = document.getElementById('refreshIcon');
+
+    try {
+      overlay.classList.remove('hidden');
+      refreshIcon.classList.add('animate-spin');
+
+      const res = await fetch('/api/v1/ai/generate-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      overlay.classList.add('hidden');
+      refreshIcon.classList.remove('animate-spin');
+
+      if (!res.ok) {
+        throw new Error('Lỗi khi gọi API phân tích: ' + res.status);
+      }
+
+      const report = await res.json();
+      
+      // Cập nhật thẻ hiển thị widget ngoài dashboard (với icon FontAwesome chuẩn)
+      if (report.insights_widget && report.insights_widget.length > 0) {
+        const container = document.getElementById('aiInsightsContainer');
+        container.innerHTML = '';
+        report.insights_widget.forEach((ins, idx) => {
+          const borderClass = idx === 0 ? 'border-l-amber-500' : (idx === 1 ? 'border-l-rose-500' : 'border-l-emerald-500');
+          const card = `
+            <div class="bg-white dark:bg-slate-850 border border-slate-200/80 dark:border-slate-750 rounded-xl p-3 shadow-2xs border-l-4 ${borderClass}">
+              <div class="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                <span class="w-5 h-5 flex items-center justify-center rounded-md bg-slate-100 dark:bg-slate-800 text-xs flex-shrink-0">
+                  <i class="${ins.icon || 'fa-solid fa-circle-info text-sky-500'}"></i>
+                </span>
+                <span>${ins.title || ''}</span>
+              </div>
+              <div class="text-[11px] text-slate-600 dark:text-slate-300 mt-1.5 leading-relaxed">
+                ${ins.content || ''}
+              </div>
+            </div>
+          `;
+          container.insertAdjacentHTML('beforeend', card);
+        });
+      }
+
+      // Cập nhật thông tin trong modal
+      if (report.model_used) {
+        document.getElementById('modalAiModelName').innerText = 'Mô hình: ' + report.model_used;
+      }
+      if (report.phan_1_tong_quan) {
+        const p1 = report.phan_1_tong_quan;
+        if (p1.tong_so_sku !== undefined) document.getElementById('modalTotalSkus').innerText = p1.tong_so_sku;
+        if (p1.so_sku_canh_bao_ton_min !== undefined) document.getElementById('modalLowStockCount').innerText = p1.so_sku_canh_bao_ton_min;
+        if (p1.so_sku_u_dong_60_ngay !== undefined) document.getElementById('modalDeadStockCount').innerText = p1.so_sku_u_dong_60_ngay;
+        if (p1.danh_gia_chung) document.getElementById('modalOverviewText').innerText = p1.danh_gia_chung;
+      }
+
+      // Cập nhật bảng đề xuất nhập
+      if (report.phan_2_canh_bao_va_de_xuat_nhap && report.phan_2_canh_bao_va_de_xuat_nhap.length > 0) {
+        const tbody = document.getElementById('modalRestockTableBody');
+        tbody.innerHTML = '';
+        report.phan_2_canh_bao_va_de_xuat_nhap.forEach(item => {
+          const badgeClass = item.muc_do === 'KHAN_CAP' ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300 border border-rose-200 dark:border-rose-800' : 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300 border border-amber-200 dark:border-amber-800';
+          const row = `
+            <tr class="hover:bg-amber-50/50 dark:hover:bg-slate-800/40">
+              <td class="p-2 font-mono font-bold text-slate-700 dark:text-slate-300">${item.ma_hh || ''}</td>
+              <td class="p-2 font-semibold text-slate-800 dark:text-slate-100">${item.ten_hh || ''}</td>
+              <td class="p-2 text-center font-bold text-rose-600 dark:text-rose-400">${item.ton_hien_tai ?? '--'}</td>
+              <td class="p-2 text-center text-slate-500 dark:text-slate-400">${item.ton_toi_thieu ?? '--'}</td>
+              <td class="p-2 text-center text-rose-600 dark:text-rose-400">${item.thieu_hut ?? 0}</td>
+              <td class="p-2 text-center text-slate-600 dark:text-slate-400">${item.burn_rate_ngay ?? 0}</td>
+              <td class="p-2 text-center font-bold text-emerald-700 dark:text-emerald-400">+${item.so_luong_de_xuat_nhap || item.de_xuat_nhap_them || 10}</td>
+              <td class="p-2 text-center">
+                <span class="px-1.5 py-0.5 rounded text-[9px] font-bold ${badgeClass}">
+                  ${item.muc_do || 'CẢNH BÁO'}
+                </span>
+              </td>
+            </tr>
+          `;
+          tbody.insertAdjacentHTML('beforeend', row);
+        });
+      }
+
+      // Cập nhật Phần 3: Biến động bất thường (Xuất đột biến & Tồn kho lâu)
+      if (report.phan_3_bien_dong_bat_thuong) {
+        const p3 = report.phan_3_bien_dong_bat_thuong;
+        const highBurnUl = document.getElementById('modalHighBurnList');
+        const deadStockUl = document.getElementById('modalDeadStockList');
+        
+        if (highBurnUl && p3.xuat_dot_bien) {
+          if (p3.xuat_dot_bien.length > 0) {
+            highBurnUl.innerHTML = p3.xuat_dot_bien.map(it => `
+              <li class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-1">
+                <span><b>${it.ma_hh || ''}</b> - ${it.ten_hh || ''}</span>
+                <span class="text-rose-600 dark:text-rose-400 font-bold">${it.burn_rate_ngay || it.tong_xuat_30d || it.so_luong_xuat_30_ngay || 'Cao'} đv/ngày</span>
+              </li>
+            `).join('');
+          } else {
+            highBurnUl.innerHTML = '<li class="italic text-slate-400">Không ghi nhận mặt hàng xuất đột biến.</li>';
+          }
+        }
+
+        if (deadStockUl && p3.hang_ton_lau_60_ngay) {
+          if (p3.hang_ton_lau_60_ngay.length > 0) {
+            deadStockUl.innerHTML = p3.hang_ton_lau_60_ngay.map(it => `
+              <li class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-1">
+                <span><b>${it.ma_hh || ''}</b> - ${it.ten_hh || ''}</span>
+                <span class="text-amber-600 dark:text-amber-400 font-bold">Tồn: ${it.ton_kho_u_dong || it.ton_kho_hien_tai || '--'} (${it.so_ngay_khong_xuat || '>60'} ngày)</span>
+              </li>
+            `).join('');
+          } else {
+            deadStockUl.innerHTML = '<li class="italic text-slate-400">Không có hàng tồn lâu vượt 60 ngày.</li>';
+          }
+        }
+      }
+
+      openAIReportModal();
+    } catch (err) {
+      console.error(err);
+      overlay.classList.add('hidden');
+      refreshIcon.classList.remove('animate-spin');
+    }
+  }
+
+  // Tự động làm mới bảng Cảnh báo tồn min thời gian thực khi có biến động từ bất kỳ thiết bị nào
+  window.refreshStockAlertsTable = async function() {
+    try {
+      const res = await fetch('/api/v1/kho/alerts');
+      if (!res.ok) return;
+      const alerts = await res.json();
+      const tbody = document.getElementById('body-stock-alerts');
+      const badge = document.getElementById('badge-alert-count');
+      if (badge) badge.innerText = `${alerts.length} mặt hàng cảnh báo`;
+      if (!tbody) return;
+
+      if (alerts.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" class="py-10 text-center text-slate-400 dark:text-slate-500">
+              <i class="fa-solid fa-circle-check text-3xl text-emerald-500 mb-2.5"></i>
+              <div class="font-semibold text-slate-600 dark:text-slate-400">Tuyệt vời! Hiện không có mặt hàng nào bị thiếu hụt hoặc chạm ngưỡng tồn min.</div>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = alerts.map(item => {
+        const isDanger = item.MucDo === 'danger';
+        const stockClass = isDanger ? 'text-rose-600 dark:text-rose-400' : 'text-amber-600 dark:text-amber-400';
+        const badgeHtml = isDanger
+          ? `<span class="inline-flex items-center gap-1.5 bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 px-2.5 py-0.5 rounded-full text-[11px] font-bold">
+               <span class="w-1.5 h-1.5 rounded-full bg-rose-600 dark:bg-rose-400"></span>
+               <span>Nguy cấp (Thiếu ${item.ThieuHut})</span>
+             </span>`
+          : `<span class="inline-flex items-center gap-1.5 bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 px-2.5 py-0.5 rounded-full text-[11px] font-bold">
+               <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+               <span>Cận ngưỡng min</span>
+             </span>`;
+
+        return `
+          <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition">
+            <td class="py-3 px-4 font-mono font-bold text-sky-700 dark:text-sky-400">${item.MaHH}</td>
+            <td class="py-3 px-4 font-semibold text-slate-900 dark:text-white">${item.TenHH}</td>
+            <td class="py-3 px-3 text-center text-slate-500 dark:text-slate-400">${item.MaDVT}</td>
+            <td class="py-3 px-3 text-center font-black ${stockClass}">${item.SoLuongTon}</td>
+            <td class="py-3 px-3 text-center text-slate-600 dark:text-slate-400 font-mono">${item.TonToiThieu}</td>
+            <td class="py-3 px-4 text-center">${badgeHtml}</td>
+            <td class="py-3 px-4 text-center">
+              <a href="/inbound?ma_hh=${item.MaHH}"
+                 style="background-color: #0284c7; color: #ffffff;"
+                 class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-sky-600 hover:bg-sky-500 active:bg-sky-700 text-white font-bold rounded-lg text-xs transition shadow-xs hover:shadow-md cursor-pointer whitespace-nowrap">
+                <i class="fa-solid fa-plus text-[10px]"></i>
+                <span>Nhập hàng</span>
+              </a>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    } catch (e) {
+      console.error('[Dashboard] Lỗi cập nhật bảng cảnh báo:', e);
+    }
+  };
+
+  // Đăng ký nhận sự kiện realtime từ WebSocket
+  window.addEventListener('smartlogis:inventory_updated', () => {
+    if (typeof window.refreshStockAlertsTable === 'function') {
+      window.refreshStockAlertsTable();
+    }
+  });
+</script>
+{% endblock %}

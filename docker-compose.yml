@@ -1,0 +1,148 @@
+services:
+  # =============================================================================
+  # 1. CƠ SỞ DỮ LIỆU POSTGRESQL TẬP TRUNG (CENTRALIZED ACID DATABASE)
+  # =============================================================================
+  database:
+    image: postgres:15-alpine
+    container_name: smartlogis_database
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: smartlogis_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d smartlogis_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      smartlogis_network:
+        aliases:
+          - database
+          - postgres_db
+
+  # =============================================================================
+  # 2. GIAO DIỆN QUẢN TRỊ CSDL TRỰC QUAN (PGADMIN 4 WEB)
+  # =============================================================================
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: smartlogis_pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@smartlogis.vn
+      PGADMIN_DEFAULT_PASSWORD: adminpassword
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - smartlogis_network
+
+  # =============================================================================
+  # 3. BACKEND CONTAINER: FASTAPI REST API & WEBSOCKET REALTIME MANAGER (PORT 8000)
+  # =============================================================================
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: smartlogis_backend
+    restart: unless-stopped
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgrespassword@database:5432/smartlogis_db
+      - SECRET_KEY=smartlogis-super-secret-key-2026-production-ready
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-AQ.Ab8RN6KCdgsk4gBZ1xWmKuwV3KfLOBmJWURaUmEkC7Sle5MW7g}
+    volumes:
+      - .:/app
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/login"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      smartlogis_network:
+        aliases:
+          - backend
+          - web
+
+  # =============================================================================
+  # 4. FRONTEND CONTAINER: WEB UI SSR & STATIC ASSETS (PORT 3000)
+  # =============================================================================
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: smartlogis_frontend
+    restart: unless-stopped
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "3000"]
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgrespassword@database:5432/smartlogis_db
+      - SECRET_KEY=smartlogis-super-secret-key-2026-production-ready
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-AQ.Ab8RN6KCdgsk4gBZ1xWmKuwV3KfLOBmJWURaUmEkC7Sle5MW7g}
+    volumes:
+      - .:/app
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      smartlogis_network:
+        aliases:
+          - frontend
+
+  # =============================================================================
+  # 5. NGINX REVERSE PROXY & GATEWAY DUY NHẤT (PORT 80 & 443)
+  # =============================================================================
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: smartlogis_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - smartlogis_network
+
+  # =============================================================================
+  # 6. CERTBOT (LET'S ENCRYPT SSL PROVISIONING & RENEWAL)
+  # =============================================================================
+  certbot:
+    image: certbot/certbot:latest
+    container_name: smartlogis_certbot
+    restart: unless-stopped
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+    networks:
+      - smartlogis_network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  smartlogis_network:
+    driver: bridge

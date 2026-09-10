@@ -1,17 +1,50 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" class="h-full">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- Google Fonts: Be Vietnam Pro & Plus Jakarta Sans (Tối ưu hóa hiển thị tiếng Việt) -->
+  <title>Đăng Ký Thành Viên - SmartLogis AI Warehouse</title>
+
+  <!-- Script khởi tạo Theme tức thời chống giật FOUC -->
+  <script>
+    (function() {
+      try {
+        const theme = localStorage.getItem('smartlogis_theme');
+        if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      } catch (e) {}
+    })();
+  </script>
+
+  <!-- Google Fonts: Be Vietnam Pro & Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
+      darkMode: 'class',
       theme: {
         extend: {
+          colors: {
+            slate: {
+              750: '#293548',
+              850: '#1e293b',
+              900: '#0f172a',
+              950: '#0f172a',
+            },
+            brand: {
+              50: '#f0f9ff',
+              100: '#e0f2fe',
+              500: '#0ea5e9',
+              600: '#0284c7',
+              700: '#0369a1',
+            }
+          },
           fontFamily: {
             sans: ['"Be Vietnam Pro"', '"Plus Jakarta Sans"', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
           }
@@ -19,68 +52,182 @@
       }
     }
   </script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <style>
-    *, ::before, ::after {
-      font-family: 'Be Vietnam Pro', 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-    }
-    body {
-      font-family: 'Be Vietnam Pro', 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    }
-  </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous">
+  <link rel="stylesheet" href="/static/css/style.css?v=20260909_6">
 </head>
-<body class="bg-slate-900 text-slate-100 flex items-center justify-center min-h-screen p-4">
+<body class="min-h-screen bg-slate-100/70 dark:bg-slate-900 text-slate-800 dark:text-slate-100 flex flex-col antialiased transition-colors duration-200 selection:bg-sky-500 selection:text-white">
 
-  <div class="w-full max-w-md bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl p-8">
-    <div class="text-center mb-6">
-      <h1 class="text-2xl font-bold text-white tracking-wide">Đăng Ký Tài Khoản</h1>
-      <p class="text-xs text-sky-400 font-semibold mt-1">HỆ THỐNG QUẢN LÝ KHO SMARTLOGIS AI</p>
+  <div class="min-h-screen flex flex-col lg:flex-row w-full">
+
+    <!-- CỘT BÊN TRÁI: HÌNH ẢNH MINH HỌA KHO THÔNG MINH -->
+    <div class="lg:w-7/12 xl:w-3/5 hidden lg:flex relative flex-col justify-between p-10 xl:p-14 overflow-hidden bg-slate-900 text-white">
+      <img src="/static/images/warehouse_login_banner.jpg" 
+           alt="Smart Logistics Warehouse AI" 
+           class="absolute inset-0 w-full h-full object-cover object-center transform scale-105 transition duration-1000 ease-out">
+      
+      <div class="absolute inset-0 bg-gradient-to-t from-slate-950/95 via-slate-900/65 to-slate-900/40 backdrop-blur-[1.5px]"></div>
+
+      <div class="relative z-10 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-white text-2xl shadow-lg shadow-emerald-500/30">
+            <i class="fa-solid fa-boxes-stacked"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl font-extrabold tracking-wide text-white">SmartLogis AI</span>
+              <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 uppercase tracking-wider">Gia Nhập Hệ Thống</span>
+            </div>
+            <p class="text-xs text-slate-300">Cổng Đăng Ký Tài Khoản Vận Hành Kho Vận Thông Minh</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800/80 backdrop-blur-md border border-slate-700/80 text-xs font-semibold text-emerald-400">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span>Bảo mật giao dịch ACID</span>
+        </div>
+      </div>
+
+      <div class="relative z-10 my-auto py-10 space-y-6">
+        <div>
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 text-xs font-bold tracking-wide uppercase mb-3">
+            <i class="fa-solid fa-user-check"></i> Khởi Tạo Tài Khoản Nhanh Chóng
+          </span>
+          <h2 class="text-3xl xl:text-4xl font-black text-white leading-tight drop-shadow-md">
+            Mở Rộng Đội Ngũ Kho Vận<br>
+            <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-sky-400">
+              Phân Quyền Rõ Ràng & Chuẩn Xác
+            </span>
+          </h2>
+          <p class="text-sm text-slate-300 mt-3 max-w-xl leading-relaxed drop-shadow-xs">
+            Hỗ trợ 3 vai trò phân quyền chuẩn mực (Admin, Thủ kho, Kế toán). Mọi thao tác nhập xuất đều ghi nhận vết kiểm toán thời gian thực.
+          </p>
+        </div>
+      </div>
+
+      <div class="relative z-10 pt-4 border-t border-slate-700/60 flex items-center justify-between text-xs text-slate-400">
+        <div>Tác giả sáng lập: <b class="text-slate-200">Nguyễn Thành Hưng</b> & <b class="text-slate-200">Hoàng Tiến Đạt</b></div>
+        <div>SmartLogis AI Enterprise</div>
+      </div>
     </div>
 
-    <div id="reg-error" class="hidden mb-4 p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs"></div>
-    <div id="reg-success" class="hidden mb-4 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs"></div>
+    <!-- CỘT BÊN PHẢI: FORM ĐĂNG KÝ -->
+    <div class="w-full lg:w-5/12 xl:w-2/5 flex flex-col justify-between p-6 sm:p-10 lg:p-12 xl:p-14 bg-white dark:bg-slate-850 border-l border-slate-200/80 dark:border-slate-800 transition-colors">
+      
+      <div class="flex items-center justify-between pb-6">
+        <div class="flex items-center gap-2.5 lg:hidden">
+          <div class="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-lg shadow-sm">
+            <i class="fa-solid fa-user-plus"></i>
+          </div>
+          <div>
+            <span class="font-extrabold text-sm text-slate-900 dark:text-white">SmartLogis AI</span>
+            <span class="text-[10px] block text-emerald-600 dark:text-emerald-400 font-bold">Đăng Ký</span>
+          </div>
+        </div>
+        <div class="hidden lg:block text-xs font-semibold text-slate-400 dark:text-slate-400">
+          Khởi Tạo Thành Viên Mới
+        </div>
 
-    <form id="register-form" onsubmit="handleRegister(event)" class="space-y-4">
-      <div>
-        <label class="block text-xs font-semibold text-slate-300 mb-1">Họ Và Tên</label>
-        <input type="text" id="reg-hoten" required placeholder="Ví dụ: Hoàng Tiến Đạt"
-          class="w-full px-3 py-2.5 bg-slate-900 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-sky-500">
+        <button type="button" id="themeToggleBtn" onclick="toggleDarkMode()"
+          class="theme-toggle-btn flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-amber-300 border border-slate-200 dark:border-slate-700 transition shadow-xs cursor-pointer"
+          title="Chuyển đổi Giao diện Sáng / Tối">
+          <i class="fa-solid fa-moon text-sky-600 text-sm"></i>
+          <span class="text-xs font-bold text-slate-700 dark:text-amber-300">Giao diện Tối</span>
+        </button>
       </div>
 
-      <div>
-        <label class="block text-xs font-semibold text-slate-300 mb-1">Tên Đăng Nhập</label>
-        <input type="text" id="reg-username" required placeholder="Tối thiểu 3 ký tự"
-          class="w-full px-3 py-2.5 bg-slate-900 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-sky-500">
+      <div class="my-auto py-4 max-w-md w-full mx-auto">
+        <div class="mb-6">
+          <div class="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800 text-xl mb-3 shadow-xs">
+            <i class="fa-solid fa-user-plus"></i>
+          </div>
+          <h1 class="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Đăng Ký Tài Khoản</h1>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            Điền đầy đủ thông tin để kích hoạt tài khoản thành viên mới
+          </p>
+        </div>
+
+        <div id="reg-error" class="hidden mb-4 p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/70 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2">
+          <i class="fa-solid fa-circle-exclamation text-rose-500 text-sm flex-shrink-0"></i>
+          <span id="reg-error-msg" class="leading-tight font-medium"></span>
+        </div>
+
+        <div id="reg-success" class="hidden mb-4 p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs flex items-center gap-2">
+          <i class="fa-solid fa-circle-check text-emerald-500 text-sm flex-shrink-0"></i>
+          <span id="reg-success-msg" class="leading-tight font-medium"></span>
+        </div>
+
+        <form id="register-form" onsubmit="handleRegister(event)" class="space-y-3.5">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Họ Và Tên (*)</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400 text-sm pointer-events-none">
+                <i class="fa-solid fa-id-card"></i>
+              </span>
+              <input type="text" id="reg-hoten" required placeholder="Ví dụ: Hoàng Tiến Đạt"
+                class="w-full pl-10 pr-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:bg-white dark:focus:bg-slate-800 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Tên Đăng Nhập (*)</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400 text-sm pointer-events-none">
+                <i class="fa-regular fa-user"></i>
+              </span>
+              <input type="text" id="reg-username" required placeholder="Tối thiểu 3 ký tự (VD: dat17)"
+                class="w-full pl-10 pr-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:bg-white dark:focus:bg-slate-800 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Mật Khẩu (*)</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400 text-sm pointer-events-none">
+                <i class="fa-solid fa-lock"></i>
+              </span>
+              <input type="password" id="reg-password" required placeholder="Tối thiểu 6 ký tự"
+                class="w-full pl-10 pr-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:bg-white dark:focus:bg-slate-800 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Phân Quyền Vai Trò (*)</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400 text-sm pointer-events-none">
+                <i class="fa-solid fa-user-shield"></i>
+              </span>
+              <select id="reg-role"
+                class="w-full pl-10 pr-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition cursor-pointer">
+                <option value="Thukho" selected>Thủ kho (Vận hành nhập / xuất kho)</option>
+                <option value="Ketoan">Kế toán (Đối soát & Báo cáo công nợ)</option>
+                <option value="Admin">Admin (Quản trị hệ thống toàn quyền)</option>
+              </select>
+            </div>
+          </div>
+
+          <button type="submit" id="btn-reg"
+            style="background-color: #059669; color: #ffffff;"
+            class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold rounded-xl text-xs sm:text-sm transition shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer mt-2">
+            <i class="fa-solid fa-check"></i>
+            <span>Đăng Ký Tài Khoản Thành Viên</span>
+          </button>
+        </form>
+
+        <div class="mt-6 text-center text-xs text-slate-500 dark:text-slate-400">
+          Đã có tài khoản? <a href="/login" class="text-sky-600 dark:text-sky-400 hover:underline font-bold">Đăng nhập ngay</a>
+        </div>
       </div>
 
-      <div>
-        <label class="block text-xs font-semibold text-slate-300 mb-1">Mật Khẩu</label>
-        <input type="password" id="reg-password" required placeholder="Tối thiểu 6 ký tự"
-          class="w-full px-3 py-2.5 bg-slate-900 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-sky-500">
+      <div class="pt-4 border-t border-slate-200/80 dark:border-slate-800 text-center lg:text-left flex flex-col sm:flex-row items-center justify-between text-[11px] text-slate-400 dark:text-slate-500 gap-2">
+        <span>&copy; 2026 SmartLogis AI. Mọi quyền được bảo lưu.</span>
+        <span>Hệ thống bảo vệ dữ liệu ACID</span>
       </div>
 
-      <div>
-        <label class="block text-xs font-semibold text-slate-300 mb-1">Vai Trò Người Dùng</label>
-        <select id="reg-role" class="w-full px-3 py-2.5 bg-slate-900 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:border-sky-500">
-          <option value="Thukho" selected>Thủ kho (Vận hành nhập / xuất)</option>
-          <option value="Ketoan">Kế toán (Đối soát & Báo cáo)</option>
-          <option value="Admin">Admin (Quản trị hệ thống)</option>
-        </select>
-      </div>
-
-      <button type="submit" id="btn-reg"
-        class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-lg text-sm transition shadow-lg shadow-emerald-600/20">
-        Tạo Tài Khoản
-      </button>
-    </form>
-
-    <div class="mt-5 text-center text-xs text-slate-400">
-      Đã có tài khoản? <a href="/login" class="text-sky-400 hover:underline font-semibold">Đăng nhập ngay</a>
     </div>
+
   </div>
 
+  <script src="/static/js/app.js?v=20260909_6"></script>
   <script>
     async function handleRegister(e) {
       e.preventDefault();
@@ -91,8 +238,14 @@
 
       const errBox = document.getElementById('reg-error');
       const succBox = document.getElementById('reg-success');
+      const errMsg = document.getElementById('reg-error-msg');
+      const succMsg = document.getElementById('reg-success-msg');
+      const btn = document.getElementById('btn-reg');
+
       errBox.classList.add('hidden');
       succBox.classList.add('hidden');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Đang xử lý đăng ký...</span>';
 
       try {
         const res = await fetch('/api/v1/auth/register', {
@@ -101,16 +254,25 @@
           body: JSON.stringify({ TenDangNhap: username, MatKhau: password, HoTen: hoten, VaiTro: role })
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || 'Đăng ký thất bại.');
+        if (!res.ok) throw new Error(data.detail || 'Đăng ký thất bại. Vui lòng thử lại.');
 
-        succBox.innerText = 'Đăng ký tài khoản thành công! Đang chuyển hướng sang trang đăng nhập...';
+        succMsg.innerText = 'Đăng ký tài khoản thành công! Đang chuyển hướng sang trang đăng nhập...';
         succBox.classList.remove('hidden');
         setTimeout(() => window.location.href = '/login', 1500);
       } catch (err) {
-        errBox.innerText = err.message;
+        errMsg.innerText = err.message;
         errBox.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> <span>Đăng Ký Tài Khoản Thành Viên</span>';
       }
     }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (typeof initTheme === 'function') {
+        initTheme();
+      }
+    });
   </script>
 </body>
-</html>\n
+</html>

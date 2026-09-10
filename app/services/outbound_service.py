@@ -1,6 +1,7 @@
 # app/services/outbound_service.py
 import uuid
 from datetime import datetime
+from sqlalchemy import update
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, status
@@ -9,14 +10,15 @@ from app.schemas.inventory_schemas import PhieuXuatCreate
 
 def execute_outbound_transaction(db: Session, phieu_in: PhieuXuatCreate, user_id: int) -> PhieuXuat:
     """
-    L?p phi?u xu?t kho Outbound c? c? ch? kh?a bi quan (SELECT FOR UPDATE) ch?ng t?n kho ?m:
-    1. T?o Master PhieuXuat (M? t? sinh d?ng PX-YYYYMMDD-UUID).
-    2. V?i m?i d?ng h?ng:
-       - Kh?a d?ng b?ng with_for_update() ?? ch?ng Race Condition khi nhi?u ng??i xu?t ??ng th?i.
-       - Ki?m tra nghi?m ng?t: SoLuongTon >= SoLuongXuat.
-       - N?u vi ph?m (thi?u h?ng), H?Y GIAO D?CH (db.rollback) v? tr? v? l?i HTTP 400 Bad Request.
-       - N?u ?? h?ng, tr? t?n kho v? ghi s? Th? kho.
-    3. Commit to?n v?n (ACID All-or-Nothing).
+    Lập phiếu xuất kho Outbound có cơ chế khóa nguyên tử (Atomic SQL Decrement):
+    1. Tạo Master PhieuXuat (Mã tự sinh dạng PX-YYYYMMDD-UUID).
+    2. Với mỗi dòng hàng:
+       - Kiểm tra hàng hóa tồn tại trong danh mục.
+       - Kiểm tra số dư tồn kho ban đầu.
+       - Trừ tồn kho nguyên tử ở cấp CSDL (Atomic SQL Decrement với điều kiện SoLuongTon >= SoLuongXuat).
+       - Nếu vi phạm (thiếu hàng / race condition), HỦY GIAO DỊCH (db.rollback) và trả về HTTP 400 Bad Request.
+       - Nếu đủ hàng, ghi chi tiết xuất kho và sổ Thẻ kho (TheKho).
+    3. Commit toàn vẹn (ACID All-or-Nothing).
     """
     try:
         ma_px = f"PX-{datetime.now().strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}"
@@ -31,42 +33,55 @@ def execute_outbound_transaction(db: Session, phieu_in: PhieuXuatCreate, user_id
         db.flush()
 
         for item in phieu_in.items:
-            # Ki?m tra h?ng h?a trong danh m?c
+            # Kiểm tra hàng hóa trong danh mục
             hh = db.query(HangHoa).filter(HangHoa.MaHH == item.MaHH).first()
             if not hh:
                 db.rollback()
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"M?t h?ng [{item.MaHH}] kh?ng t?n t?i trong danh m?c."
+                    detail=f"Mặt hàng [{item.MaHH}] không tồn tại trong danh mục."
                 )
 
-            # KH?A BI QUAN C?P D?NG: with_for_update() -> SELECT ... FOR UPDATE tr?n PostgreSQL
-            ton_kho = db.query(TonKho).filter(TonKho.MaHH == item.MaHH).with_for_update().first()
-
-            if not ton_kho:
+            # Kiểm tra tồn kho có tồn tại không
+            ton_kho_record = db.query(TonKho).filter(TonKho.MaHH == item.MaHH).first()
+            if not ton_kho_record:
                 db.rollback()
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"M?t h?ng [{hh.TenHH}] ch?a t?ng c? s? d? trong kho."
+                    detail=f"Mặt hàng [{hh.TenHH}] chưa từng có số dư trong kho."
                 )
 
-            # KI?M TRA CH?NG T?N ?M NGHI?M NG?T
-            if ton_kho.SoLuongTon < item.SoLuongXuat:
+            # THỰC HIỆN ATOMIC SQL DECREMENT CẤP CSDL CHỐNG RACE CONDITION
+            # Câu lệnh UPDATE chỉ thành công khi SoLuongTon >= SoLuongXuat
+            stmt = (
+                update(TonKho)
+                .where(TonKho.MaHH == item.MaHH, TonKho.SoLuongTon >= item.SoLuongXuat)
+                .values(
+                    SoLuongTon=TonKho.SoLuongTon - item.SoLuongXuat,
+                    CapNhatCuoi=datetime.utcnow()
+                )
+            )
+            result = db.execute(stmt)
+
+            if result.rowcount == 0:
                 db.rollback()
+                # Truy vấn lại số tồn hiện thực tại thời điểm lỗi
+                current_ton = db.query(TonKho.SoLuongTon).filter(TonKho.MaHH == item.MaHH).scalar()
+                current_ton_val = current_ton if current_ton is not None else 0
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=(
-                        f"M?t h?ng [{hh.TenHH}] (M?: {item.MaHH}) kh?ng ?? t?n kho ?? xu?t. "
-                        f"T?n kh? d?ng trong kho: {ton_kho.SoLuongTon}, "
-                        f"Y?u c?u xu?t: {item.SoLuongXuat}. "
-                        f"Giao d?ch b? h?y ho?n to?n (Rollback) ?? b?o v? t?nh to?n v?n CSDL."
+                        f"Mặt hàng [{hh.TenHH}] (Mã: {item.MaHH}) không đủ tồn kho để xuất. "
+                        f"Tồn khả dụng trong kho: {current_ton_val}, "
+                        f"Yêu cầu xuất: {item.SoLuongXuat}. "
+                        f"Giao dịch bị hủy hoàn toàn (Rollback) để bảo vệ tính toàn vẹn CSDL."
                     )
                 )
 
-            # Tr? s? l??ng t?n kho
-            ton_kho.SoLuongTon -= item.SoLuongXuat
+            # Lấy số tồn mới sau khi trừ để ghi sổ Thẻ kho
+            new_ton = db.query(TonKho.SoLuongTon).filter(TonKho.MaHH == item.MaHH).scalar()
 
-            # T?o chi ti?t xu?t kho
+            # Tạo chi tiết xuất kho
             ct = ChiTietPhieuXuat(
                 MaPX=ma_px,
                 MaHH=item.MaHH,
@@ -75,18 +90,18 @@ def execute_outbound_transaction(db: Session, phieu_in: PhieuXuatCreate, user_id
             db.add(ct)
             db.flush()
 
-            # Ghi Th? kho l?u v?t bi?n ??ng
+            # Ghi Thẻ kho lưu vết biến động
             the_kho = TheKho(
                 NgayGiaoDich=datetime.utcnow(),
                 MaHH=item.MaHH,
                 MaChungTu=ma_px,
                 LoaiGiaoDich="XUAT",
                 SoLuongThayDoi=-item.SoLuongXuat,
-                TonSauGiaoDich=ton_kho.SoLuongTon
+                TonSauGiaoDich=new_ton
             )
             db.add(the_kho)
 
-        # Commit to?n b?
+        # Commit toàn bộ giao dịch nguyên tử
         db.commit()
         db.refresh(phieu_xuat)
         return phieu_xuat
@@ -95,7 +110,7 @@ def execute_outbound_transaction(db: Session, phieu_in: PhieuXuatCreate, user_id
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Vi ph?m r?ng bu?c c? s? d? li?u (SoLuongTon >= 0): {str(ie.orig)}"
+            detail=f"Vi phạm ràng buộc cơ sở dữ liệu (SoLuongTon >= 0): {str(ie.orig)}"
         )
     except HTTPException:
         raise
@@ -103,5 +118,6 @@ def execute_outbound_transaction(db: Session, phieu_in: PhieuXuatCreate, user_id
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"L?i h? th?ng khi x? l? xu?t kho: {str(e)}"
+            detail=f"Lỗi hệ thống khi xử lý xuất kho: {str(e)}"
         )
+

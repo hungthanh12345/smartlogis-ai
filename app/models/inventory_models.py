@@ -85,12 +85,12 @@ class TonKho(Base):
     hang_hoa = relationship("HangHoa", back_populates="ton_kho")
 
 class PhieuNhap(Base):
-    """Ch?ng t? nh?p kho (Master)."""
+    """Chứng từ nhập kho (Master)."""
     __tablename__ = "phieu_nhap"
 
     MaPN = Column(String(50), primary_key=True, index=True)
-    NgayNhap = Column(DateTime, default=datetime.utcnow, nullable=False)
-    MaNCC = Column(String(50), ForeignKey("nha_cung_cap.MaNCC"), nullable=False)
+    NgayNhap = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    MaNCC = Column(String(50), ForeignKey("nha_cung_cap.MaNCC"), nullable=False, index=True)
     MaND = Column(Integer, ForeignKey("nguoi_dung.MaND"), nullable=False)
     TongTien = Column(Float, default=0.0, nullable=False)
     GhiChu = Column(String(500), nullable=True)
@@ -106,10 +106,14 @@ class PhieuNhap(Base):
 class ChiTietPhieuNhap(Base):
     """Chi tiết các mặt hàng trong phiếu nhập (Detail)."""
     __tablename__ = "chi_tiet_phieu_nhap"
+    __table_args__ = (
+        CheckConstraint("SoLuongNhap > 0", name="check_soluongnhap_duong"),
+        CheckConstraint("DonGiaNhap >= 0", name="check_dongianhap_khong_am"),
+    )
 
     MaCTPN = Column(Integer, primary_key=True, autoincrement=True)
-    MaPN = Column(String(50), ForeignKey("phieu_nhap.MaPN", ondelete="CASCADE"), nullable=False)
-    MaHH = Column(String(50), ForeignKey("hang_hoa.MaHH"), nullable=False)
+    MaPN = Column(String(50), ForeignKey("phieu_nhap.MaPN", ondelete="CASCADE"), nullable=False, index=True)
+    MaHH = Column(String(50), ForeignKey("hang_hoa.MaHH"), nullable=False, index=True)
     SoLuongNhap = Column(Integer, nullable=False)
     DonGiaNhap = Column(Float, nullable=False)
     ThanhTien = Column(Float, nullable=False)
@@ -117,12 +121,16 @@ class ChiTietPhieuNhap(Base):
     phieu_nhap = relationship("PhieuNhap", back_populates="chi_tiet")
     hang_hoa = relationship("HangHoa", back_populates="chi_tiet_nhap")
 
+    @property
+    def TenHH(self):
+        return self.hang_hoa.TenHH if self.hang_hoa else None
+
 class PhieuXuat(Base):
     """Chứng từ xuất kho (Master)."""
     __tablename__ = "phieu_xuat"
 
     MaPX = Column(String(50), primary_key=True, index=True)
-    NgayXuat = Column(DateTime, default=datetime.utcnow, nullable=False)
+    NgayXuat = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
     MaND = Column(Integer, ForeignKey("nguoi_dung.MaND"), nullable=False)
     NguoiNhan = Column(String(255), nullable=False)
     LyDoXuat = Column(String(500), nullable=True)
@@ -135,27 +143,43 @@ class PhieuXuat(Base):
         return self.chi_tiet
 
 class ChiTietPhieuXuat(Base):
-    """Chi ti?t c?c m?t h?ng trong phi?u xu?t (Detail)."""
+    """Chi tiết các mặt hàng trong phiếu xuất (Detail)."""
     __tablename__ = "chi_tiet_phieu_xuat"
+    __table_args__ = (
+        CheckConstraint("SoLuongXuat > 0", name="check_soluongxuat_duong"),
+    )
 
     MaCTPX = Column(Integer, primary_key=True, autoincrement=True)
-    MaPX = Column(String(50), ForeignKey("phieu_xuat.MaPX", ondelete="CASCADE"), nullable=False)
-    MaHH = Column(String(50), ForeignKey("hang_hoa.MaHH"), nullable=False)
+    MaPX = Column(String(50), ForeignKey("phieu_xuat.MaPX", ondelete="CASCADE"), nullable=False, index=True)
+    MaHH = Column(String(50), ForeignKey("hang_hoa.MaHH"), nullable=False, index=True)
     SoLuongXuat = Column(Integer, nullable=False)
 
     phieu_xuat = relationship("PhieuXuat", back_populates="chi_tiet")
     hang_hoa = relationship("HangHoa", back_populates="chi_tiet_xuat")
 
+    @property
+    def TenHH(self):
+        return self.hang_hoa.TenHH if self.hang_hoa else None
+
 class TheKho(Base):
-    """S? th? kho l?u v?t to?n b? bi?n ??ng giao d?ch nh?p xu?t v? t?n l?y k? theo th?i gian."""
+    """Sổ thẻ kho lưu vết toàn bộ biến động giao dịch nhập xuất và tồn lũy kế theo thời gian."""
     __tablename__ = "the_kho"
+    __table_args__ = (
+        CheckConstraint("TonSauGiaoDich >= 0", name="check_tonsaugiaodich_khong_am"),
+    )
 
     MaTK = Column(Integer, primary_key=True, autoincrement=True)
     NgayGiaoDich = Column(DateTime, default=datetime.utcnow, index=True)
     MaHH = Column(String(50), ForeignKey("hang_hoa.MaHH"), nullable=False, index=True)
-    MaChungTu = Column(String(50), nullable=False)
-    LoaiGiaoDich = Column(String(10), nullable=False)  # 'NHAP' ho?c 'XUAT'
+    MaChungTu = Column(String(50), nullable=False, index=True)
+    LoaiGiaoDich = Column(String(10), nullable=False)  # 'NHAP' hoặc 'XUAT'
     SoLuongThayDoi = Column(Integer, nullable=False)
     TonSauGiaoDich = Column(Integer, nullable=False)
 
     hang_hoa = relationship("HangHoa", back_populates="the_kho")
+
+    @property
+    def TenHH(self):
+        return self.hang_hoa.TenHH if self.hang_hoa else None
+
+

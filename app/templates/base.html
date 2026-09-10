@@ -1,19 +1,62 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" class="h-full">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}SmartLogis AI - Quản Lý Kho Thông Minh{% endblock %}</title>
-  <!-- Google Fonts: Be Vietnam Pro & Plus Jakarta Sans (Tối ưu hóa hiển thị tiếng Việt) -->
+
+  <!-- Script áp dụng Theme tức thời chống giật nhấp nháy FOUC -->
+  <script>
+    (function() {
+      try {
+        const theme = localStorage.getItem('smartlogis_theme');
+        if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      } catch (e) {}
+    })();
+  </script>
+
+  <!-- Google Fonts: Be Vietnam Pro & Plus Jakarta Sans (Tối ưu hiển thị tiếng Việt) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <!-- Tailwind CSS CDN -->
+
+  <!-- Tailwind CSS CDN với Dark Mode & Hệ màu KiotViet Light Blue -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
+      darkMode: 'class',
       theme: {
         extend: {
+          colors: {
+            slate: {
+              750: '#293548',
+              850: '#1e293b',
+              900: '#0f172a',
+              950: '#0f172a', // Màu tối sáng hơn, dễ nhìn hơn (không bị đen kịt)
+            },
+            brand: {
+              50: '#f0f9ff',
+              100: '#e0f2fe',
+              200: '#bae6fd',
+              300: '#7dd3fc',
+              400: '#38bdf8',
+              500: '#0ea5e9',
+              600: '#0284c7',
+              700: '#0369a1',
+              800: '#075985',
+              900: '#0c4a6e',
+            },
+            accent: {
+              50: '#fff7ed',
+              100: '#ffedd5',
+              500: '#f97316',
+              600: '#ea580c',
+            }
+          },
           fontFamily: {
             sans: ['"Be Vietnam Pro"', '"Plus Jakarta Sans"', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
           }
@@ -21,110 +64,144 @@
       }
     }
   </script>
-  <!-- FontAwesome Icons CDN -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="/static/css/style.css">
-  <style>
-    *, ::before, ::after {
-      font-family: 'Be Vietnam Pro', 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-    }
-    body {
-      font-family: 'Be Vietnam Pro', 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    }
-    .nav-item-active { background-color: #1e293b; color: #38bdf8; border-left: 4px solid #38bdf8; font-weight: 600; }
-  </style>
+
+  <!-- FontAwesome 6 Icons (CSS WebFonts - chuẩn xác & ổn định) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous">
+  <link rel="stylesheet" href="/static/css/style.css?v=20260909_6">
+
   {% block extra_head %}{% endblock %}
 </head>
-<body class="bg-slate-100 text-slate-800 flex h-screen overflow-hidden">
+<body class="bg-slate-100/80 dark:bg-slate-900 text-slate-800 dark:text-slate-100 flex h-screen overflow-hidden antialiased transition-colors duration-200">
 
-  <!-- SIDEBAR (Navy / Slate-900) -->
-  <aside class="w-64 bg-slate-900 text-slate-300 flex flex-col flex-shrink-0">
-    <div class="h-16 flex items-center justify-between px-5 border-b border-slate-800 bg-slate-950">
-      <div class="flex items-center gap-2">
-        <span class="text-xl text-sky-400 font-bold"><i class="fa-solid fa-boxes-stacked"></i> SmartLogis AI</span>
-      </div>
-      <span class="text-xs bg-sky-600 text-white font-semibold px-2 py-0.5 rounded">v2.0</span>
+  <!-- SIDEBAR (Navy / Slate-900 KiotViet Style) -->
+  <aside class="w-64 bg-slate-900 text-slate-300 flex flex-col flex-shrink-0 border-r border-slate-800">
+    <!-- Brand Header -->
+    <div class="h-16 flex items-center justify-between px-5 border-b border-slate-800/80 bg-slate-900">
+      <a href="/dashboard" class="flex items-center gap-2.5">
+        <span class="w-9 h-9 rounded-xl bg-sky-500/15 border border-sky-500/30 text-sky-400 flex items-center justify-center text-lg shadow-xs">
+          <i class="fa-solid fa-boxes-stacked"></i>
+        </span>
+        <div class="leading-tight">
+          <span class="text-base font-extrabold text-white tracking-wide">SmartLogis</span>
+          <span class="text-xs font-black text-sky-400 block -mt-0.5">AI LOGISTICS</span>
+        </div>
+      </a>
+      <span class="text-[10px] font-bold bg-sky-600/90 text-white px-2 py-0.5 rounded-full shadow-xs">v2.0</span>
     </div>
 
-    <!-- Navigation Links -->
-    <nav class="flex-1 py-4 overflow-y-auto space-y-1">
-      <a href="/dashboard" class="flex items-center gap-3 px-5 py-3 text-sm text-slate-400 hover:bg-slate-800 hover:text-sky-300 transition {% if active_page == 'dashboard' %}nav-item-active{% endif %}">
-        <i class="fa-solid fa-chart-pie w-5 text-center"></i>
+    <!-- Navigation Links (Sleek, Clean & Focused) -->
+    <nav class="flex-1 py-4 px-3 overflow-y-auto space-y-1">
+      <a href="/dashboard" class="flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold rounded-xl text-slate-300 hover:bg-slate-800 hover:text-white transition {% if active_page == 'dashboard' %}nav-item-active{% endif %}">
+        <i class="fa-solid fa-chart-pie w-4 text-center text-sm"></i>
         <span>Dashboard Tồn Kho</span>
       </a>
-      <a href="/inbound" class="flex items-center gap-3 px-5 py-3 text-sm text-slate-400 hover:bg-slate-800 hover:text-sky-300 transition {% if active_page == 'inbound' %}nav-item-active{% endif %}">
-        <i class="fa-solid fa-box-archive w-5 text-center"></i>
-        <span>Lập Phiếu Nhập Kho</span>
+
+      <a href="/hang-hoa" class="flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold rounded-xl text-slate-300 hover:bg-slate-800 hover:text-white transition {% if active_page == 'hang_hoa' %}nav-item-active{% endif %}">
+        <i class="fa-solid fa-boxes-stacked w-4 text-center text-sm"></i>
+        <span>Danh Mục Hàng Hóa</span>
       </a>
-      <a href="/outbound" class="flex items-center gap-3 px-5 py-3 text-sm text-slate-400 hover:bg-slate-800 hover:text-sky-300 transition {% if active_page == 'outbound' %}nav-item-active{% endif %}">
-        <i class="fa-solid fa-dolly w-5 text-center"></i>
-        <span>Lập Phiếu Xuất Kho</span>
+
+      <a href="/nha-cung-cap" class="flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold rounded-xl text-slate-300 hover:bg-slate-800 hover:text-white transition {% if active_page == 'nha_cung_cap' %}nav-item-active{% endif %}">
+        <i class="fa-solid fa-truck-ramp-box w-4 text-center text-sm"></i>
+        <span>Nhà Cung Cấp</span>
       </a>
-      <a href="/the-kho" class="flex items-center gap-3 px-5 py-3 text-sm text-slate-400 hover:bg-slate-800 hover:text-sky-300 transition {% if active_page == 'the-kho' %}nav-item-active{% endif %}">
-        <i class="fa-solid fa-file-invoice w-5 text-center"></i>
+
+      {% if user and user.VaiTro in ['Admin', 'Thukho', 'Ketoan'] %}
+      <a href="/inbound" class="flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold rounded-xl text-slate-300 hover:bg-slate-800 hover:text-white transition {% if active_page == 'inbound' %}nav-item-active{% endif %}">
+        <i class="fa-solid fa-box-archive w-4 text-center text-sm"></i>
+        <span>Phiếu Nhập Kho</span>
+      </a>
+
+      <a href="/outbound" class="flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold rounded-xl text-slate-300 hover:bg-slate-800 hover:text-white transition {% if active_page == 'outbound' %}nav-item-active{% endif %}">
+        <i class="fa-solid fa-dolly w-4 text-center text-sm"></i>
+        <span>Phiếu Xuất Kho</span>
+      </a>
+      {% endif %}
+
+      <a href="/the-kho" class="flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold rounded-xl text-slate-300 hover:bg-slate-800 hover:text-white transition {% if active_page == 'the-kho' %}nav-item-active{% endif %}">
+        <i class="fa-solid fa-file-invoice w-4 text-center text-sm"></i>
         <span>Tra Cứu Thẻ Kho</span>
-      </a>
-      <a href="/docs" target="_blank" class="flex items-center gap-3 px-5 py-3 text-sm text-slate-400 hover:bg-slate-800 hover:text-sky-300 transition">
-        <i class="fa-solid fa-code w-5 text-center"></i>
-        <span>Swagger API Docs</span>
       </a>
     </nav>
 
     <!-- Sidebar Footer -->
-    <div class="p-4 border-t border-slate-800 bg-slate-950 text-xs text-slate-400 flex items-center justify-between">
+    <div class="p-3.5 border-t border-slate-800/80 bg-slate-900 text-[11px] text-slate-400 flex items-center justify-between">
       <div class="flex items-center gap-2">
         <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-        <span>PostgreSQL ACID: OK</span>
+        <span class="text-slate-400 font-medium">Bảo vệ ACID</span>
       </div>
-      <span class="text-slate-500">FastAPI Backend</span>
+      <span class="text-[10px] text-sky-400 font-mono font-semibold">Realtime v2.0</span>
     </div>
   </aside>
 
   <!-- MAIN VIEW CONTAINER -->
-  <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
-    
-    <!-- TOPBAR -->
-    <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 z-10">
+  <div class="flex-1 flex flex-col min-w-0 overflow-hidden bg-slate-100/70 dark:bg-slate-900 transition-colors">
+
+    <!-- TOPBAR (Light Blue / Clean Modern Header) -->
+    <header class="h-16 bg-white dark:bg-slate-850 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between px-6 z-10 transition-colors">
       <div class="flex items-center gap-3">
-        <h1 class="text-base font-bold text-slate-800 uppercase tracking-wide">
+        <h1 class="text-sm md:text-base font-bold text-slate-800 dark:text-white uppercase tracking-wide flex items-center gap-2">
           {% block header_title %}HỆ THỐNG QUẢN LÝ KHO THÔNG MINH SMARTLOGIS AI{% endblock %}
         </h1>
       </div>
 
-      <!-- User Profile & Actions -->
-      <div class="flex items-center gap-4">
+      <!-- Topbar Actions (Dark Mode, WebSocket, User Profile, Logout) -->
+      <div class="flex items-center gap-3">
+        <!-- Nút chuyển đổi Dark Mode / Light Mode hoàn thiện 100% -->
+        <button type="button" id="themeToggleBtn" onclick="toggleDarkMode()"
+          class="theme-toggle-btn flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-amber-300 border border-slate-200 dark:border-slate-700 transition shadow-xs cursor-pointer"
+          title="Chuyển chế độ Giao diện Sáng / Tối">
+          <i class="fa-solid fa-moon text-sky-600 text-sm"></i>
+          <span class="text-xs font-bold text-slate-700 dark:text-amber-300">Giao diện Tối</span>
+        </button>
+
+        <!-- Realtime WebSocket Status Badge -->
+        <div id="realtimeBadge" class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-all shadow-2xs">
+          <span id="realtimeDot" class="w-2 h-2 rounded-full bg-slate-400"></span>
+          <span id="realtimeText">Đồng bộ Realtime...</span>
+        </div>
+
         {% if user %}
-        <div class="flex items-center gap-3 border-r border-slate-200 pr-4">
-          <div class="w-8 h-8 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center font-bold text-xs">
-            <i class="fa-regular fa-user"></i>
+        <!-- User Profile Info -->
+        <div class="flex items-center gap-2.5 pl-2 border-l border-slate-200 dark:border-slate-800">
+          <div class="w-8 h-8 rounded-full bg-sky-100 dark:bg-sky-950/70 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 flex items-center justify-center font-bold text-xs shadow-xs">
+            <i class="fa-solid fa-user-check"></i>
           </div>
-          <div class="text-left">
-            <div class="text-xs font-bold text-slate-800 leading-tight">{{ user.HoTen }}</div>
-            <div class="text-[11px] text-slate-500">
-              <span class="bg-sky-50 text-sky-700 border border-sky-200 px-1.5 py-0.2 rounded font-medium">{{ user.VaiTro }}</span>
+          <div class="text-left hidden sm:block">
+            <div class="text-xs font-bold text-slate-800 dark:text-slate-100 leading-tight">{{ user.HoTen }}</div>
+            <div class="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
+              <span class="bg-sky-50 dark:bg-sky-950 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 px-1.5 py-0.2 rounded font-medium">{{ user.VaiTro }}</span>
+              <span class="text-slate-400 font-mono">@{{ user.TenDangNhap }}</span>
             </div>
           </div>
         </div>
-        <a href="/logout" onclick="handleLogout(event)" class="text-xs text-rose-600 hover:text-rose-800 font-semibold flex items-center gap-1.5 px-2.5 py-1.5 rounded hover:bg-rose-50 transition cursor-pointer">
-          <i class="fa-solid fa-right-from-bracket"></i> Đăng xuất
+
+        <!-- Nút Đăng Xuất -->
+        <a href="/logout" onclick="handleLogout(event)"
+          class="text-xs text-rose-600 dark:text-rose-400 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/50 font-semibold flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-transparent hover:border-rose-200 dark:hover:border-rose-900 transition cursor-pointer">
+          <i class="fa-solid fa-right-from-bracket"></i>
+          <span class="hidden md:inline">Đăng xuất</span>
         </a>
         {% else %}
-        <a href="/login" class="text-xs bg-sky-600 hover:bg-sky-700 text-white font-semibold px-4 py-2 rounded-md transition shadow-sm">
-          Đăng nhập
+        <a href="/login" class="text-xs bg-sky-600 hover:bg-sky-500 active:bg-sky-700 text-white font-bold px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-1.5 whitespace-nowrap">
+          <i class="fa-solid fa-right-to-bracket"></i>
+          <span>Đăng nhập</span>
         </a>
         {% endif %}
       </div>
     </header>
 
     <!-- CONTENT BODY (Scrollable) -->
-    <main class="flex-1 overflow-y-auto p-6">
+    <main class="flex-1 overflow-y-auto p-5 md:p-6 bg-slate-100/60 dark:bg-slate-900 transition-colors">
       {% block content %}{% endblock %}
     </main>
   </div>
 
-  <script src="/static/js/app.js"></script>
+  <!-- Realtime Toast Notifications Container (Fixed Top Right) -->
+  <div id="realtimeToastContainer" class="fixed top-5 right-5 z-50 space-y-2 pointer-events-none max-w-sm w-full"></div>
+
+  <script src="/static/js/app.js?v=20260909_6"></script>
+  <script src="/static/js/websocket.js?v=20260909_6"></script>
   {% block extra_scripts %}{% endblock %}
 </body>
-</html>\n
+</html>

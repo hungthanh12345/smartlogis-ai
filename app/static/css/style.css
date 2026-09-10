@@ -1,8 +1,158 @@
-﻿@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
 
-*, *::before, *::after {
+/* ==========================================================================
+   SMARTLOGIS AI - MODERN WAREHOUSE UI DESIGN SYSTEM (KIOTVIET STYLE)
+   ========================================================================== */
+
+/* 1. Chuẩn hóa typography tiếng Việt và tối ưu hóa hiển thị văn bản */
+html, body, button, input, select, textarea, p, h1, h2, h3, h4, h5, h6, span, div, a, td, th, label {
   font-family: 'Be Vietnam Pro', 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+}
+
+/* 2. Hiệu ứng chuyển động mượt mà khi chuyển đổi Dark Mode */
+html.dark {
+  color-scheme: dark;
+}
+
+body {
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+/* 3. Bảo vệ tuyệt đối font chữ không đè lên các biểu tượng FontAwesome */
+.fa, .fas, .far, .fal, .fad, .fab, .fa-solid, .fa-regular, .fa-brands, [class*="fa-"] {
+  font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands" !important;
+}
+
+.fa-solid, .fas {
+  font-weight: 900 !important;
+}
+
+.fa-brands, .fab {
+  font-weight: 400 !important;
+}
+
+/* 4. Thanh cuộn tinh tế, hiện đại */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+  background: #475569;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* 5. Điều hướng Sidebar - Trạng thái Active */
+.nav-item-active {
+  background-color: #0284c7 !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);
+}
+
+html.dark .nav-item-active {
+  background-color: #0369a1 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(3, 105, 161, 0.35);
+}
+
+/* 6. Nút chức năng phong cách KiotViet & Nhanh.vn */
+.btn-kiot-green {
+  background-color: #16a34a !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  transition: all 0.15s ease-in-out;
+}
+.btn-kiot-green:hover {
+  background-color: #15803d !important;
+  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.35);
+}
+
+.btn-kiot-blue {
+  background-color: #0284c7 !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  transition: all 0.15s ease-in-out;
+}
+.btn-kiot-blue:hover {
+  background-color: #0369a1 !important;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.35);
+}
+
+.btn-kiot-orange {
+  background-color: #ea580c !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  transition: all 0.15s ease-in-out;
+}
+.btn-kiot-orange:hover {
+  background-color: #c2410c !important;
+  box-shadow: 0 2px 8px rgba(234, 88, 12, 0.35);
+}
+
+/* 7. Định dạng thẻ bảng dữ liệu chuẩn kho chuyên nghiệp */
+.table-hover-row:hover {
+  background-color: #f8fafc;
+}
+html.dark .table-hover-row:hover {
+  background-color: #1e293b;
+}
+
+/* 8. Badge trạng thái tồn kho chuẩn hóa */
+.badge-status-safe {
+  background-color: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+html.dark .badge-status-safe {
+  background-color: rgba(6, 78, 59, 0.3);
+  color: #34d399;
+  border-color: rgba(5, 150, 105, 0.4);
+}
+
+.badge-status-warning {
+  background-color: #fff7ed;
+  color: #c2410c;
+  border: 1px solid #fed7aa;
+}
+html.dark .badge-status-warning {
+  background-color: rgba(124, 45, 18, 0.3);
+  color: #fb923c;
+  border-color: rgba(234, 88, 12, 0.4);
+}
+
+.badge-status-danger {
+  background-color: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+html.dark .badge-status-danger {
+  background-color: rgba(127, 29, 29, 0.3);
+  color: #f87171;
+  border-color: rgba(220, 38, 38, 0.4);
 }

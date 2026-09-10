@@ -1,62 +1,87 @@
 # app/services/ai_service.py
+"""
+AI Service Facade - Giao diện thống nhất cho các nghiệp vụ Trí tuệ Nhân tạo trong SmartLogis AI
+Kết hợp:
+1. Data Sanitizer & Aggregator (ai_data_service)
+2. Prompt Engineering (inventory_prompts)
+3. Gemini LLM Connector & Local Grounded Fallback Engine (gemini_service)
+"""
+
 from typing import List, Dict, Any
 from sqlalchemy.orm import Session
-from app.models.inventory_models import HangHoa, TonKho, TheKho
+
+from app.services.ai_data_service import aggregate_warehouse_data_30d, sanitize_inventory_payload
+from app.services.gemini_service import gemini_service
+
 
 def sanitize_inventory_data_for_ai(raw_records: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
-    Module Data Sanitizer:
-    Lo?i b? 100% th?ng tin ??n gi? nh?p nh?y c?m (DonGiaNhap, ThanhTien, GiaVon)
-    tr??c khi d? li?u ???c g?i ??n m? h?nh Gemini LLM ?? b?o v? b? m?t kinh doanh.
+    Module Data Sanitizer (Tương thích ngược):
+    Loại bỏ 100% thông tin đơn giá nhập nhạy cảm (DonGiaNhap, ThanhTien, GiaVon)
+    trước khi dữ liệu được gửi đến mô hình Gemini LLM để bảo vệ bí mật kinh doanh.
     """
-    sanitized = []
-    sensitive_keys = {"dongianhap", "don_gia_nhap", "thanhtien", "thanh_tien", "gia_von", "giavon"}
-    for item in raw_records:
-        cleaned_item = {k: v for k, v in item.items() if k.lower() not in sensitive_keys}
-        sanitized.append(cleaned_item)
-    return sanitized
+    return sanitize_inventory_payload(raw_records)
+
 
 def generate_ai_inventory_advisory(db: Session) -> dict:
     """
-    Tr? l? AI Gemini Advisory (Grounded Prompting):
-    Truy v?n s? li?u th?c t? trong CSDL v? sinh khuy?n ngh? ph?n t?ch kho ch?nh x?c 100%,
-    kh?ng b?a ??t s? li?u (Zero Hallucination), ??nh k?m x?c nh?n b?o to?n ACID.
+    Trợ lý AI Gemini Advisory (Phục vụ Widget Dashboard):
+    1. Tổng hợp số liệu kho 30 ngày và loại bỏ giá nhập.
+    2. Gửi dữ liệu tới GeminiService (kèm cơ chế Retry & Fallback).
+    3. Định dạng kết quả tương thích hoàn hảo với giao diện Dashboard.
     """
-    # L?y danh s?ch h?ng c? nguy c? c?n kho
-    low_stocks = db.query(HangHoa, TonKho).join(TonKho, HangHoa.MaHH == TonKho.MaHH)\
-        .filter(TonKho.SoLuongTon <= HangHoa.TonToiThieu).limit(5).all()
+    # 1. Trích xuất và làm sạch dữ liệu kho 30 ngày
+    warehouse_data = aggregate_warehouse_data_30d(db)
 
-    # Ki?m tra t?nh to?n v?n: xem c? d?ng n?o SoLuongTon < 0 kh?ng
-    negative_stock_count = db.query(TonKho).filter(TonKho.SoLuongTon < 0).count()
+    # 2. Sinh báo cáo phân tích
+    report = gemini_service.generate_inventory_report(warehouse_data, output_format="json")
 
-    burn_rate_items = []
-    for hh, tk in low_stocks:
-        thieu = hh.TonToiThieu - tk.SoLuongTon
-        burn_rate_items.append(f"{hh.TenHH} (M? {hh.MaHH}): T?n {tk.SoLuongTon}/{hh.TonToiThieu} {hh.MaDVT}, thi?u h?t {thieu}")
+    insights = report.get("insights_widget", [])
+    model_name = report.get("model_used", "SmartLogis Grounded Analytical Engine")
+    is_fallback = report.get("is_fallback", False)
+    meta = warehouse_data.get("metadata", {})
 
-    summary_text = "D? li?u kho th?i gian th?c ghi nh?n: " + ("; ".join(burn_rate_items) if burn_rate_items else "M?i m?t h?ng ?ang ? m?c an to?n.")
-
-    insights = [
-        {
-            "icon": "?",
-            "title": "Bi?n ??ng xu?t t?ng ??t bi?n (Burn Rate)",
-            "content": "M?t h?ng Xi m?ng Holcim PCB40 c? l??ng xu?t t?ng 65% trong 3 ng?y qua. D? b?o kho s? c?n ki?t trong 1,5 ng?y t?i n?u kh?ng nh?p th?m."
-        },
-        {
-            "icon": "??",
-            "title": "?? xu?t k? ho?ch nh?p h?ng t?i ?u",
-            "content": "Khuy?n ngh? ?u ti?n t?o Phi?u nh?p ngay cho 03 SKU nguy c?p nh?t: S?n Alkyd (+50 th?ng), Xi m?ng PCB40 (+200 bao), Que h?n ?i?n (+30 h?p)."
-        },
-        {
-            "icon": "???",
-            "title": "Tr?ng th?i to?n v?n C? s? d? li?u CSDL",
-            "content": f"100% giao d?ch tu?n th? nghi?m ng?t chu?n ACID. Ph?t hi?n {negative_stock_count} b?n ghi t?n ?m trong h? th?ng (??t chu?n b?o to?n to?n v?n d? li?u)."
-        }
-    ]
+    summary_text = (
+        f"Phân tích từ {meta.get('total_skus', 0)} SKU, "
+        f"phát hiện {meta.get('low_stock_sku_count', 0)} mặt hàng chạm tồn min "
+        f"và {meta.get('dead_stock_sku_count', 0)} mặt hàng đọng > 60 ngày."
+    )
 
     return {
-        "model_name": "Google Gemini 1.5 Flash (Grounded)",
-        "prompt_technique": "Grounded Prompting with System Instruction & Sanitized Input",
+        "model_name": model_name,
+        "prompt_technique": "Grounded Prompting with Strict Anti-Hallucination",
         "insights": insights,
-        "raw_summary": summary_text
+        "raw_summary": summary_text,
+        "is_fallback": is_fallback,
+        "markdown_report": report.get("markdown_report", ""),
+        "structured_report": {
+            "phan_1_tong_quan": report.get("phan_1_tong_quan", {}),
+            "phan_2_canh_bao_va_de_xuat_nhap": report.get("phan_2_canh_bao_va_de_xuat_nhap", []),
+            "phan_3_bien_dong_bat_thuong": report.get("phan_3_bien_dong_bat_thuong", {})
+        }
+    }
+
+
+def generate_full_ai_report(db: Session) -> dict:
+    """
+    Sinh báo cáo phân tích kho toàn diện phục vụ API POST /api/v1/ai/generate-report.
+    Đầu ra tuân thủ chuẩn 3 phần theo yêu cầu Giai đoạn 3:
+    - Phần 1: Tình trạng tồn kho tổng quan.
+    - Phần 2: Cảnh báo & Gợi ý nhập hàng khẩn cấp.
+    - Phần 3: Tóm tắt biến động bất thường (xuất tăng đột biến hoặc hàng tồn lâu > 60 ngày).
+    """
+    warehouse_data = aggregate_warehouse_data_30d(db)
+    report = gemini_service.generate_inventory_report(warehouse_data, output_format="json")
+
+    return {
+        "status": "success",
+        "model_used": report.get("model_used", "SmartLogis AI"),
+        "is_fallback": report.get("is_fallback", False),
+        "fallback_reason": report.get("fallback_reason"),
+        "data_context_summary": warehouse_data.get("metadata", {}),
+        "phan_1_tong_quan": report.get("phan_1_tong_quan", {}),
+        "phan_2_canh_bao_va_de_xuat_nhap": report.get("phan_2_canh_bao_va_de_xuat_nhap", []),
+        "phan_3_bien_dong_bat_thuong": report.get("phan_3_bien_dong_bat_thuong", {}),
+        "insights_widget": report.get("insights_widget", []),
+        "markdown_report": report.get("markdown_report", "")
     }

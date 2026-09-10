@@ -2,8 +2,8 @@ import os
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = "SmartLogis AI - H? th?ng Qu?n l? Kho T?ch h?p AI"
-    VERSION: str = "2.0.0"
+    PROJECT_NAME: str = "SmartLogis AI - Hệ thống Quản lý Kho Thông minh Tích hợp AI"
+    VERSION: str = "4.0.0"
     API_V1_STR: str = "/api/v1"
     
     # Secret Key & JWT Config

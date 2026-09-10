@@ -16,6 +16,8 @@ ENV/
 # Database & Logs
 *.log
 *.db
+*.db-shm
+*.db-wal
 *.sqlite3
 test_results.log
 
@@ -24,3 +26,13 @@ test_results.log
 .idea/
 .DS_Store
 Thumbs.db
+
+# SSL Certificates & Secrets
+certbot/conf/live/
+certbot/conf/*.key
+certbot/conf/*.crt
+certbot/conf/archive/
+certbot/conf/keys/
+!certbot/conf/.gitkeep
+!certbot/www/.gitkeep
+

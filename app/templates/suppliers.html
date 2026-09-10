@@ -1,0 +1,837 @@
+{% extends "base.html" %}
+
+{% block title %}Quản Lý Nhà Cung Cấp - SmartLogis AI{% endblock %}
+{% block header_title %}DANH BẠ ĐỐI TÁC & NHÀ CUNG CẤP VẬT TƯ THIẾT BỊ{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- ========================================================================= -->
+  <!-- 4 THẺ KPI TỔNG QUAN PHÂN HỆ NHÀ CUNG CẤP -->
+  <!-- ========================================================================= -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    
+    <!-- KPI 1: Tổng số NCC -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5 shadow-xs hover:shadow-md transition">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs font-bold text-sky-800 dark:text-sky-400 uppercase tracking-wider">Tổng Nhà Cung Cấp</p>
+          <h3 class="text-2xl font-black text-slate-800 dark:text-white mt-1" id="kpi-tong-ncc">{{ kpis.TongNCC if kpis else suppliers|length }}</h3>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1">
+            <i class="fa-solid fa-database text-sky-500"></i> Trong CSDL hệ thống
+          </p>
+        </div>
+        <div class="w-12 h-12 rounded-2xl bg-sky-50 dark:bg-sky-950/70 border border-sky-100 dark:border-sky-900/50 flex items-center justify-center text-sky-600 dark:text-sky-400 text-xl">
+          <i class="fa-solid fa-truck-field"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI 2: NCC Đang có giao dịch -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5 shadow-xs hover:shadow-md transition">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs font-bold text-emerald-800 dark:text-emerald-400 uppercase tracking-wider">Đang Có Giao Dịch</p>
+          <h3 class="text-2xl font-black text-slate-800 dark:text-white mt-1" id="kpi-ncc-active">{{ kpis.NCCActive if kpis else 0 }}</h3>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1">
+            <i class="fa-solid fa-circle-check text-emerald-500"></i> Đã phát sinh phiếu nhập
+          </p>
+        </div>
+        <div class="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-100 dark:border-emerald-900/50 flex items-center justify-center text-emerald-600 dark:text-emerald-400 text-xl">
+          <i class="fa-solid fa-handshake"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI 3: Tổng giá trị mua hàng -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5 shadow-xs hover:shadow-md transition">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs font-bold text-amber-800 dark:text-amber-400 uppercase tracking-wider">Tổng Chi Phí Mua Hàng</p>
+          <h3 class="text-xl font-black text-slate-800 dark:text-white mt-1" id="kpi-tong-tien">
+            {{ "{:,.0f}".format(kpis.TongChiTieu) if kpis else 0 }} <span class="text-xs font-bold text-amber-600">VNĐ</span>
+          </h3>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1">
+            <i class="fa-solid fa-receipt text-amber-500"></i> Lũy kế từ phiếu nhập
+          </p>
+        </div>
+        <div class="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/70 border border-amber-100 dark:border-amber-900/50 flex items-center justify-center text-amber-600 dark:text-amber-400 text-xl">
+          <i class="fa-solid fa-coins"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI 4: Đối tác lớn nhất -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5 shadow-xs hover:shadow-md transition">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs font-bold text-indigo-800 dark:text-indigo-400 uppercase tracking-wider">Đối Tác Chủ Lực</p>
+          <h3 class="text-sm font-extrabold text-slate-800 dark:text-white mt-1 truncate max-w-[170px]" title="{{ kpis.TopNCC if kpis else 'Chưa có' }}" id="kpi-top-ncc">
+            {{ kpis.TopNCC if kpis else 'Chưa có' }}
+          </h3>
+          <p class="text-[11px] text-indigo-600 dark:text-indigo-400 font-semibold mt-1 flex items-center gap-1">
+            <i class="fa-solid fa-award text-indigo-500"></i>
+            {{ "{:,.0f}".format(kpis.TopNCCTien) if kpis and kpis.TopNCCTien else 0 }} VNĐ
+          </p>
+        </div>
+        <div class="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/70 border border-indigo-100 dark:border-indigo-900/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 text-xl">
+          <i class="fa-solid fa-crown"></i>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- BỘ LỌC, TÌM KIẾM & THANH CÔNG CỤ -->
+  <!-- ========================================================================= -->
+  <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 md:p-5 shadow-xs flex flex-col lg:flex-row items-center justify-between gap-4 transition">
+    
+    <!-- Tìm kiếm -->
+    <div class="relative flex-1 w-full max-w-lg">
+      <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3.5 text-slate-400 text-sm pointer-events-none"></i>
+      <input type="text" id="supplierSearchInput" onkeyup="filterSuppliersTable()" 
+             placeholder="Tìm kiếm theo mã, tên công ty, số điện thoại, email, địa chỉ..." 
+             class="w-full pl-10 pr-4 py-2.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 text-slate-800 dark:text-slate-100 placeholder-slate-400 transition">
+    </div>
+
+    <!-- Bộ lọc trạng thái & Hành động -->
+    <div class="flex flex-wrap items-center justify-end gap-3 w-full lg:w-auto">
+      
+      <!-- Filter Tabs -->
+      <div class="inline-flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+        <button type="button" onclick="setFilterStatus('all', this)" id="tab-all" class="filter-tab px-3 py-1.5 rounded-lg bg-white dark:bg-slate-700 shadow-xs text-sky-700 dark:text-sky-300 font-bold transition">
+          Tất cả ({{ suppliers|length }})
+        </button>
+        <button type="button" onclick="setFilterStatus('active', this)" id="tab-active" class="filter-tab px-3 py-1.5 rounded-lg hover:text-slate-900 dark:hover:text-white transition">
+          Có giao dịch
+        </button>
+        <button type="button" onclick="setFilterStatus('new', this)" id="tab-new" class="filter-tab px-3 py-1.5 rounded-lg hover:text-slate-900 dark:hover:text-white transition">
+          Mới tạo
+        </button>
+      </div>
+
+      <!-- Xuất Excel Danh Bạ -->
+      <a href="/api/v1/reports/export/suppliers-excel" download 
+         class="inline-flex items-center gap-2 px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs hover:shadow transition cursor-pointer whitespace-nowrap">
+        <i class="fa-solid fa-file-excel"></i>
+        <span>Xuất Excel Danh Bạ</span>
+      </a>
+
+      <!-- Thêm Nhà Cung Cấp Mới -->
+      {% if user and user.VaiTro in ['Admin', 'Thukho'] %}
+      <button type="button" onclick="openCreateSupplierModal()" 
+              class="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs hover:shadow transition cursor-pointer whitespace-nowrap">
+        <i class="fa-solid fa-plus"></i>
+        <span>+ Thêm Nhà Cung Cấp</span>
+      </button>
+      {% endif %}
+
+    </div>
+
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- BẢNG DỮ LIỆU NHÀ CUNG CẤP -->
+  <!-- ========================================================================= -->
+  <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
+    
+    <!-- Table Header Info -->
+    <div class="px-6 py-4 border-b border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-2 bg-slate-50/80">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-sky-100 flex items-center justify-center text-sky-600">
+          <i class="fa-solid fa-truck-ramp-box"></i>
+        </div>
+        <div>
+          <h2 class="text-sm font-bold text-slate-800">
+            Danh Sách Đối Tác & Nhà Cung Cấp
+          </h2>
+          <p class="text-[11px] text-slate-500">Dữ liệu nguồn cung ứng đồng bộ trực tiếp từ CSDL</p>
+        </div>
+      </div>
+      <span id="supplierCountBadge" class="text-xs bg-sky-100 text-sky-800 font-bold px-3 py-1 rounded-full border border-sky-200">
+        {{ suppliers|length }} đối tác hiển thị
+      </span>
+    </div>
+
+    <!-- Table Body -->
+    <div class="overflow-x-auto">
+      <table id="suppliersTable" class="w-full text-left text-xs border-collapse">
+        <thead>
+          <tr class="bg-slate-100/80 text-slate-600 uppercase text-[11px] font-bold border-b border-slate-200">
+            <th class="py-3 px-4 w-12 text-center">STT</th>
+            <th class="py-3 px-4 w-32">Mã NCC</th>
+            <th class="py-3 px-4 min-w-[200px]">Tên Công Ty / Doanh Nghiệp</th>
+            <th class="py-3 px-4 min-w-[180px]">Thông Tin Liên Hệ</th>
+            <th class="py-3 px-4 min-w-[180px]">Địa Chỉ Trụ Sở</th>
+            <th class="py-3 px-4 text-center w-24">Đơn Nhập</th>
+            <th class="py-3 px-4 text-right min-w-[130px]">Tổng Tiền Nhập</th>
+            <th class="py-3 px-4 text-center w-28">Trạng Thái</th>
+            <th class="py-3 px-4 text-right w-28">Thao Tác</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100" id="suppliersTableBody">
+          {% for s in suppliers %}
+          {% set has_orders = (s.SoPhieuNhap and s.SoPhieuNhap > 0) %}
+          <tr class="hover:bg-slate-50/80 transition supplier-row" 
+              data-code="{{ s.MaNCC|lower }}" 
+              data-name="{{ s.TenNCC|lower }}"
+              data-phone="{{ (s.SoDienThoai or '')|lower }}"
+              data-email="{{ (s.Email or '')|lower }}"
+              data-address="{{ (s.DiaChi or '')|lower }}"
+              data-has-orders="{{ 'true' if has_orders else 'false' }}">
+            
+            <td class="py-3.5 px-4 text-center text-slate-400 font-medium">{{ loop.index }}</td>
+            
+            <td class="py-3.5 px-4">
+              <span class="font-mono font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                {{ s.MaNCC }}
+              </span>
+            </td>
+
+            <td class="py-3.5 px-4">
+              <div class="font-bold text-slate-800">{{ s.TenNCC }}</div>
+              {% if s.NgayNhapGanNhat %}
+              <div class="text-[10px] text-slate-400 mt-0.5 flex items-center gap-1">
+                <i class="fa-regular fa-clock text-slate-400"></i> Giao dịch gần nhất: <span class="font-semibold text-slate-600">{{ s.NgayNhapGanNhat }}</span>
+              </div>
+              {% endif %}
+            </td>
+
+            <td class="py-3.5 px-4 space-y-1">
+              {% if s.SoDienThoai %}
+              <div class="flex items-center gap-1.5 text-slate-700 font-medium">
+                <i class="fa-solid fa-phone text-slate-400 text-[10px]"></i>
+                <a href="tel:{{ s.SoDienThoai }}" class="hover:text-sky-600 transition">{{ s.SoDienThoai }}</a>
+              </div>
+              {% else %}
+              <span class="text-slate-400 italic text-[11px]">Chưa có SĐT</span>
+              {% endif %}
+
+              {% if s.Email %}
+              <div class="flex items-center gap-1.5 text-slate-500 text-[11px]">
+                <i class="fa-regular fa-envelope text-slate-400 text-[10px]"></i>
+                <a href="mailto:{{ s.Email }}" class="hover:text-sky-600 transition truncate max-w-[150px]">{{ s.Email }}</a>
+              </div>
+              {% endif %}
+            </td>
+
+            <td class="py-3.5 px-4 text-slate-600 leading-relaxed">
+              {{ s.DiaChi or "--" }}
+            </td>
+
+            <td class="py-3.5 px-4 text-center">
+              {% if has_orders %}
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-sky-100 text-sky-800">
+                {{ s.SoPhieuNhap }} đơn
+              </span>
+              {% else %}
+              <span class="text-slate-400 font-medium">0</span>
+              {% endif %}
+            </td>
+
+            <td class="py-3.5 px-4 text-right font-bold text-slate-800">
+              {% if s.TongGiaTriNhap and s.TongGiaTriNhap > 0 %}
+              <span class="text-emerald-700 font-extrabold">{{ "{:,.0f}".format(s.TongGiaTriNhap) }} đ</span>
+              {% else %}
+              <span class="text-slate-400">0 đ</span>
+              {% endif %}
+            </td>
+
+            <td class="py-3.5 px-4 text-center">
+              {% if has_orders %}
+              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Đang giao dịch
+              </span>
+              {% else %}
+              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span> Mới tạo
+              </span>
+              {% endif %}
+            </td>
+
+            <td class="py-3.5 px-4 text-right space-x-1 whitespace-nowrap">
+              <!-- Xem chi tiết & Lịch sử -->
+              <button onclick="viewSupplierDetail('{{ s.MaNCC }}')"
+                      title="Xem chi tiết & lịch sử nhập hàng"
+                      class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-sky-50 text-sky-600 hover:bg-sky-600 hover:text-white transition">
+                <i class="fa-solid fa-eye text-xs"></i>
+              </button>
+
+              {% if user and user.VaiTro in ['Admin', 'Thukho'] %}
+              <!-- Sửa -->
+              <button onclick="openEditSupplierModal(this)"
+                      data-mancc="{{ s.MaNCC }}"
+                      data-tenncc="{{ s.TenNCC }}"
+                      data-diachi="{{ s.DiaChi or '' }}"
+                      data-sodienthoai="{{ s.SoDienThoai or '' }}"
+                      data-email="{{ s.Email or '' }}"
+                      title="Chỉnh sửa thông tin"
+                      class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-600 hover:text-white transition">
+                <i class="fa-solid fa-pen-to-square text-xs"></i>
+              </button>
+              <!-- Xóa -->
+              <button onclick="confirmDeleteSupplier('{{ s.MaNCC }}', '{{ s.TenNCC }}')"
+                      title="Xóa đối tác"
+                      class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white transition">
+                <i class="fa-solid fa-trash-can text-xs"></i>
+              </button>
+              {% else %}
+              <span class="text-[11px] text-slate-400 italic">Chỉ đọc</span>
+              {% endif %}
+            </td>
+
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="9" class="py-12 text-center text-slate-400">
+              <div class="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-2 text-slate-400 text-xl">
+                <i class="fa-solid fa-truck"></i>
+              </div>
+              <div class="font-bold text-slate-600 text-sm">Chưa có nhà cung cấp nào</div>
+              <p class="text-xs text-slate-400 mt-1">Bấm nút "Thêm Nhà Cung Cấp" ở trên để khởi tạo đối tác đầu tiên.</p>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <!-- Empty State -->
+      <div id="emptySearchState" class="hidden p-12 text-center">
+        <div class="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3 text-slate-400 text-2xl">
+          <i class="fa-solid fa-truck"></i>
+        </div>
+        <h4 class="text-sm font-bold text-slate-700">Không tìm thấy nhà cung cấp phù hợp</h4>
+        <p class="text-xs text-slate-500 mt-1">Vui lòng thử lại với từ khóa tìm kiếm hoặc bộ lọc trạng thái khác.</p>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<!-- ========================================================================= -->
+<!-- MODAL 1: THÊM NHÀ CUNG CẤP MỚI -->
+<!-- ========================================================================= -->
+<div id="createSupplierModal" onclick="if(event.target === this) closeCreateSupplierModal()" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
+    
+    <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+      <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+        <i class="fa-solid fa-handshake text-sky-600"></i> Thêm Nhà Cung Cấp Mới
+      </h3>
+      <button onclick="closeCreateSupplierModal()" class="w-7 h-7 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200 flex items-center justify-center transition">
+        <i class="fa-solid fa-xmark text-base"></i>
+      </button>
+    </div>
+
+    <form id="createSupplierForm" onsubmit="submitCreateSupplier(event)" class="p-6 space-y-4 text-xs">
+      <div>
+        <label class="block font-bold text-slate-700 mb-1">Mã Nhà Cung Cấp (*)</label>
+        <input type="text" id="create_MaNCC" required placeholder="VD: NCC-HOAPHAT" 
+               class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl uppercase font-mono font-bold focus:ring-2 focus:ring-sky-500 outline-none transition">
+        <p class="text-[11px] text-slate-400 mt-1">Mã đối tác viết hoa, không dấu, duy nhất trong hệ thống.</p>
+      </div>
+
+      <div>
+        <label class="block font-bold text-slate-700 mb-1">Tên Đầy Đủ Công Ty / Đối Tác (*)</label>
+        <input type="text" id="create_TenNCC" required placeholder="VD: Tập đoàn Thép Hòa Phát" 
+               class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none transition">
+      </div>
+
+      <div>
+        <label class="block font-bold text-slate-700 mb-1">Địa Chỉ Trụ Sở / Kho Xuất</label>
+        <input type="text" id="create_DiaChi" placeholder="VD: KCN Phố Nối A, Xã Giai Phạm, Hưng Yên" 
+               class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none transition">
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Số Điện Thoại Liên Hệ</label>
+          <input type="text" id="create_SoDienThoai" placeholder="024.xxxx.xxxx" 
+                 class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none transition">
+        </div>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Hòm Thư Email</label>
+          <input type="email" id="create_Email" placeholder="contact@hoaphat.com.vn" 
+                 class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none transition">
+        </div>
+      </div>
+
+      <div class="pt-3 border-t border-slate-100 flex justify-end gap-3">
+        <button type="button" onclick="closeCreateSupplierModal()" 
+                class="px-4 py-2 border border-slate-300 text-slate-600 rounded-xl hover:bg-slate-100 font-semibold transition">Hủy</button>
+        <button type="submit" id="btnCreateSupplier"
+                class="px-5 py-2 bg-sky-600 text-white rounded-xl hover:bg-sky-700 font-bold shadow transition flex items-center gap-2">
+          <i class="fa-solid fa-floppy-disk"></i>
+          <span>Lưu Đối Tác</span>
+        </button>
+      </div>
+    </form>
+
+  </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- MODAL 2: CẬP NHẬT NHÀ CUNG CẤP -->
+<!-- ========================================================================= -->
+<div id="editSupplierModal" onclick="if(event.target === this) closeEditSupplierModal()" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
+    
+    <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+      <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+        <i class="fa-solid fa-pen-to-square text-amber-500"></i> Cập Nhật Thông Tin Nhà Cung Cấp
+      </h3>
+      <button onclick="closeEditSupplierModal()" class="w-7 h-7 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200 flex items-center justify-center transition">
+        <i class="fa-solid fa-xmark text-base"></i>
+      </button>
+    </div>
+
+    <form id="editSupplierForm" onsubmit="submitEditSupplier(event)" class="p-6 space-y-4 text-xs">
+      <input type="hidden" id="edit_MaNCC">
+      
+      <div>
+        <label class="block font-bold text-slate-500 mb-1">Mã Nhà Cung Cấp (Cố định)</label>
+        <input type="text" id="edit_MaNCC_Display" disabled 
+               class="w-full px-3.5 py-2.5 bg-slate-100 border border-slate-200 rounded-xl font-mono font-bold text-slate-700">
+      </div>
+
+      <div>
+        <label class="block font-bold text-slate-700 mb-1">Tên Đầy Đủ Đối Tác (*)</label>
+        <input type="text" id="edit_TenNCC" required 
+               class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none transition">
+      </div>
+
+      <div>
+        <label class="block font-bold text-slate-700 mb-1">Địa Chỉ Trụ Sở / Kho Hàng</label>
+        <input type="text" id="edit_DiaChi" 
+               class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none transition">
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Số Điện Thoại</label>
+          <input type="text" id="edit_SoDienThoai" 
+                 class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none transition">
+        </div>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Hòm Thư Email</label>
+          <input type="email" id="edit_Email" 
+                 class="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-sky-500 outline-none transition">
+        </div>
+      </div>
+
+      <div class="pt-3 border-t border-slate-100 flex justify-end gap-3">
+        <button type="button" onclick="closeEditSupplierModal()" 
+                class="px-4 py-2 border border-slate-300 text-slate-600 rounded-xl hover:bg-slate-100 font-semibold transition">Hủy</button>
+        <button type="submit" id="btnEditSupplier"
+                class="px-5 py-2 bg-amber-600 text-white rounded-xl hover:bg-amber-700 font-bold shadow transition flex items-center gap-2">
+          <i class="fa-solid fa-check"></i>
+          <span>Lưu Cập Nhật</span>
+        </button>
+      </div>
+    </form>
+
+  </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- MODAL 3: XEM CHI TIẾT & LỊCH SỬ GIAO DỊCH NHÀ CUNG CẤP -->
+<!-- ========================================================================= -->
+<div id="detailSupplierModal" onclick="if(event.target === this) closeSupplierDetailModal()" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden border border-slate-200 flex flex-col animate-in fade-in zoom-in-95 duration-200">
+    
+    <!-- Modal Header -->
+    <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-sky-100 flex items-center justify-center text-sky-600 text-lg">
+          <i class="fa-solid fa-building"></i>
+        </div>
+        <div>
+          <h3 class="font-bold text-slate-800 text-sm" id="detail_TenNCC">Tên Nhà Cung Cấp</h3>
+          <div class="flex items-center gap-2 mt-0.5">
+            <span class="font-mono text-xs font-bold text-slate-600 bg-slate-200 px-1.5 py-0.2 rounded" id="detail_MaNCC">NCC-XX</span>
+            <span class="text-[11px] text-slate-400" id="detail_StatusBadge"></span>
+          </div>
+        </div>
+      </div>
+      <button onclick="closeSupplierDetailModal()" class="w-7 h-7 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200 flex items-center justify-center transition">
+        <i class="fa-solid fa-xmark text-base"></i>
+      </button>
+    </div>
+
+    <!-- Modal Scroll Content -->
+    <div class="p-6 overflow-y-auto space-y-5 text-xs flex-1">
+      
+      <!-- Thông tin liên lạc & Thống kê -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        
+        <!-- Card 1: Liên hệ -->
+        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/80 space-y-2">
+          <p class="font-bold text-slate-700 flex items-center gap-1.5">
+            <i class="fa-solid fa-address-book text-sky-600"></i> Thông Tin Liên Hệ
+          </p>
+          <div class="text-slate-600 space-y-1 text-[11px]">
+            <div><b>SĐT:</b> <span id="detail_SoDienThoai">--</span></div>
+            <div><b>Email:</b> <span id="detail_Email">--</span></div>
+            <div><b>Địa chỉ:</b> <span id="detail_DiaChi">--</span></div>
+          </div>
+        </div>
+
+        <!-- Card 2: Số đơn nhập -->
+        <div class="bg-sky-50/60 p-4 rounded-xl border border-sky-200/80 flex flex-col justify-center">
+          <p class="text-[11px] font-bold text-sky-800 uppercase tracking-wider">Số Phiếu Nhập Kho</p>
+          <h4 class="text-2xl font-black text-sky-900 mt-1" id="detail_SoPhieuNhap">0</h4>
+          <p class="text-[10px] text-slate-500 mt-1">Lần nhập hàng thành công</p>
+        </div>
+
+        <!-- Card 3: Tổng tiền -->
+        <div class="bg-emerald-50/60 p-4 rounded-xl border border-emerald-200/80 flex flex-col justify-center">
+          <p class="text-[11px] font-bold text-emerald-800 uppercase tracking-wider">Tổng Giá Trị Giao Dịch</p>
+          <h4 class="text-xl font-black text-emerald-800 mt-1" id="detail_TongTienNhap">0 đ</h4>
+          <p class="text-[10px] text-slate-500 mt-1" id="detail_NgayNhapGanNhat">Chưa có giao dịch</p>
+        </div>
+
+      </div>
+
+      <!-- Danh Sách Phiếu Nhập Kho Liên Kết -->
+      <div class="space-y-3">
+        <div class="flex items-center justify-between">
+          <h4 class="font-bold text-slate-800 text-xs flex items-center gap-1.5">
+            <i class="fa-solid fa-file-invoice text-sky-600"></i> Lịch Sử Phiếu Nhập Kho Liên Kết
+          </h4>
+          <a href="/inbound" id="detail_btnCreateInbound" 
+             class="text-[11px] text-sky-600 hover:text-sky-800 font-semibold flex items-center gap-1">
+            <i class="fa-solid fa-plus-circle"></i> Tạo phiếu nhập mới với NCC này
+          </a>
+        </div>
+
+        <div class="border border-slate-200 rounded-xl overflow-hidden">
+          <table class="w-full text-left text-[11px] border-collapse">
+            <thead>
+              <tr class="bg-slate-100 text-slate-600 font-bold border-b border-slate-200">
+                <th class="py-2.5 px-3 w-10 text-center">STT</th>
+                <th class="py-2.5 px-3">Mã Phiếu</th>
+                <th class="py-2.5 px-3">Ngày Lập</th>
+                <th class="py-2.5 px-3">Người Lập</th>
+                <th class="py-2.5 px-3 text-center">Số Mặt Hàng</th>
+                <th class="py-2.5 px-3 text-right">Tổng Tiền</th>
+                <th class="py-2.5 px-3">Ghi Chú</th>
+              </tr>
+            </thead>
+            <tbody id="detail_LichSuTableBody" class="divide-y divide-slate-100">
+              <!-- Sẽ render động qua JS -->
+            </tbody>
+          </table>
+          <div id="detail_LichSuEmpty" class="hidden p-6 text-center text-slate-400 text-xs">
+            <i class="fa-solid fa-inbox text-2xl mb-1 block"></i>
+            Chưa có phiếu nhập kho nào với nhà cung cấp này.
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Modal Footer -->
+    <div class="px-6 py-3 border-t border-slate-200 bg-slate-50 flex justify-end">
+      <button type="button" onclick="closeSupplierDetailModal()" 
+              class="px-5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl text-xs transition">
+        Đóng
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- TOAST THÔNG BÁO HIỆN ĐẠI -->
+<!-- ========================================================================= -->
+<div id="toastContainer" class="fixed top-5 right-5 z-50 space-y-2 pointer-events-none"></div>
+
+<!-- ========================================================================= -->
+<!-- JAVASCRIPT XỬ LÝ NGHIỆP VỤ -->
+<!-- ========================================================================= -->
+<script>
+  let currentFilter = 'all';
+
+  // --- HỆ THỐNG TOAST NOTIFICATION ---
+  function showToast(message, type = 'success') {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = `pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-lg border text-xs font-semibold transform transition-all duration-300 translate-y-[-10px] opacity-0 ${
+      type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 
+      type === 'error' ? 'bg-rose-50 border-rose-200 text-rose-800' : 
+      'bg-sky-50 border-sky-200 text-sky-800'
+    }`;
+    
+    const icon = type === 'success' ? 'fa-circle-check text-emerald-600' :
+                 type === 'error' ? 'fa-circle-xmark text-rose-600' : 'fa-circle-info text-sky-600';
+                 
+    toast.innerHTML = `<i class="fa-solid ${icon} text-base"></i> <span>${message}</span>`;
+    container.appendChild(toast);
+
+    setTimeout(() => {
+      toast.classList.remove('translate-y-[-10px]', 'opacity-0');
+    }, 10);
+
+    setTimeout(() => {
+      toast.classList.add('opacity-0', 'translate-y-[-10px]');
+      setTimeout(() => toast.remove(), 300);
+    }, 3500);
+  }
+
+  // --- LỌC TÌM KIẾM BẢNG DỮ LIỆU ---
+  function setFilterStatus(status, btn) {
+    currentFilter = status;
+    document.querySelectorAll('.filter-tab').forEach(t => {
+      t.classList.remove('bg-white', 'shadow-sm', 'text-sky-700', 'font-bold');
+      t.classList.add('text-slate-600');
+    });
+    btn.classList.add('bg-white', 'shadow-sm', 'text-sky-700', 'font-bold');
+    btn.classList.remove('text-slate-600');
+    filterSuppliersTable();
+  }
+
+  function filterSuppliersTable() {
+    const searchVal = document.getElementById('supplierSearchInput').value.toLowerCase().trim();
+    const rows = document.querySelectorAll('.supplier-row');
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+      const code = row.getAttribute('data-code') || '';
+      const name = row.getAttribute('data-name') || '';
+      const phone = row.getAttribute('data-phone') || '';
+      const email = row.getAttribute('data-email') || '';
+      const address = row.getAttribute('data-address') || '';
+      const hasOrders = row.getAttribute('data-has-orders') === 'true';
+
+      const matchSearch = !searchVal || 
+                          code.includes(searchVal) || 
+                          name.includes(searchVal) || 
+                          phone.includes(searchVal) || 
+                          email.includes(searchVal) || 
+                          address.includes(searchVal);
+
+      let matchFilter = true;
+      if (currentFilter === 'active') matchFilter = hasOrders;
+      if (currentFilter === 'new') matchFilter = !hasOrders;
+
+      if (matchSearch && matchFilter) {
+        row.style.display = '';
+        visibleCount++;
+      } else {
+        row.style.display = 'none';
+      }
+    });
+
+    document.getElementById('supplierCountBadge').innerText = `${visibleCount} đối tác hiển thị`;
+    
+    const emptyState = document.getElementById('emptySearchState');
+    if (visibleCount === 0) {
+      emptyState.classList.remove('hidden');
+    } else {
+      emptyState.classList.add('hidden');
+    }
+  }
+
+  // --- MODAL XEM CHI TIẾT & LỊCH SỬ ---
+  async function viewSupplierDetail(ma_ncc) {
+    try {
+      const res = await fetch(`/api/v1/kho/suppliers/${encodeURIComponent(ma_ncc)}`);
+      if (!res.ok) {
+        const err = await res.json();
+        showToast(err.detail || 'Không thể tải thông tin đối tác', 'error');
+        return;
+      }
+      const data = await res.json();
+
+      document.getElementById('detail_TenNCC').innerText = data.TenNCC;
+      document.getElementById('detail_MaNCC').innerText = data.MaNCC;
+      document.getElementById('detail_SoDienThoai').innerText = data.SoDienThoai || 'Chưa cập nhật';
+      document.getElementById('detail_Email').innerText = data.Email || 'Chưa cập nhật';
+      document.getElementById('detail_DiaChi').innerText = data.DiaChi || 'Chưa cập nhật';
+      document.getElementById('detail_SoPhieuNhap').innerText = data.SoPhieuNhap || 0;
+      document.getElementById('detail_TongTienNhap').innerText = (data.TongGiaTriNhap || 0).toLocaleString('vi-VN') + ' đ';
+      
+      const badge = document.getElementById('detail_StatusBadge');
+      if (data.SoPhieuNhap > 0) {
+        badge.innerHTML = '<span class="text-emerald-700 font-bold bg-emerald-100 px-2 py-0.5 rounded-full">Đang giao dịch</span>';
+        document.getElementById('detail_NgayNhapGanNhat').innerText = 'Gần nhất: ' + (data.NgayNhapGanNhat || '--');
+      } else {
+        badge.innerHTML = '<span class="text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">Chưa có giao dịch</span>';
+        document.getElementById('detail_NgayNhapGanNhat').innerText = 'Chưa phát sinh đơn hàng';
+      }
+
+      // Render lịch sử phiếu nhập
+      const tbody = document.getElementById('detail_LichSuTableBody');
+      const emptyDiv = document.getElementById('detail_LichSuEmpty');
+      tbody.innerHTML = '';
+
+      if (data.LichSuNhap && data.LichSuNhap.length > 0) {
+        emptyDiv.classList.add('hidden');
+        data.LichSuNhap.forEach((pn, i) => {
+          const ngay = new Date(pn.NgayNhap).toLocaleDateString('vi-VN');
+          const tr = document.createElement('tr');
+          tr.className = 'hover:bg-slate-50 transition';
+          tr.innerHTML = `
+            <td class="py-2.5 px-3 text-center text-slate-400 font-medium">${i + 1}</td>
+            <td class="py-2.5 px-3 font-mono font-bold text-slate-800">${pn.MaPN}</td>
+            <td class="py-2.5 px-3 text-slate-600">${ngay}</td>
+            <td class="py-2.5 px-3 font-medium text-slate-700">${pn.NguoiLap || 'Thủ kho'}</td>
+            <td class="py-2.5 px-3 text-center font-bold text-sky-700">${pn.SoMatHang} SKU</td>
+            <td class="py-2.5 px-3 text-right font-extrabold text-emerald-700">${(pn.TongTien || 0).toLocaleString('vi-VN')} đ</td>
+            <td class="py-2.5 px-3 text-slate-500 italic truncate max-w-[150px]" title="${pn.GhiChu || ''}">${pn.GhiChu || '--'}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } else {
+        emptyDiv.classList.remove('hidden');
+      }
+
+      // Cập nhật đường link Tạo phiếu nhập kèm mã NCC
+      const btnInbound = document.getElementById('detail_btnCreateInbound');
+      if (btnInbound) {
+        btnInbound.href = `/inbound?supplier=${encodeURIComponent(data.MaNCC)}`;
+      }
+
+      document.getElementById('detailSupplierModal').classList.remove('hidden');
+    } catch (err) {
+      showToast('Lỗi kết nối khi tải chi tiết: ' + err.message, 'error');
+    }
+  }
+
+  function closeSupplierDetailModal() {
+    document.getElementById('detailSupplierModal').classList.add('hidden');
+  }
+
+  // --- MODAL THÊM NCC ---
+  function openCreateSupplierModal() {
+    document.getElementById('createSupplierForm').reset();
+    document.getElementById('createSupplierModal').classList.remove('hidden');
+    document.getElementById('create_MaNCC').focus();
+  }
+  function closeCreateSupplierModal() {
+    document.getElementById('createSupplierModal').classList.add('hidden');
+  }
+
+  async function submitCreateSupplier(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btnCreateSupplier');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang lưu...';
+
+    const payload = {
+      MaNCC: document.getElementById('create_MaNCC').value.trim().toUpperCase(),
+      TenNCC: document.getElementById('create_TenNCC').value.trim(),
+      DiaChi: document.getElementById('create_DiaChi').value.trim(),
+      SoDienThoai: document.getElementById('create_SoDienThoai').value.trim(),
+      Email: document.getElementById('create_Email').value.trim()
+    };
+
+    try {
+      const res = await fetch('/api/v1/kho/suppliers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(data.detail || 'Không thể tạo nhà cung cấp', 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Lưu Đối Tác';
+        return;
+      }
+      showToast(`Đã thêm nhà cung cấp [${data.TenNCC}] thành công!`, 'success');
+      setTimeout(() => window.location.reload(), 1000);
+    } catch (err) {
+      showToast('Lỗi kết nối: ' + err.message, 'error');
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Lưu Đối Tác';
+    }
+  }
+
+  // --- MODAL SỬA NCC ---
+  function openEditSupplierModal(btn) {
+    const d = btn.dataset;
+    document.getElementById('edit_MaNCC').value = d.mancc || '';
+    document.getElementById('edit_MaNCC_Display').value = d.mancc || '';
+    document.getElementById('edit_TenNCC').value = d.tenncc || '';
+    document.getElementById('edit_DiaChi').value = d.diachi || '';
+    document.getElementById('edit_SoDienThoai').value = d.sodienthoai || '';
+    document.getElementById('edit_Email').value = d.email || '';
+    document.getElementById('editSupplierModal').classList.remove('hidden');
+  }
+
+  function closeEditSupplierModal() {
+    document.getElementById('editSupplierModal').classList.add('hidden');
+  }
+
+  async function submitEditSupplier(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btnEditSupplier');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang cập nhật...';
+
+    const ma_ncc = document.getElementById('edit_MaNCC').value;
+    const payload = {
+      TenNCC: document.getElementById('edit_TenNCC').value.trim(),
+      DiaChi: document.getElementById('edit_DiaChi').value.trim(),
+      SoDienThoai: document.getElementById('edit_SoDienThoai').value.trim(),
+      Email: document.getElementById('edit_Email').value.trim()
+    };
+
+    try {
+      const res = await fetch(`/api/v1/kho/suppliers/${encodeURIComponent(ma_ncc)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(data.detail || 'Không thể cập nhật đối tác', 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> Lưu Cập Nhật';
+        return;
+      }
+      showToast(`Đã cập nhật nhà cung cấp [${data.TenNCC}] thành công!`, 'success');
+      setTimeout(() => window.location.reload(), 1000);
+    } catch (err) {
+      showToast('Lỗi kết nối: ' + err.message, 'error');
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-check"></i> Lưu Cập Nhật';
+    }
+  }
+
+  // --- XÓA NCC VÀ KIỂM TRA RÀNG BUỘC ---
+  async function confirmDeleteSupplier(ma_ncc, ten_ncc) {
+    if (!confirm(`Bạn có chắc chắn muốn xóa đối tác:\n[${ten_ncc}] (${ma_ncc})?\n\nLƯU Ý: Không thể xóa đối tác nếu đã có phiếu nhập kho liên kết trong CSDL.`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/v1/kho/suppliers/${encodeURIComponent(ma_ncc)}`, {
+        method: 'DELETE'
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(data.detail || 'Không thể xóa nhà cung cấp', 'error');
+        return;
+      }
+      showToast(data.message || `Đã xóa nhà cung cấp [${ma_ncc}] thành công!`, 'success');
+      setTimeout(() => window.location.reload(), 1000);
+    } catch (err) {
+      showToast('Lỗi kết nối: ' + err.message, 'error');
+    }
+  }
+
+  // Đóng modal khi nhấn phím ESC
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      closeCreateSupplierModal();
+      closeEditSupplierModal();
+      closeSupplierDetailModal();
+    }
+  });
+</script>
+{% endblock %}
