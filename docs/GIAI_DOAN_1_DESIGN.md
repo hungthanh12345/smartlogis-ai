@@ -20,19 +20,19 @@ flowchart TD
 
     subgraph SecurityLayer ["Tầng Xác Thực & Phân Quyền (RBAC & Auth)"]
         JWT_Auth["JWT Middleware & Cookie Handler"]
-        RoleGuard["RBAC Guard (Admin / Thủ kho / Kế toán)"]
+        RoleGuard["RBAC Guard (Admin / Thủ kho kiêm Kế toán)"]
     end
 
     subgraph BusinessLayer ["Tầng Nghiệp Vụ (Service Layer)"]
         InboundService["Inbound Service (ACID Transaction)"]
-        OutboundService["Outbound Service (Pessimistic Lock FOR UPDATE)"]
+        OutboundService["Outbound Service (Atomic SQL Decrement)"]
         InventoryService["Inventory Service (KPIs, Alert, TheKho, Excel)"]
         AIService["AI Engine (Data Sanitizer & Gemini Grounded Prompting)"]
     end
 
     subgraph DataLayer ["Tầng Dữ Liệu (ORM & Database Layer)"]
         SQLAlchemyORM["SQLAlchemy ORM 2.0 (Check Constraints)"]
-        PostgreSQL[("PostgreSQL / SQLite Database")]
+        Database[("MySQL 8.0 / Dual-Database")]
     end
 
     UI_Web --> JWT_Auth
@@ -46,7 +46,7 @@ flowchart TD
     OutboundService --> SQLAlchemyORM
     InventoryService --> SQLAlchemyORM
     AIService --> SQLAlchemyORM
-    SQLAlchemyORM --> PostgreSQL
+    SQLAlchemyORM --> Database
 ```
 
 ---
@@ -78,7 +78,7 @@ erDiagram
         string TenDangNhap UK "Tên đăng nhập duy nhất"
         string MatKhau "Bcrypt Hash 72-bytes"
         string HoTen "Họ và tên hiển thị"
-        string VaiTro "Admin | Thukho | Ketoan"
+        string VaiTro "Admin | Thukho (Thủ kho kiêm Kế toán)"
         boolean KichHoat "Trạng thái hoạt động"
         datetime NgayTao "Thời điểm tạo"
     }
@@ -170,10 +170,10 @@ Hệ thống triển khai mô hình bảo vệ 2 lớp ngăn chặn triệt đ�
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Staff as Thủ Kho / Client
+    actor Staff as Thủ kho kiêm Kế toán
     participant Router as Outbound Router
     participant Service as Outbound Service
-    participant DB as CSDL (PostgreSQL / SQLite)
+    participant DB as CSDL (MySQL 8.0 / PostgreSQL)
 
     Staff ->> Router: POST /api/v1/kho/phieu-xuat {MaHH, SoLuongXuat}
     activate Router
@@ -210,20 +210,24 @@ sequenceDiagram
 
 ## 4. MA TRẬN PHÂN QUYỀN ACTOR (RBAC MATRIX)
 
-Hệ thống thiết kế chuẩn hóa theo 3 vai trò tác nhân nghiệp vụ:
+Hệ thống thiết kế chuẩn hóa theo 2 vai trò tác nhân nghiệp vụ (phù hợp với quy mô đội dự án 02 thành viên Scrum):
+* **Admin (Quản trị viên - Nguyễn Thành Hưng):** Toàn quyền cấu hình hệ thống, quản trị người dùng và giám sát toàn diện.
+* **Thủ kho kiêm Kế toán (Storekeeper & Accountant - Hoàng Tiến Đạt):** Quản lý danh mục hàng hóa, đối tác nhà cung cấp, trực tiếp lập phiếu nhập kho, phiếu xuất kho chống tồn âm, theo dõi sổ thẻ kho và kết xuất báo cáo Nhập - Xuất - Tồn (Excel/PDF) phục vụ đối soát tài chính.
+* **Trợ lý AI (Google Gemini 1.5 Flash):** Tác nhân dịch vụ thông minh hỗ trợ phân tích và gợi ý nhập hàng.
 
-| Mã Chức Năng | Nghiệp Vụ / API | Admin (Quản trị) | Thủ Kho (Keeper) | Kế Toán (Accountant) | Ghi Chú Quyền Hạn |
+| Mã Chức Năng | Nghiệp Vụ / API | Admin (Quản trị) | Thủ kho kiêm Kế toán | Trợ lý AI | Ghi Chú Quyền Hạn |
 | :--- | :--- | :---: | :---: | :---: | :--- |
-| **AUTH** | Đăng nhập, Đăng xuất, Refresh Token | ✔ | ✔ | ✔ | Mọi tài khoản hoạt động |
-| **DASHBOARD**| Xem 4 chỉ số KPI & Cảnh báo tồn min | ✔ | ✔ | ✔ | Giám sát thời gian thực |
-| **MASTER_DATA**| Xem danh mục SKU, Nhóm hàng, ĐVT | ✔ | ✔ | ✔ | Tra cứu danh mục |
-| **SKU_MGMT** | Thêm, Sửa, Xóa Hàng hóa (CRUD SKU) | ✔ | ✔ | ❌ | Kế toán chỉ xem |
-| **SUPPLIER** | Quản lý thông tin Nhà cung cấp | ✔ | ✔ | ❌ | Kế toán chỉ xem |
-| **INBOUND** | Lập Phiếu Nhập Kho (Transaction ACID) | ✔ | ✔ | ❌ | Nghiệp vụ kho thực địa |
-| **OUTBOUND** | Lập Phiếu Xuất Kho (Khóa FOR UPDATE) | ✔ | ✔ | ❌ | Chống tồn âm |
-| **THE_KHO** | Tra cứu lịch sử Sổ Thẻ kho lũy kế | ✔ | ✔ | ✔ | Phục vụ đối soát kế toán |
-| **REPORT_XLS**| Xuất Báo cáo Nhập - Xuất - Tồn (Excel) | ✔ | ❌ | ✔ | Chức năng kế toán / sếp |
-| **AI_ADVISORY**| Tham vấn Trợ lý AI Gemini phân tích kho | ✔ | ✔ | ✔ | Hỗ trợ ra quyết định |
+| **AUTH** | Đăng nhập, Đăng xuất, Refresh Token | ✔ | ✔ | ❌ | Mọi tài khoản đang kích hoạt |
+| **USER_MGMT**| Quản trị người dùng & Phân quyền | ✔ | ❌ | ❌ | Đặc quyền riêng của Admin |
+| **DASHBOARD**| Xem 4 chỉ số KPI & Cảnh báo tồn min | ✔ | ✔ | ❌ | Giám sát vận hành thời gian thực |
+| **MASTER_DATA**| Xem danh mục SKU, Nhóm hàng, ĐVT | ✔ | ✔ | ❌ | Tra cứu thông tin danh mục |
+| **SKU_MGMT** | Thêm, Sửa, Xóa Hàng hóa (CRUD SKU) | ✔ | ✔ | ❌ | Thủ kho kiêm KT quản lý vật tư |
+| **SUPPLIER** | Quản lý thông tin Nhà cung cấp | ✔ | ✔ | ❌ | Quản lý đối tác nhập hàng |
+| **INBOUND** | Lập Phiếu Nhập Kho (Transaction ACID) | ✔ | ✔ | ❌ | Nghiệp vụ nhập hàng và tăng tồn |
+| **OUTBOUND** | Lập Phiếu Xuất Kho (Khóa FOR UPDATE) | ✔ | ✔ | ❌ | Xuất kho & Chống tồn âm |
+| **THE_KHO** | Tra cứu lịch sử Sổ Thẻ kho lũy kế | ✔ | ✔ | ❌ | Phục vụ kiểm kê và đối soát |
+| **REPORT_XLS**| Xuất Báo cáo Nhập - Xuất - Tồn (Excel) | ✔ | ✔ | ❌ | Kết xuất bảng kê đối soát kho |
+| **AI_ADVISORY**| Tham vấn Trợ lý AI Gemini phân tích kho | ✔ | ✔ | ✔ *(Xử lý)* | Hỗ trợ phân tích & ra quyết định |
 
 ---
 

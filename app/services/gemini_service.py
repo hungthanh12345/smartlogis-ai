@@ -34,8 +34,9 @@ SUPPORTED_GEMINI_MODELS = [
 class GeminiService:
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key or settings.GEMINI_API_KEY or ""
-        self.timeout = 20.0
-        self.max_retries = 3
+        self.timeout = getattr(settings, "AI_TIMEOUT_SECONDS", 20.0)
+        self.max_retries = getattr(settings, "AI_MAX_RETRIES", 3)
+
 
     def is_configured(self) -> bool:
         """Kiểm tra xem API Key đã được cấu hình hợp lệ chưa."""
@@ -71,6 +72,9 @@ class GeminiService:
                     parsed_content["model_used"] = f"Google Gemini API ({model_name})"
                     parsed_content["is_fallback"] = False
                     return parsed_content
+            if getattr(self, "last_error_was_network", False):
+                logger.warning("[GeminiService] Mạng/Timeout không phản hồi. Chuyển ngay sang Local Grounded Fallback Engine.")
+                break
 
         # Nếu tất cả các model và retries đều không thành công -> Kích hoạt Fallback
         logger.error("[GeminiService] Tất cả các model Gemini đều không khả dụng. Kích hoạt Local Grounded Fallback Engine.")
@@ -80,7 +84,8 @@ class GeminiService:
         """
         Gọi Gemini REST API kèm cơ chế Retry với Exponential Backoff.
         """
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={self.api_key}"
+        base_endpoint = getattr(settings, "GEMINI_API_ENDPOINT", "https://generativelanguage.googleapis.com/v1beta").rstrip("/")
+        url = f"{base_endpoint}/models/{model_name}:generateContent?key={self.api_key}"
         payload = {
             "contents": [
                 {
@@ -97,6 +102,7 @@ class GeminiService:
             }
         }
 
+        self.last_error_was_network = False
         for attempt in range(1, self.max_retries + 1):
             try:
                 with httpx.Client(timeout=self.timeout) as client:
@@ -123,6 +129,7 @@ class GeminiService:
                         break  # Thử model tiếp theo
             
             except (httpx.TimeoutException, httpx.NetworkError) as exc:
+                self.last_error_was_network = True
                 logger.warning(f"[GeminiService] Lỗi mạng/Timeout khi gọi {model_name} (Thử lần {attempt}/{self.max_retries}): {exc}")
                 time.sleep(1.0 * attempt)
             except Exception as e:
