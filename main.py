@@ -187,7 +187,7 @@ def route_inbound(request: Request, db: Session = Depends(get_db), user = Depend
     """Màn hình Lập Phiếu Nhập Kho (Hình 4.6.2 Wireframe)."""
     if not user:
         return RedirectResponse(url="/login")
-    if user.VaiTro not in ["Admin", "Thukho", "Ketoan"]:
+    if user.VaiTro not in ["Admin", "Thukho"]:
         return RedirectResponse(url="/dashboard?error=access_denied")
 
     suppliers = get_all_suppliers(db)
@@ -208,7 +208,7 @@ def route_outbound(request: Request, db: Session = Depends(get_db), user = Depen
     """Màn hình Lập Phiếu Xuất Kho & Chống Tồn Âm (Hình 4.6.3 Wireframe)."""
     if not user:
         return RedirectResponse(url="/login")
-    if user.VaiTro not in ["Admin", "Thukho", "Ketoan"]:
+    if user.VaiTro not in ["Admin", "Thukho"]:
         return RedirectResponse(url="/dashboard?error=access_denied")
 
     return templates.TemplateResponse(

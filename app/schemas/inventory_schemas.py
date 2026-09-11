@@ -1,23 +1,21 @@
 # app/schemas/inventory_schemas.py
 from datetime import datetime
 from typing import List, Optional, Dict, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 # --- Schema cho Danh mục & Nhóm Hàng & ĐVT ---
 class NhomHangOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     MaNhom: str
     TenNhom: str
     MoTa: Optional[str] = None
 
-    class Config:
-        from_attributes = True
-
 class DonViTinhOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     MaDVT: str
     TenDVT: str
-
-    class Config:
-        from_attributes = True
 
 class HangHoaCreate(BaseModel):
     MaHH: str = Field(min_length=2, max_length=50, description="Mã hàng hóa duy nhất")
@@ -36,6 +34,8 @@ class HangHoaUpdate(BaseModel):
     MoTa: Optional[str] = None
 
 class HangHoaOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     MaHH: str
     TenHH: str
     MaNhom: str
@@ -45,9 +45,6 @@ class HangHoaOut(BaseModel):
     SoLuongTon: int = 0
     TenDVT: Optional[str] = None
     TenNhom: Optional[str] = None
-
-    class Config:
-        from_attributes = True
 
 # --- Schema cho Nhà Cung Cấp ---
 class NhaCungCapCreate(BaseModel):
@@ -64,6 +61,8 @@ class NhaCungCapUpdate(BaseModel):
     Email: Optional[str] = None
 
 class NhaCungCapOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     MaNCC: str
     TenNCC: str
     DiaChi: Optional[str] = None
@@ -72,9 +71,6 @@ class NhaCungCapOut(BaseModel):
     SoPhieuNhap: int = 0
     TongGiaTriNhap: float = 0.0
     NgayNhapGanNhat: Optional[str] = None
-
-    class Config:
-        from_attributes = True
 
 class LichSuPhieuNhapItem(BaseModel):
     MaHH: str
@@ -93,6 +89,8 @@ class LichSuPhieuNhap(BaseModel):
     ChiTiet: List[LichSuPhieuNhapItem] = []
 
 class NhaCungCapDetailOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     MaNCC: str
     TenNCC: str
     DiaChi: Optional[str] = None
@@ -102,9 +100,6 @@ class NhaCungCapDetailOut(BaseModel):
     TongGiaTriNhap: float = 0.0
     NgayNhapGanNhat: Optional[str] = None
     LichSuNhap: List[LichSuPhieuNhap] = []
-
-    class Config:
-        from_attributes = True
 
 class SupplierKPIs(BaseModel):
     TongNCC: int = 0
@@ -126,6 +121,8 @@ class PhieuNhapCreate(BaseModel):
     items: List[ChiTietNhapCreate] = Field(min_length=1, description="Phiếu phải có ít nhất 1 dòng hàng")
 
 class ChiTietNhapOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     MaCTPN: int
     MaHH: str
     TenHH: Optional[str] = None
@@ -133,10 +130,9 @@ class ChiTietNhapOut(BaseModel):
     DonGiaNhap: float
     ThanhTien: float
 
-    class Config:
-        from_attributes = True
-
 class PhieuNhapOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     MaPN: str
     NgayNhap: datetime
     MaNCC: str
@@ -144,9 +140,6 @@ class PhieuNhapOut(BaseModel):
     TongTien: float
     GhiChu: Optional[str] = None
     items: List[ChiTietNhapOut] = []
-
-    class Config:
-        from_attributes = True
 
 # --- Schema cho Phiếu Xuất ---
 class ChiTietXuatCreate(BaseModel):
@@ -159,24 +152,22 @@ class PhieuXuatCreate(BaseModel):
     items: List[ChiTietXuatCreate] = Field(min_length=1, description="Phiếu phải có ít nhất 1 dòng hàng")
 
 class ChiTietXuatOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     MaCTPX: int
     MaHH: str
     TenHH: Optional[str] = None
     SoLuongXuat: int
 
-    class Config:
-        from_attributes = True
-
 class PhieuXuatOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     MaPX: str
     NgayXuat: datetime
     MaND: int
     NguoiNhan: str
     LyDoXuat: Optional[str] = None
     items: List[ChiTietXuatOut] = []
-
-    class Config:
-        from_attributes = True
 
 # --- Schema cho Dashboard & Cảnh báo Tồn min ---
 class StockAlertItem(BaseModel):
@@ -199,6 +190,8 @@ class KPISummary(BaseModel):
 
 # --- Schema cho Thẻ Kho ---
 class TheKhoRecord(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     MaTK: int
     NgayGiaoDich: datetime
     MaHH: str
@@ -207,9 +200,6 @@ class TheKhoRecord(BaseModel):
     LoaiGiaoDich: str  # 'NHAP' hoặc 'XUAT'
     SoLuongThayDoi: int
     TonSauGiaoDich: int
-
-    class Config:
-        from_attributes = True
 
 # --- Schema cho Trợ Lý AI ---
 class AIInsightItem(BaseModel):

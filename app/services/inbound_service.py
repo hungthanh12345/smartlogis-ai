@@ -7,6 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, status
 from app.models.inventory_models import PhieuNhap, ChiTietPhieuNhap, TonKho, TheKho, HangHoa, NhaCungCap
 from app.schemas.inventory_schemas import PhieuNhapCreate
+from app.core.datetime_utils import utc_now
 
 def execute_inbound_transaction(db: Session, phieu_in: PhieuNhapCreate, user_id: int) -> PhieuNhap:
     """
@@ -30,7 +31,7 @@ def execute_inbound_transaction(db: Session, phieu_in: PhieuNhapCreate, user_id:
         ma_pn = f"PN-{datetime.now().strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}"
         phieu_nhap = PhieuNhap(
             MaPN=ma_pn,
-            NgayNhap=datetime.utcnow(),
+            NgayNhap=utc_now(),
             MaNCC=phieu_in.MaNCC,
             MaND=user_id,
             GhiChu=phieu_in.GhiChu,
@@ -69,7 +70,7 @@ def execute_inbound_transaction(db: Session, phieu_in: PhieuNhapCreate, user_id:
                 ton_kho = TonKho(
                     MaHH=item.MaHH,
                     SoLuongTon=item.SoLuongNhap,
-                    CapNhatCuoi=datetime.utcnow()
+                    CapNhatCuoi=utc_now()
                 )
                 db.add(ton_kho)
                 db.flush()
@@ -80,7 +81,7 @@ def execute_inbound_transaction(db: Session, phieu_in: PhieuNhapCreate, user_id:
                     .where(TonKho.MaHH == item.MaHH)
                     .values(
                         SoLuongTon=TonKho.SoLuongTon + item.SoLuongNhap,
-                        CapNhatCuoi=datetime.utcnow()
+                        CapNhatCuoi=utc_now()
                     )
                 )
                 db.execute(stmt)
@@ -89,7 +90,7 @@ def execute_inbound_transaction(db: Session, phieu_in: PhieuNhapCreate, user_id:
 
             # Ghi sổ Thẻ kho lưu vết
             the_kho = TheKho(
-                NgayGiaoDich=datetime.utcnow(),
+                NgayGiaoDich=utc_now(),
                 MaHH=item.MaHH,
                 MaChungTu=ma_pn,
                 LoaiGiaoDich="NHAP",

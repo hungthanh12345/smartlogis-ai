@@ -2,7 +2,7 @@
 """
 Script Nạp Dữ Liệu Mẫu Chuẩn Cho SmartLogis AI (Demo Seeder & Data Reset)
 Phục vụ hoàn hảo cho việc Demo, nghiệm thu và chấm điểm đồ án:
-1. Tài khoản: Admin (admin/admin123), Thủ kho (thukho/thukho123), Kế toán (ketoan/ketoan123).
+1. Tài khoản: Admin (admin/admin123), Thủ kho kiêm Kế toán (thukho/thukho123), Nhân viên kho (nhanvien/nhanvien123).
 2. Danh mục: 5 Nhóm hàng, 6 Đơn vị tính, 5 Nhà cung cấp thực tế.
 3. Hàng hóa: 20 SKUs bao gồm cả 3 trạng thái nghiệp vụ:
    - Hàng an toàn (Normal stock).
@@ -77,10 +77,10 @@ def reset_and_seed_database(force_reset: bool = False):
                 KichHoat=True
             ),
             NguoiDung(
-                TenDangNhap="ketoan",
-                MatKhau=get_password_hash("ketoan123"),
-                HoTen="Hoàng Tiến Đạt (Kế Toán Kho - Dự phòng)",
-                VaiTro="Ketoan",
+                TenDangNhap="nhanvien",
+                MatKhau=get_password_hash("nhanvien123"),
+                HoTen="Nhân Viên Kho",
+                VaiTro="Nhanvien",
                 KichHoat=True
             ),
         ]
@@ -295,7 +295,7 @@ def reset_and_seed_database(force_reset: bool = False):
 
         db.commit()
         print("[SUCCESS] Da nap thanh cong 100% du lieu mau chuan cho SmartLogis AI:")
-        print("  + 3 Tai khoan demo: admin/admin123, thukho/thukho123, ketoan/ketoan123")
+        print("  + 3 Tai khoan demo: admin/admin123 (Admin), thukho/thukho123 (Thu kho kiem Ke toan), nhanvien/nhanvien123 (Nhan vien kho)")
         print("  + 5 Nhom hang & 6 Don vi tinh")
         print("  + 5 Nha cung cap")
         print("  + 20 SKUs hang hoa (7 An toan, 7 Canh bao ton min, 6 Dead Stock > 60 ngay)")

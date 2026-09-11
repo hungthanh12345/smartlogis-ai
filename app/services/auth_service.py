@@ -15,8 +15,8 @@ def register_user(db: Session, user_in: UserRegister) -> NguoiDung:
             detail=f"T?n ??ng nh?p '{user_in.TenDangNhap}' ?? t?n t?i trong h? th?ng."
         )
 
-    # Chu?n h?a vai tr?
-    role = user_in.VaiTro if user_in.VaiTro in ["Admin", "Thukho", "Ketoan"] else "Thukho"
+    # Chuẩn hóa vai trò (Admin, Thukho, Nhanvien)
+    role = user_in.VaiTro if user_in.VaiTro in ["Admin", "Thukho", "Nhanvien"] else "Nhanvien"
 
     hashed_pw = get_password_hash(user_in.MatKhau)
     new_user = NguoiDung(

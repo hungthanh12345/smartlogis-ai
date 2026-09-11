@@ -27,7 +27,7 @@ def api_get_the_kho(
 @router.get("/export/excel")
 def api_export_excel(
     db: Session = Depends(get_db),
-    current_user: NguoiDung = Depends(require_role(["Admin", "Thukho", "Ketoan"]))
+    current_user: NguoiDung = Depends(require_role(["Admin", "Thukho"]))
 ):
     """
     KẾT XUẤT BÁO CÁO EXCEL THỰC TẾ (OPENPYXL ENGINE):
@@ -47,7 +47,7 @@ def api_export_excel(
 @router.get("/export/suppliers-excel")
 def api_export_suppliers_excel(
     db: Session = Depends(get_db),
-    current_user: NguoiDung = Depends(require_role(["Admin", "Ketoan", "Thukho"]))
+    current_user: NguoiDung = Depends(require_role(["Admin", "Thukho"]))
 ):
     """
     KẾT XUẤT BÁO CÁO DANH BẠ NHÀ CUNG CẤP RA EXCEL (.XLSX):

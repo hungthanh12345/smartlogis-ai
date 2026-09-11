@@ -192,7 +192,7 @@ def create_deck():
     foot_box = slide1.shapes.add_textbox(Inches(1.0), Inches(6.65), Inches(11.3), Inches(0.5))
     tf_f = foot_box.text_frame
     p_f = tf_f.paragraphs[0]
-    p_f.text = "Đội ngũ Thực hiện: Kỹ sư Công nghệ Dự án SmartLogis AI   |   Hội đồng Chấm Đồ Án Tốt Nghiệp"
+    p_f.text = "Đội ngũ Thực hiện: Nguyễn Thành Hưng (Admin) • Hoàng Tiến Đạt (Thủ kho kiêm KT) | Đồ Án Tốt Nghiệp"
     p_f.font.name = FONT_BODY
     p_f.font.size = Pt(13.5)
     p_f.font.color.rgb = COLOR_LIGHT_MUTED
@@ -412,7 +412,7 @@ def create_deck():
         
         ("2. SECURITY & RBAC LAYER (TẦNG BẢO MẬT & PHÂN QUYỀN)", 
          "FastAPI OAuth2 • JSON Web Token (JWT) • HTTP-Only Cookie • Bcrypt Password Hashing", 
-         "Xác thực phiên an toàn chống XSS/CSRF, phân quyền RBAC nghiêm ngặt 3 vai trò: Admin (Toàn quyền), Thủ kho (Nhập/Xuất & Danh mục) và Kế toán (Chứng từ, Thẻ kho).", 
+         "Xác thực phiên an toàn chống XSS/CSRF, phân quyền RBAC nghiêm ngặt 3 vai trò: Admin (Toàn quyền), Thủ kho kiêm Kế toán (Vận hành kho & Báo cáo Excel) và Nhân viên kho (Tra cứu chỉ đọc).", 
          COLOR_ROYAL_BLUE),
         
         ("3. BUSINESS & AI ENGINE LAYER (TẦNG NGHIỆP VỤ & TRÍ TUỆ NHÂN TẠO)", 
@@ -421,7 +421,7 @@ def create_deck():
          COLOR_MID_NAVY),
         
         ("4. DATABASE & STORAGE LAYER (TẦNG DỮ LIỆU & BẢO TOÀN ACID)", 
-         "SQLite WAL Mode / PostgreSQL 15 • SQLAlchemy 2.0 ORM • 8 B-Tree Indexes Chiến Lược", 
+         "SQLite WAL Mode / MySQL 8.0 InnoDB • SQLAlchemy 2.0 ORM • 8 B-Tree Indexes Chiến Lược", 
          "Kiểm soát toàn vẹn giao dịch chống tồn âm kép (Atomic SQL Decrement + CheckConstraints/Triggers), ghi sổ Thẻ kho tự động và tối ưu hóa truy vấn báo cáo dưới 5ms.", 
          COLOR_DEEP_NAVY)
     ]
@@ -481,7 +481,7 @@ def create_deck():
 
     add_speaker_notes(slide4,
         "Thời lượng: 80s\n"
-        "Lời thoại: Về mặt kiến trúc, SmartLogis AI áp dụng mô hình phân tầng Modular Clean Architecture: Tầng Presentation sử dụng kết hợp Jinja2 Server-Side Rendering và Tailwind CSS giúp tối ưu tốc độ phản hồi trang dưới 50 mili-giây. Tầng Security đảm bảo xác thực bằng JSON Web Token với cơ chế bảo vệ HTTP-only Cookie và phân quyền RBAC nghiêm ngặt. Tầng Nghiệp vụ đóng vai trò bộ não điều phối, nơi xử lý các transaction ACID và kết nối với Google Gemini Engine. Và dưới cùng là tầng CSDL với SQLite chế độ WAL hoặc PostgreSQL 15 tối ưu hóa bằng 8 B-Tree Indexes.\n"
+        "Lời thoại: Về mặt kiến trúc, SmartLogis AI áp dụng mô hình phân tầng Modular Clean Architecture: Tầng Presentation sử dụng kết hợp Jinja2 Server-Side Rendering và Tailwind CSS giúp tối ưu tốc độ phản hồi trang dưới 50 mili-giây. Tầng Security đảm bảo xác thực bằng JSON Web Token với cơ chế bảo vệ HTTP-only Cookie và phân quyền RBAC nghiêm ngặt 3 vai trò: Admin, Thủ kho kiêm Kế toán và Nhân viên kho. Tầng Nghiệp vụ đóng vai trò bộ não điều phối, nơi xử lý các transaction ACID và kết nối với Google Gemini Engine. Và dưới cùng là tầng CSDL với SQLite chế độ WAL hoặc MySQL 8.0 InnoDB tối ưu hóa bằng 8 B-Tree Indexes.\n"
         "Mẹo tương tác: Quét tay theo thứ tự từ tầng trên xuống tầng dưới để người nghe nắm bắt luồng kiến trúc."
     )
 
@@ -517,7 +517,7 @@ def create_deck():
     pl1.alignment = PP_ALIGN.LEFT
 
     entities = [
-        ("nguoi_dung:", "Quản trị người dùng, phân quyền RBAC 3 vai trò, mã hóa Bcrypt an toàn."),
+        ("nguoi_dung:", "Quản trị người dùng, phân quyền RBAC 3 vai trò (Admin, Thủ kho kiêm KT, Nhân viên kho)."),
         ("hang_hoa & ton_kho:", "Quan hệ 1-1 chặt chẽ, kiểm soát số dư khả dụng và ngưỡng tồn tối thiểu."),
         ("phieu_nhap & chi_tiet:", "Chứng từ nhập kho Master-Detail, lưu trữ nhà cung cấp và ngày nhập hàng."),
         ("phieu_xuat & chi_tiet:", "Chứng từ xuất kho Master-Detail, áp dụng Atomic SQL Decrement chống tồn âm."),
@@ -554,12 +554,12 @@ def create_deck():
     pr1.alignment = PP_ALIGN.LEFT
 
     optimizations = [
-        ("PRAGMA foreign_keys = ON:", "Bắt buộc kiểm tra toàn vẹn quan hệ khóa ngoại cấp engine CSDL."),
-        ("PRAGMA journal_mode = WAL:", "Ghi nhật ký Write-Ahead Logging đa luồng đọc/ghi không bị khóa DB."),
-        ("PRAGMA busy_timeout = 30000:", "Chờ tối đa 30s giải phóng hàng đợi, triệt tiêu lỗi Database is Locked."),
+        ("Tương thích đa cơ sở dữ liệu:", "Vận hành hoàn hảo trên cả SQLite WAL và MySQL 8.0 InnoDB."),
+        ("Kiểm soát khóa ngoại chặt chẽ:", "Ràng buộc Foreign Key cấp engine ngăn chặn triệt để bản ghi mồ côi."),
+        ("Hàng đợi Connection Pooling:", "Chờ giải phóng khóa, triệt tiêu lỗi tranh chấp Database Lock."),
         ("8 B-Tree Indexes chiến lược:", "Đánh trên NgayNhap, MaNCC, NgayXuat, MaPN, MaPX, MaHH, MaChungTu."),
         ("Tốc độ truy vấn siêu tốc:", "Báo cáo vận hành 30 ngày & tra cứu Thẻ kho phản hồi tức thời < 5ms."),
-        ("Ràng buộc CheckConstraint:", "CHECK (SoLuongTon >= 0) ngăn chặn 100% mọi can thiệp SQL số âm.")
+        ("Ràng buộc CheckConstraint:", "CHECK (SoLuongTon >= 0) trên SQLite & MySQL ngăn chặn 100% can thiệp số âm.")
     ]
     for tag, desc in optimizations:
         po = tf_r.add_paragraph()
@@ -578,7 +578,7 @@ def create_deck():
     ban5.line.width = Pt(1)
     tf_b5 = ban5.text_frame
     pb5 = tf_b5.paragraphs[0]
-    pb5.text = "🔒 BẢO VỆ PHẦN CỨNG: 4 SQLite Triggers tự động ngăn chặn mọi giao dịch ghi số âm kể cả khi thao tác ngoài ứng dụng!"
+    pb5.text = "🔒 BẢO TOÀN CSDL: Tương thích cả SQLite & MySQL 8.0 InnoDB với Check Constraints & Triggers ngăn chặn 100% mọi giao dịch số âm!"
     pb5.font.name = FONT_HEADING
     pb5.font.size = Pt(13.5)
     pb5.font.bold = True
@@ -587,8 +587,8 @@ def create_deck():
 
     add_speaker_notes(slide5,
         "Thời lượng: 75s\n"
-        "Lời thoại: Đi sâu vào tầng dữ liệu, mô hình CSDL của chúng em gồm 10 bảng thực thể được chuẩn hóa nghiêm ngặt theo dạng chuẩn 3NF. Bảng ton_kho gắn chặt quan hệ 1-1 với hang_hoa, và mọi biến động đều tự động ghi sổ vào bảng the_kho. Để tối ưu hóa hiệu năng, chúng em thiết lập 8 chỉ mục B-Tree Index trên các trường khóa ngoại và thời gian giao dịch, kết hợp cùng chế độ WAL giúp giảm độ trễ truy vấn báo cáo 30 ngày xuống dưới 5 mili-giây. Đồng thời, các CheckConstraint cấp phần cứng bảo đảm không ai có thể ghi số âm vào CSDL.\n"
-        "Mẹo tương tác: Chỉ vào các dòng PRAGMA và 8 B-Tree Indexes để chứng minh năng lực tối ưu hệ thống sâu."
+        "Lời thoại: Đi sâu vào tầng dữ liệu, mô hình CSDL của chúng em gồm 10 bảng thực thể được chuẩn hóa nghiêm ngặt theo dạng chuẩn 3NF. Bảng ton_kho gắn chặt quan hệ 1-1 với hang_hoa, và mọi biến động đều tự động ghi sổ vào bảng the_kho. Hệ thống hỗ trợ song song SQLite WAL và MySQL 8.0 InnoDB với 8 chỉ mục B-Tree Index trên các trường khóa ngoại và thời gian giao dịch, giúp giảm độ trễ truy vấn báo cáo 30 ngày xuống dưới 5 mili-giây. Đồng thời, các CheckConstraint cấp CSDL bảo đảm không ai có thể ghi số âm vào hệ thống.\n"
+        "Mẹo tương tác: Chỉ vào các dòng hỗ trợ SQLite/MySQL và 8 B-Tree Indexes để chứng minh năng lực tối ưu hệ thống sâu."
     )
 
     # =========================================================================
@@ -733,25 +733,26 @@ def create_deck():
     ptw3.alignment = PP_ALIGN.LEFT
 
     # RBAC Table
-    rows, cols = 5, 4
+    rows, cols = 6, 4
     left = Inches(0.8)
-    top = Inches(3.1)
+    top = Inches(3.05)
     width = Inches(11.73)
-    height = Inches(3.8)
+    height = Inches(3.9)
 
     table_shape = slide7.shapes.add_table(rows, cols, left, top, width, height)
     table = table_shape.table
-    table.columns[0].width = Inches(4.53)
-    table.columns[1].width = Inches(2.4)
-    table.columns[2].width = Inches(2.4)
-    table.columns[3].width = Inches(2.4)
+    table.columns[0].width = Inches(3.93)
+    table.columns[1].width = Inches(2.6)
+    table.columns[2].width = Inches(2.6)
+    table.columns[3].width = Inches(2.6)
 
     table_data = [
-        ["NGHIỆP VỤ & TÀI NGUYÊN", "ADMIN HỆ THỐNG", "THỦ KHO (THUKHO)", "KẾ TOÁN (KETOAN)"],
+        ["NGHIỆP VỤ & TÀI NGUYÊN", "ADMIN HỆ THỐNG", "THỦ KHO KIÊM KẾ TOÁN", "NHÂN VIÊN KHO (STAFF)"],
         ["Quản trị người dùng & Phân quyền", "✅ Toàn Quyền Quản Trị", "❌ Không có quyền", "❌ Không có quyền"],
-        ["Khởi tạo SKU & Tồn kho ban đầu", "✅ Cho phép thực hiện", "✅ Cho phép thực hiện", "❌ Chặn sửa tồn ban đầu"],
-        ["Lập Phiếu Nhập / Xuất Kho ACID", "✅ Cho phép thực hiện", "✅ Cho phép thực hiện", "✅ Có quyền lập chứng từ"],
-        ["Tra cứu Thẻ kho & Báo cáo AI", "✅ Xem toàn bộ dữ liệu", "✅ Xem toàn bộ dữ liệu", "✅ Xem toàn bộ dữ liệu"]
+        ["Quản trị SKU & Nhà cung cấp", "✅ Cho phép thực hiện", "✅ Toàn quyền quản lý", "❌ Chế độ Chỉ Đọc (Staff)"],
+        ["Lập Phiếu Nhập / Xuất Kho ACID", "✅ Cho phép thực hiện", "✅ Lập phiếu & ghi sổ", "❌ Bị chặn (HTTP 403)"],
+        ["Xuất Báo Cáo Kế Toán Excel", "✅ Cho phép thực hiện", "✅ Xuất báo cáo kế toán", "❌ Bị chặn (HTTP 403)"],
+        ["Tra cứu Thẻ kho & Cảnh báo tồn", "✅ Xem toàn bộ dữ liệu", "✅ Tra cứu & cảnh báo", "✅ Tra cứu kiểm đếm kho"]
     ]
 
     for r_idx, row in enumerate(table_data):
@@ -761,7 +762,7 @@ def create_deck():
             cell.vertical_anchor = MSO_ANCHOR.MIDDLE
             p = cell.text_frame.paragraphs[0]
             p.font.name = FONT_HEADING if r_idx == 0 else FONT_BODY
-            p.font.size = Pt(13)
+            p.font.size = Pt(12)
             if r_idx == 0:
                 p.font.bold = True
                 p.font.color.rgb = COLOR_WHITE
@@ -782,8 +783,8 @@ def create_deck():
 
     add_speaker_notes(slide7,
         "Thời lượng: 75s\n"
-        "Lời thoại: Bên cạnh giải thuật chống tồn âm, SmartLogis AI đóng gói toàn bộ quy trình Nhập - Xuất kho trong một giao dịch ACID nguyên tử duy nhất gồm 4 bước. Đồng thời, mô hình phân quyền RBAC được thiết kế chặt chẽ theo nguyên tắc kiểm soát chéo: Kế toán viên có quyền lập phiếu nhập xuất hàng ngày nhưng tuyệt đối bị chặn không được tự ý sửa đổi danh mục SKU hay tồn kho ban đầu. Điều này ngăn chặn 100% rủi ro gian lận nội bộ.\n"
-        "Mẹo tương tác: Chỉ vào cột 'Kế toán' và giải thích tính bảo mật của nguyên tắc kiểm soát chéo trong doanh nghiệp."
+        "Lời thoại: Bên cạnh giải thuật chống tồn âm, SmartLogis AI đóng gói toàn bộ quy trình Nhập - Xuất kho trong một giao dịch ACID nguyên tử duy nhất gồm 4 bước. Đồng thời, mô hình phân quyền RBAC được tối ưu hóa cho thực tế doanh nghiệp với 3 vai trò rõ ràng: Admin nắm toàn quyền hệ thống; Thủ kho kiêm Kế toán được trao quyền vận hành kho, lập chứng từ và kết xuất báo cáo tài chính kế toán; trong khi Nhân viên kho (Staff) chỉ có quyền tra cứu danh mục để kiểm đếm hiện trường và bị chặn hoàn toàn các thao tác sửa đổi hay lập phiếu (HTTP 403).\n"
+        "Mẹo tương tác: Chỉ vào cột 'Nhân viên kho (Staff)' và nhấn mạnh tính phân quyền phân cấp bảo mật chặt chẽ trong doanh nghiệp."
     )
 
     # =========================================================================
@@ -1232,7 +1233,7 @@ def create_deck():
     # =========================================================================
     slide12 = prs.slides.add_slide(blank_slide_layout)
     set_slide_background(slide12, COLOR_WHITE)
-    add_header(slide12, "Chiến Lược Kiểm Thử Tự Động: 12/12 Test Cases Đạt 100%", "QUALITY ASSURANCE")
+    add_header(slide12, "Chiến Lược Kiểm Thử Tự Động: 16/16 Test Cases Đạt 100%", "QUALITY ASSURANCE")
 
     # Table of tests
     rows, cols = 6, 4
@@ -1251,10 +1252,10 @@ def create_deck():
     test_data = [
         ["MODULE KIỂM THỬ", "SỐ TEST CASES", "KỊCH BẢN KIỂM THỬ TRỌNG YẾU", "KẾT QUẢ"],
         ["test_ai_engine.py", "4 Test Cases", "Kho rỗng không ảo giác, đề xuất tồn min, khử 100% giá vốn, Mocking Fallback 429", "✅ 100% PASSED"],
-        ["test_phase2_inventory.py (ACID)", "3 Test Cases", "Nhập kho tăng tồn ACID, xuất vượt tồn bị chặn 400 Bad Request, Rollback CSDL", "✅ 100% PASSED"],
-        ["test_phase2_inventory.py (Stress)", "1 Test Case", "ThreadPoolExecutor giả lập nhiều thủ kho xuất vét kho đồng thời -> Không âm tồn", "✅ 100% PASSED"],
-        ["test_rbac.py", "1 Test Case", "Ma trận RBAC: Chặn Kế toán sửa tồn ban đầu, cho phép lập phiếu đúng thẩm quyền", "✅ 100% PASSED"],
-        ["test_crud.py & test_excel.py", "3 Test Cases", "Vòng đời CRUD SKU, tra cứu Sổ Thẻ kho, xuất file báo cáo Excel openpyxl", "✅ 100% PASSED"]
+        ["test_phase2_inventory.py", "6 Test Cases", "ACID Inbound, chống tồn âm, Concurrency Stress Test, RBAC 3 vai trò, CheckConstraint", "✅ 100% PASSED"],
+        ["test_websocket.py", "3 Test Cases", "Kết nối song công WebSocket, Broadcast sự kiện tức thời, đồng bộ đa thiết bị", "✅ 100% PASSED"],
+        ["test_crud & supplier_crud.py", "2 Test Cases", "Vòng đời CRUD SKU vật tư & Nhà cung cấp, kiểm tra toàn vẹn quan hệ khóa ngoại", "✅ 100% PASSED"],
+        ["test_endpoints.py", "1 Test Suite", "Kiểm thử Endpoints Dashboard, Master Data, Sổ Thẻ kho & Xuất báo cáo Excel", "✅ 100% PASSED"]
     ]
 
     for r_idx, row in enumerate(test_data):
@@ -1289,7 +1290,7 @@ def create_deck():
     ban12.line.width = Pt(1)
     tf_b12 = ban12.text_frame
     pb12 = tf_b12.paragraphs[0]
-    pb12.text = "🏆 TỔNG NGHIỆM THU: 12/12 TEST CASES PASSED HOÀN TOÀN (100%) TRONG ~40 GIÂY THỰC THI PYTEST!"
+    pb12.text = "🏆 TỔNG NGHIỆM THU: 16/16 TEST CASES PASSED HOÀN TOÀN (100%) TRONG ~40 GIÂY THỰC THI PYTEST!"
     pb12.font.name = FONT_HEADING
     pb12.font.size = Pt(13.5)
     pb12.font.bold = True
@@ -1298,8 +1299,8 @@ def create_deck():
 
     add_speaker_notes(slide12,
         "Thời lượng: 80s\n"
-        "Lời thoại: Để đảm bảo hệ thống đủ tiêu chuẩn vận hành thực tế, chúng em xây dựng bộ kiểm thử tự động toàn diện bằng framework Pytest gồm 12 kịch bản trọng yếu. Đặc biệt, chúng em thực hiện bài kiểm thử Concurrency Stress Test bằng ThreadPoolExecutor: giả lập nhiều thủ kho cùng xuất vét kho đồng thời, kết quả chứng minh tồn kho dừng lại chính xác ở số dư khả dụng và không bao giờ bị âm. Toàn bộ 12 test cases từ bảo mật AI, giao dịch ACID, phân quyền RBAC đến xuất báo cáo Excel đều vượt qua với tỷ lệ thành công 100%.\n"
-        "Mẹo tương tác: Nhấn mạnh bài test Concurrency và tỷ lệ 12/12 test cases passed để tạo sự thuyết phục cao nhất với hội đồng kỹ thuật."
+        "Lời thoại: Để đảm bảo hệ thống đủ tiêu chuẩn vận hành thực tế, chúng em xây dựng bộ kiểm thử tự động toàn diện bằng framework Pytest gồm 16 kịch bản trọng yếu. Đặc biệt, chúng em thực hiện bài kiểm thử Concurrency Stress Test bằng ThreadPoolExecutor: giả lập nhiều thủ kho cùng xuất vét kho đồng thời, kết quả chứng minh tồn kho dừng lại chính xác ở số dư khả dụng và không bao giờ bị âm. Cùng với đó là các kịch bản kiểm thử RBAC chặt chẽ đảm bảo Nhân viên kho bị chặn 403 khi thao tác trái quyền. Toàn bộ 16 test cases từ bảo mật AI, giao dịch ACID, phân quyền RBAC đến xuất báo cáo Excel đều vượt qua với tỷ lệ thành công 100%.\n"
+        "Mẹo tương tác: Nhấn mạnh bài test Concurrency và tỷ lệ 16/16 test cases passed để tạo sự thuyết phục cao nhất với hội đồng kỹ thuật."
     )
 
     # =========================================================================
@@ -1423,7 +1424,7 @@ def create_deck():
 
     demo_data = [
         ["THỜI GIAN", "THAO TÁC THỰC HIỆN TRÊN HỆ THỐNG", "MỤC TIÊU & KẾT QUẢ KỲ VỌNG"],
-        ["Phút 1", "Đăng nhập tài khoản Thủ kho (`thukho1`)", "Khám phá Dashboard trực quan, 4 thẻ KPIs kho vận và bảng cảnh báo tồn min"],
+        ["Phút 1", "Đăng nhập Thủ kho (`thukho`) & Nhân viên (`nhanvien`)", "So sánh giao diện RBAC: Thủ kho có nút Lập phiếu/Báo cáo; Nhân viên chỉ xem tra cứu"],
         ["Phút 2", "Bấm nút 'Báo Cáo 3 Phần' trên AI Widget", "Google Gemini Live API phân tích Burn-rate, đề xuất nhập hàng và cảnh báo Dead stock"],
         ["Phút 3", "Thử nghiệm xuất vượt tồn kho Thép D10", "Giao diện cảnh báo đỏ; Backend từ chối với mã lỗi 400 Bad Request chống tồn âm"],
         ["Phút 4", "Lập phiếu nhập kho & Tra cứu Thẻ kho", "Giao dịch Master-Detail thành công; Sổ Thẻ kho tự động cập nhật số dư lũy kế"],
@@ -1455,7 +1456,7 @@ def create_deck():
 
     add_speaker_notes(slide14,
         "Thời lượng: 60s\n"
-        "Lời thoại: Sau đây, chúng em xin phép được bắt đầu phần Live Demo hệ thống thực tế trong đúng 5 phút theo lộ trình chuẩn: Phút 1: Đăng nhập và khám phá Dashboard thời gian thực; Phút 2: Tương tác với AI Widget để nhận báo cáo phân tích chiến lược từ Google Gemini; Phút 3: Trực tiếp 'thử thách' tính toàn vẹn hệ thống bằng cách xuất vượt số lượng tồn kho để quan sát cơ chế chống tồn âm; Phút 4: Lập phiếu nhập và tra cứu sổ Thẻ kho; Và Phút 5: Thanh tra trực tiếp payload gửi tới AI để chứng minh 100% giá vốn đã được khử nhạy cảm.\n"
+        "Lời thoại: Sau đây, chúng em xin phép được bắt đầu phần Live Demo hệ thống thực tế trong đúng 5 phút theo lộ trình chuẩn: Phút 1: Đăng nhập so sánh 2 vai trò Thủ kho kiêm Kế toán và Nhân viên kho để thấy rõ phân quyền RBAC; Phút 2: Tương tác với AI Widget để nhận báo cáo phân tích chiến lược từ Google Gemini; Phút 3: Trực tiếp 'thử thách' tính toàn vẹn hệ thống bằng cách xuất vượt số lượng tồn kho để quan sát cơ chế chống tồn âm; Phút 4: Lập phiếu nhập và tra cứu sổ Thẻ kho; Và Phút 5: Thanh tra trực tiếp payload gửi tới AI để chứng minh 100% giá vốn đã được khử nhạy cảm.\n"
         "Mẹo tương tác: Chuyển sang màn hình trình chiếu trình duyệt web, bắt đầu thao tác mượt mà theo đúng 5 bước đã nêu."
     )
 
@@ -1499,8 +1500,8 @@ def create_deck():
     achs = [
         "100% Zero Negative Stock: Triệt tiêu hoàn toàn rủi ro tồn âm và Lost Update.",
         "Trợ lý AI Gemini Thực Chiến: Cảnh báo Burn-rate & đề xuất nhập kho thông minh.",
-        "Bảo Mật Cấp Doanh Nghiệp: Khử 100% giá vốn nhạy cảm, phân quyền RBAC chặt chẽ.",
-        "Chất Lượng Xuất Xưởng: 12/12 Test Cases passed, Docker 1-click sẵn sàng vận hành."
+        "Bảo Mật Cấp Doanh Nghiệp: Khử 100% giá vốn nhạy cảm, phân quyền RBAC 3 vai trò.",
+        "Chất Lượng Xuất Xưởng: 16/16 Test Cases passed, CSDL MySQL 8.0 & SQLite WAL sẵn sàng."
     ]
     for ac in achs:
         p = tfa.add_paragraph()
@@ -1570,7 +1571,7 @@ def create_deck():
 
     add_speaker_notes(slide15,
         "Thời lượng: 60s\n"
-        "Lời thoại: Kính thưa Hội đồng, SmartLogis AI đã hoàn thành 100% các mục tiêu đề ra, mang lại một giải pháp quản trị kho vận toàn diện: vừa an toàn tuyệt đối với giao dịch ACID chống tồn âm, vừa thông minh vượt bậc với sự trợ lực từ Google Gemini, và sẵn sàng triển khai ngay vào thực tế doanh nghiệp. Trong tương lai, chúng em sẽ tiếp tục mở rộng mô hình học máy chuỗi thời gian để dự báo nhu cầu theo mùa vụ công trình và phát triển ứng dụng di động quét mã vạch tại hiện trường bãi vật tư. Chúng em xin trân trọng cảm ơn sự hướng dẫn tận tình của Thầy/Cô và rất mong nhận được những góp ý quý báu từ Hội đồng để hoàn thiện dự án hơn nữa. Xin trân trọng cảm ơn!\n"
+        "Lời thoại: Kính thưa Hội đồng, SmartLogis AI đã hoàn thành 100% các mục tiêu đề ra với 16/16 test cases đạt chuẩn, mang lại một giải pháp quản trị kho vận toàn diện: vừa an toàn tuyệt đối với giao dịch ACID chống tồn âm trên cả MySQL 8.0 và SQLite, vừa thông minh vượt bậc với sự trợ lực từ Google Gemini, phân quyền 3 vai trò thực tế và sẵn sàng triển khai ngay vào doanh nghiệp. Trong tương lai, chúng em sẽ tiếp tục mở rộng mô hình học máy chuỗi thời gian để dự báo nhu cầu theo mùa vụ công trình và phát triển ứng dụng di động quét mã vạch tại hiện trường bãi vật tư. Chúng em xin trân trọng cảm ơn sự hướng dẫn tận tình của Thầy/Cô và rất mong nhận được những góp ý quý báu từ Hội đồng để hoàn thiện dự án hơn nữa. Xin trân trọng cảm ơn!\n"
         "Mẹo tương tác: Cúi đầu chào trang trọng, mỉm cười tự tin, chuyển sang trạng thái sẵn sàng lắng nghe câu hỏi phản biện."
     )
 

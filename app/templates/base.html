@@ -106,7 +106,7 @@
         <span>Nhà Cung Cấp</span>
       </a>
 
-      {% if user and user.VaiTro in ['Admin', 'Thukho', 'Ketoan'] %}
+      {% if user and user.VaiTro in ['Admin', 'Thukho'] %}
       <a href="/inbound" class="flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold rounded-xl text-slate-300 hover:bg-slate-800 hover:text-white transition {% if active_page == 'inbound' %}nav-item-active{% endif %}">
         <i class="fa-solid fa-box-archive w-4 text-center text-sm"></i>
         <span>Phiếu Nhập Kho</span>
@@ -172,8 +172,10 @@
             <div class="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
               {% if user.VaiTro == 'Admin' %}
               <span class="bg-rose-50 dark:bg-rose-950 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 px-1.5 py-0.2 rounded font-medium">Quản Trị Viên</span>
-              {% elif user.VaiTro in ['Thukho', 'Ketoan'] %}
+              {% elif user.VaiTro == 'Thukho' %}
               <span class="bg-sky-50 dark:bg-sky-950 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 px-1.5 py-0.2 rounded font-medium">Thủ Kho Kiêm Kế Toán</span>
+              {% elif user.VaiTro == 'Nhanvien' %}
+              <span class="bg-purple-50 dark:bg-purple-950 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 px-1.5 py-0.2 rounded font-medium">Nhân Viên Kho (Staff)</span>
               {% else %}
               <span class="bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-1.5 py-0.2 rounded font-medium">{{ user.VaiTro }}</span>
               {% endif %}

@@ -112,6 +112,7 @@
       </div>
 
       <!-- Xuất Excel Danh Bạ -->
+      {% if user and user.VaiTro in ['Admin', 'Thukho'] %}
       <a href="/api/v1/reports/export/suppliers-excel" download 
          class="inline-flex items-center gap-2 px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs hover:shadow transition cursor-pointer whitespace-nowrap">
         <i class="fa-solid fa-file-excel"></i>
@@ -119,12 +120,16 @@
       </a>
 
       <!-- Thêm Nhà Cung Cấp Mới -->
-      {% if user and user.VaiTro in ['Admin', 'Thukho', 'Ketoan'] %}
       <button type="button" onclick="openCreateSupplierModal()" 
               class="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs hover:shadow transition cursor-pointer whitespace-nowrap">
         <i class="fa-solid fa-plus"></i>
         <span>+ Thêm Nhà Cung Cấp</span>
       </button>
+      {% else %}
+      <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 text-slate-500 text-xs font-semibold border border-slate-200">
+        <i class="fa-solid fa-eye text-xs"></i>
+        <span>Chế độ Chỉ Đọc (Staff)</span>
+      </span>
       {% endif %}
 
     </div>
@@ -258,7 +263,7 @@
                 <i class="fa-solid fa-eye text-xs"></i>
               </button>
 
-              {% if user and user.VaiTro in ['Admin', 'Thukho', 'Ketoan'] %}
+              {% if user and user.VaiTro in ['Admin', 'Thukho'] %}
               <!-- Sửa -->
               <button onclick="openEditSupplierModal(this)"
                       data-mancc="{{ s.MaNCC }}"

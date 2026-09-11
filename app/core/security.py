@@ -7,6 +7,7 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.database import get_db
+from app.core.datetime_utils import utc_now
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/token", auto_error=False)
 
@@ -28,7 +29,7 @@ def get_password_hash(password: str) -> str:
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     """Khởi tạo mã JWT Access Token mã hóa thông tin người dùng."""
     to_encode = data.copy()
-    expire = datetime.utcnow() + (expires_delta if expires_delta else timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES))
+    expire = utc_now() + (expires_delta if expires_delta else timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
@@ -75,7 +76,7 @@ def get_current_active_user(user = Depends(get_current_user_optional)):
     return user
 
 def require_role(allowed_roles: List[str]):
-    """Dependency phân quyền truy cập theo vai trò (Admin, Thukho, Ketoan)."""
+    """Dependency phân quyền truy cập theo vai trò (Admin, Thukho, Nhanvien)."""
     def role_checker(current_user = Depends(get_current_active_user)):
         if current_user.VaiTro not in allowed_roles:
             raise HTTPException(

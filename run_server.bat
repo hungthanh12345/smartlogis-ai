@@ -85,9 +85,8 @@ echo     * Quan tri CSDL:    http://localhost:5050 (pgAdmin 4: admin@smartlogis.
 echo     * Tai lieu API:     http://localhost/docs  hoac  http://%LAN_IP%/docs
 echo -------------------------------------------------------------------------------
 echo  * Tai khoan dang nhap san co:
-echo    - Quan tri vien: admin  /  admin123
-echo    - Thu kho:       thukho /  thukho123
-echo    - Ke toan kho:   ketoan /  ketoan123
+echo    - Quan tri vien:          admin  /  admin123
+echo    - Thu kho kiem Ke toan:   thukho /  thukho123
 echo ===============================================================================
 echo.
 echo He thong dang chay ngam (Background Containers).

@@ -6,18 +6,19 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship
 from app.core.database import Base
+from app.core.datetime_utils import utc_now
 
 class NguoiDung(Base):
-    """B?ng ng??i d?ng h? th?ng v?i ph?n quy?n 3 vai tr?: Admin, Thukho, Ketoan."""
+    """Bảng người dùng hệ thống với phân quyền 3 vai trò: Admin, Thukho (Thủ kho kiêm Kế toán), Nhanvien (Nhân viên kho)."""
     __tablename__ = "nguoi_dung"
 
     MaND = Column(Integer, primary_key=True, autoincrement=True)
     TenDangNhap = Column(String(50), unique=True, index=True, nullable=False)
     MatKhau = Column(String(255), nullable=False)
     HoTen = Column(String(100), nullable=False)
-    VaiTro = Column(String(20), nullable=False, default="Thukho")  # 'Admin', 'Thukho', 'Ketoan'
+    VaiTro = Column(String(20), nullable=False, default="Nhanvien")  # 'Admin', 'Thukho', 'Nhanvien'
     KichHoat = Column(Boolean, default=True, nullable=False)
-    NgayTao = Column(DateTime, default=datetime.utcnow, nullable=False)
+    NgayTao = Column(DateTime, default=utc_now, nullable=False)
 
     phieu_nhap = relationship("PhieuNhap", back_populates="nguoi_dung")
     phieu_xuat = relationship("PhieuXuat", back_populates="nguoi_dung")
@@ -80,7 +81,7 @@ class TonKho(Base):
 
     MaHH = Column(String(50), ForeignKey("hang_hoa.MaHH", ondelete="CASCADE"), primary_key=True)
     SoLuongTon = Column(Integer, nullable=False, default=0)
-    CapNhatCuoi = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    CapNhatCuoi = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     hang_hoa = relationship("HangHoa", back_populates="ton_kho")
 
@@ -89,7 +90,7 @@ class PhieuNhap(Base):
     __tablename__ = "phieu_nhap"
 
     MaPN = Column(String(50), primary_key=True, index=True)
-    NgayNhap = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    NgayNhap = Column(DateTime, default=utc_now, nullable=False, index=True)
     MaNCC = Column(String(50), ForeignKey("nha_cung_cap.MaNCC"), nullable=False, index=True)
     MaND = Column(Integer, ForeignKey("nguoi_dung.MaND"), nullable=False)
     TongTien = Column(Float, default=0.0, nullable=False)
@@ -130,7 +131,7 @@ class PhieuXuat(Base):
     __tablename__ = "phieu_xuat"
 
     MaPX = Column(String(50), primary_key=True, index=True)
-    NgayXuat = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    NgayXuat = Column(DateTime, default=utc_now, nullable=False, index=True)
     MaND = Column(Integer, ForeignKey("nguoi_dung.MaND"), nullable=False)
     NguoiNhan = Column(String(255), nullable=False)
     LyDoXuat = Column(String(500), nullable=True)
@@ -169,7 +170,7 @@ class TheKho(Base):
     )
 
     MaTK = Column(Integer, primary_key=True, autoincrement=True)
-    NgayGiaoDich = Column(DateTime, default=datetime.utcnow, index=True)
+    NgayGiaoDich = Column(DateTime, default=utc_now, index=True)
     MaHH = Column(String(50), ForeignKey("hang_hoa.MaHH"), nullable=False, index=True)
     MaChungTu = Column(String(50), nullable=False, index=True)
     LoaiGiaoDich = Column(String(10), nullable=False)  # 'NHAP' hoặc 'XUAT'

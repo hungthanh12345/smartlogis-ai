@@ -4,11 +4,11 @@
 
 ![FastAPI](https://img.shields.io/badge/Backend-FastAPI_0.104+-009688?style=for-the-badge&logo=fastapi&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3.12+-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![Database](https://img.shields.io/badge/Database-SQLite_WAL_%7C_PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
+![Database](https://img.shields.io/badge/Database-MySQL_8.0_%7C_SQLite_WAL-4169E1?style=for-the-badge&logo=mysql&logoColor=white)
 ![WebSocket](https://img.shields.io/badge/Realtime-WebSocket_Broadcaster-FF6F00?style=for-the-badge&logo=websocket&logoColor=white)
 ![Gemini AI](https://img.shields.io/badge/AI_Engine-Google_Gemini_LLM-8E75C2?style=for-the-badge&logo=google&logoColor=white)
 ![Docker](https://img.shields.io/badge/Container-Docker_Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)
-![Tests](https://img.shields.io/badge/Pytest-100%25_Passed_(15/15)-success?style=for-the-badge&logo=pytest&logoColor=white)
+![Tests](https://img.shields.io/badge/Pytest-100%25_Passed_(16/16)-success?style=for-the-badge&logo=pytest&logoColor=white)
 
 **Giải pháp Quản lý Kho Vận Vật Tư & Công Trình Xây Dựng kết hợp Giao dịch ACID Chống Tồn Âm và Trợ lý Trí Tuệ Nhân Tạo Google Gemini**
 
@@ -26,7 +26,7 @@
   - **Tầng CSDL:** Ràng buộc `CHECK (SoLuongTon >= 0)` kết hợp SQLite Triggers chống can thiệp trực tiếp vào CSDL.
 - **Quy trình Nhập - Xuất kho chuẩn mực:**
   - Tự động ghi nhận Master-Detail chứng từ, cập nhật số dư khả dụng và ghi sổ **Thẻ kho (TheKho)** trong cùng 1 Transaction nguyên tử (ACID).
-- **Phân quyền RBAC chuẩn hóa:** **Admin (Quản trị viên)** và **Thủ kho kiêm Kế toán (Thukho)**. Hỗ trợ toàn diện quản trị danh mục, lập chứng từ nhập/xuất ACID, tra cứu thẻ kho lũy kế và xuất báo cáo kế toán Excel. Duy trì tài khoản `ketoan` để tương thích ngược.
+- **Phân quyền RBAC chuẩn hóa 3 vai trò:** **Admin (Quản trị viên)**, **Thủ kho kiêm Kế toán (Thukho)**, và **Nhân viên kho (Employee / Staff - Nhanvien)**. Phân định rõ ràng quyền hạn: Admin toàn quyền quản trị hệ thống, Thủ kho điều hành xuất/nhập ACID & xuất báo cáo kế toán Excel, Nhân viên kho được cấp quyền cơ bản để tra cứu danh mục, kiểm tra tồn khả dụng và xem thẻ kho phục vụ công tác bốc dỡ/kiểm đếm.
 
 ### 1.2. Trợ Lý AI Điều Hành Kho (Google Gemini LLM)
 - **Module Data Sanitizer (Khử Nhạy Cảm 100%):** Tự động loại bỏ hoàn toàn các thông tin giá vốn bí mật (`DonGiaNhap`, `ThanhTien`, `GiaVon`) trước khi gửi context cho AI.
@@ -165,7 +165,7 @@ chmod +x run_server.sh
 3. **Bước 3 - Mở trình duyệt:** 
    - Trên điện thoại, mở trình duyệt (Safari trên iPhone/iPad hoặc Chrome trên Android).
    - Nhập thẳng địa chỉ IP: `http://192.168.11.174` (không cần gõ cổng `:8000` vì Nginx đã lắng nghe tại Port 80 tiêu chuẩn).
-4. **Bước 4 - Đăng nhập:** Chọn tài khoản Thủ kho (`thukho` / `thukho123`) hoặc Kế toán (`ketoan` / `ketoan123`).
+4. **Bước 4 - Đăng nhập:** Chọn tài khoản Quản trị viên (`admin` / `admin123`) hoặc Thủ kho kiêm Kế toán (`thukho` / `thukho123`).
 
 ---
 
@@ -261,9 +261,9 @@ Hệ thống đã tích hợp các nút đăng nhập 1-click ngay tại màn h�
 
 | Tên Đăng Nhập | Mật Khẩu | Vai Trò | Phạm Vi Quyền Hạn |
 | :--- | :--- | :--- | :--- |
-| **`admin`** | `admin123` | **Admin** | Toàn quyền quản trị: Quản lý danh mục, lập phiếu, xuất Excel, xem báo cáo AI |
-| **`thukho`** | `thukho123` | **Thủ kho** | Lập phiếu nhập kho, xuất kho ACID, kiểm soát tồn khả dụng, quản lý nhà cung cấp |
-| **`ketoan`** | `ketoan123` | **Kế toán** | Lập/xem phiếu nhập xuất, tra cứu thẻ kho, xuất Excel, không được can thiệp tồn ban đầu |
+| **`admin`** | `admin123` | **Quản Trị Viên** | Toàn quyền quản trị hệ thống: Phân quyền, cấu hình kho, quản lý danh mục, lập chứng từ, xuất Excel, xem báo cáo AI |
+| **`thukho`** | `thukho123` | **Thủ Kho Kiêm Kế Toán** | Vận hành kho toàn diện & đối soát tài chính: Quản lý danh mục hàng hóa & NCC, lập phiếu nhập/xuất ACID, tra cứu thẻ kho, xuất báo cáo kế toán Excel |
+| **`nhanvien`** | `nhanvien123` | **Nhân Viên Kho (Staff)** | Quyền hạn cơ bản (Chỉ đọc): Xem Dashboard, tra cứu danh mục SKU, tra cứu nhà cung cấp, xem sổ thẻ kho biến động; Không có quyền lập phiếu nhập/xuất, không xuất Excel, không thay đổi Master Data |
 
 ---
 
@@ -307,7 +307,7 @@ Hệ thống đã tích hợp các nút đăng nhập 1-click ngay tại màn h�
 
 ## 6. Kiểm Thử Tự Động
 
-Toàn bộ hệ thống được bảo vệ bởi bộ kiểm thử tự động với 15 test cases bao phủ toàn bộ các tầng ứng dụng (AI Engine, CRUD, ACID, Race Condition, RBAC, và Realtime WebSocket):
+Toàn bộ hệ thống được bảo vệ bởi bộ kiểm thử tự động với 16 test cases bao phủ toàn bộ các tầng ứng dụng (AI Engine, CRUD, ACID, Race Condition, RBAC 3 vai trò, và Realtime WebSocket):
 
 ```powershell
 py -3.12 -m pytest tests/ -v
@@ -316,32 +316,34 @@ py -3.12 -m pytest tests/ -v
 **Kết quả ghi nhận (100% Passed):**
 ```text
 tests/test_ai_engine.py::test_ai_data_empty_inventory PASSED             [  6%]
-tests/test_ai_engine.py::test_ai_under_min_stock_recommendation PASSED   [ 13%]
-tests/test_ai_engine.py::test_mocking_gemini_api_call PASSED             [ 20%]
-tests/test_ai_engine.py::test_ai_api_endpoints_integration PASSED        [ 26%]
-tests/test_crud.py::test_crud_suite PASSED                               [ 33%]
-tests/test_endpoints.py::test_endpoints_suite PASSED                     [ 40%]
-tests/test_phase2_inventory.py::test_inbound_acid_transaction PASSED      [ 46%]
-tests/test_phase2_inventory.py::test_outbound_negative_stock_prevention PASSED [ 53%]
-tests/test_phase2_inventory.py::test_outbound_concurrency_race_condition PASSED [ 60%]
-tests/test_phase2_inventory.py::test_rbac_matrix PASSED                  [ 66%]
-tests/test_phase2_inventory.py::test_database_level_negative_stock_constraints PASSED [ 73%]
-tests/test_supplier_crud.py::test_supplier_suite PASSED                  [ 80%]
-tests/test_websocket.py::test_websocket_connect_and_ping PASSED          [ 86%]
+tests/test_ai_engine.py::test_ai_under_min_stock_recommendation PASSED   [ 12%]
+tests/test_ai_engine.py::test_mocking_gemini_api_call PASSED             [ 18%]
+tests/test_ai_engine.py::test_ai_api_endpoints_integration PASSED        [ 25%]
+tests/test_crud.py::test_crud_suite PASSED                               [ 31%]
+tests/test_endpoints.py::test_endpoints_suite PASSED                     [ 37%]
+tests/test_phase2_inventory.py::test_inbound_acid_transaction PASSED     [ 43%]
+tests/test_phase2_inventory.py::test_outbound_negative_stock_prevention PASSED [ 50%]
+tests/test_phase2_inventory.py::test_outbound_concurrency_race_condition PASSED [ 56%]
+tests/test_phase2_inventory.py::test_rbac_matrix PASSED                  [ 62%]
+tests/test_phase2_inventory.py::test_employee_role_restrictions PASSED   [ 68%]
+tests/test_phase2_inventory.py::test_database_level_negative_stock_constraints PASSED [ 75%]
+tests/test_supplier_crud.py::test_supplier_suite PASSED                  [ 81%]
+tests/test_websocket.py::test_websocket_connect_and_ping PASSED          [ 87%]
 tests/test_websocket.py::test_websocket_broadcast_event PASSED           [ 93%]
 tests/test_websocket.py::test_inbound_api_triggers_realtime_broadcast PASSED [100%]
 
-====================== 15 passed in 41.25s =======================
+====================== 16 passed in 34.09s =======================
 ```
 
 ---
 
-## 7. Tài Liệu Nghiệm Thu Chi Tiết
+## 7. Tài Liệu Nghiệm Thu & Bàn Giao Chính Thức
 
-- [Báo Cáo Nghiệm Thu Giai Đoạn 2 (ACID & Concurrency)](file:///docs/GIAI_DOAN_2_AUDIT_REPORT.md)
-- [Báo Cáo Nghiệm Thu Giai Đoạn 3 (AI Integration & Prompting)](file:///docs/GIAI_DOAN_3_AI_INTEGRATION.md)
-- [Báo Cáo Kỹ Thuật Tổng Hợp Cuối Kỳ (Toàn Bộ 4 Giai Đoạn)](file:///docs/BAO_CAO_KY_THUAT_CUOI_KY.md)
-- [Đề Cương Slide Thuyết Trình Bảo Vệ Đồ Án](file:///docs/SLIDE_DEMO_OUTLINE.md)
+- [Báo Cáo Đồ Án Chính Thức (Word docx)](file:///docs/HTD_NTH_KTPMK23A.docx)
+- [Slide Thuyết Trình Bảo Vệ Đồ Án (PowerPoint pptx)](file:///docs/SmartLogis_AI_Presentation_Deck.pptx)
+- [Đặc Tả Thiết Kế Cơ Sở Dữ Liệu 11 Bảng (MySQL 8.0 & SQLite)](file:///docs/database_design.md)
+- [Hướng Dẫn Triển Khai Web Server, Nginx SSL & Tên Miền](file:///docs/DEPLOY_DOMAIN_GUIDE.md)
+- [Thư Mục 15 Sơ Đồ Kỹ Thuật Chuẩn Hóa 300 DPI](file:///docs/generated_diagrams/)
 
 ---
 

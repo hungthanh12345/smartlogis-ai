@@ -49,9 +49,8 @@ echo   - Giao dien Web:     http://127.0.0.1:8000
 echo   - Tai lieu API:      http://127.0.0.1:8000/docs
 echo.
 echo   TAI KHOAN DEMO:
-echo   - Admin:    admin   / admin123
-echo   - Thu kho:  thukho  / thukho123
-echo   - Ke toan:  ketoan  / ketoan123
+echo   - Admin:                 admin   / admin123
+echo   - Thu kho kiem Ke toan:  thukho  / thukho123
 echo =====================================================================
 echo.
 

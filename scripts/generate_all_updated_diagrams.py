@@ -3,6 +3,7 @@
 Script Sinh Toàn Bộ 14 Sơ Đồ Kỹ Thuật Kiến Trúc Cho SmartLogis AI Chuẩn Hóa:
 - Tác nhân 1: Quản trị viên (Admin)
 - Tác nhân 2: Thủ kho kiêm Kế toán (Storekeeper & Accountant)
+- Tác nhân 3: Nhân viên kho (Employee / Staff)
 - Tác nhân bên ngoài: Trợ lý AI (Google Gemini 1.5 Flash API)
 - Cơ sở dữ liệu: MySQL Server 8.0 (InnoDB ACID) & Dual-Database
 """
@@ -55,14 +56,14 @@ def draw_system_architecture(out_path):
 
     # Layer 1: Frontend Presentation
     draw_layer_box(0.5, 6.8, 14.0, 2.3, "1. TẦNG GIAO DIỆN NGƯỜI DÙNG (FRONTEND - JINJA2 SSR & WEBSOCKET REALTIME)", '#F0FDF4', '#16A34A')
-    draw_component(0.8, 7.1, 2.8, 1.4, "Phân Hệ Xác Thực RBAC", "Đăng nhập, Phân quyền\nAdmin / Thủ kho kiêm Kế toán", '#DCFCE7', '#16A34A')
+    draw_component(0.8, 7.1, 2.8, 1.4, "Phân Hệ Xác Thực RBAC", "Đăng nhập, Phân quyền\nAdmin / Thủ kho / Nhân viên", '#DCFCE7', '#16A34A')
     draw_component(3.9, 7.1, 3.2, 1.4, "Quản Lý Danh Mục & Thẻ Kho", "CRUD Hàng hóa, NCC, DVT\nTra cứu biến động sổ thẻ kho", '#DCFCE7', '#16A34A')
     draw_component(7.4, 7.1, 3.2, 1.4, "Nghiệp Vụ Nhập / Xuất Kho", "Lập phiếu nhập & Lập phiếu xuất\nValidation giao diện, Chống tồn âm", '#DCFCE7', '#16A34A')
     draw_component(10.9, 7.1, 3.3, 1.4, "Dashboard & Trợ Lý AI / Báo Cáo", "Giao diện Báo cáo Nhập-Xuất-Tồn\nGợi ý nhập hàng & Xuất Excel/PDF", '#DCFCE7', '#16A34A')
 
     # Layer 2: Backend Application
     draw_layer_box(0.5, 3.6, 9.8, 2.8, "2. TẦNG XỬ LÝ NGHIỆP VỤ (BACKEND API - FASTAPI PYTHON)", '#EFF6FF', '#2563EB')
-    draw_component(0.8, 3.9, 2.8, 2.0, "API Router & Auth", "JWT Authentication\nRBAC Guard: 2 Vai Trò\nSwagger / OpenAPI Docs", '#DBEAFE', '#2563EB')
+    draw_component(0.8, 3.9, 2.8, 2.0, "API Router & Auth", "JWT Authentication\nRBAC Guard: 3 Vai Trò\nSwagger / OpenAPI Docs", '#DBEAFE', '#2563EB')
     draw_component(3.9, 3.9, 3.2, 2.0, "Inventory Service (Core ACID)", "Xử lý Transaction Nhập/Xuất\nAtomic SQL Decrement\nKiểm tra chống tồn kho âm", '#DBEAFE', '#2563EB')
     draw_component(7.4, 3.9, 2.6, 2.0, "AI Aggregator & Sanitizer", "Tổng hợp số liệu xuất nhập tồn\nẨn DonGiaNhap bảo mật giá vốn\nGrounded Prompt Template", '#DBEAFE', '#2563EB')
 
@@ -72,7 +73,7 @@ def draw_system_architecture(out_path):
 
     # Layer 3: Database & Storage (MySQL 8.0)
     draw_layer_box(0.5, 0.5, 14.0, 2.7, "3. TẦNG CƠ SỞ DỮ LIỆU & LƯU TRỮ (DATABASE - MYSQL SERVER 8.0 INNODB ACID)", '#FFFBEB', '#D97706')
-    draw_component(0.8, 0.8, 3.2, 1.9, "Danh Mục & Người Dùng", "Bảng: NguoiDung (2 vai trò),\nHangHoa, NhomHang, NCC", '#FEF3C7', '#D97706')
+    draw_component(0.8, 0.8, 3.2, 1.9, "Danh Mục & Người Dùng", "Bảng: NguoiDung (3 vai trò),\nHangHoa, NhomHang, NCC", '#FEF3C7', '#D97706')
     draw_component(4.3, 0.8, 3.4, 1.9, "Tồn Kho & Ràng Buộc ACID", "Bảng: TonKho\nCHECK (SoLuongTon >= 0)\nAtomic SQL Decrement", '#FEF3C7', '#D97706')
     draw_component(8.0, 0.8, 3.1, 1.9, "Giao Dịch Nhập / Xuất", "Bảng: PhieuNhap, ChiTietPN,\nPhieuXuat, ChiTietPX", '#FEF3C7', '#D97706')
     draw_component(11.4, 0.8, 2.8, 1.9, "Nhật Ký Thẻ Kho", "Bảng: TheKho (Append-only)\nTruy vết biến động tồn lũy kế\nPhục vụ đối soát & AI", '#FEF3C7', '#D97706')
@@ -125,9 +126,10 @@ def draw_usecase_general(out_path):
         ax.text(x, y - 0.95, name, ha='center', va='top', fontsize=10.5, fontweight='bold', color='#0F172A')
         ax.text(x, y - 1.25, role_desc, ha='center', va='top', fontsize=8.0, color='#64748B', style='italic')
 
-    # Draw 2 Human Actors on Left + 1 AI Actor on Right
-    draw_actor(1.6, 9.2, "Quản Trị Viên\n(Admin)", "Toàn quyền hệ thống", '#1E40AF')
-    draw_actor(1.6, 4.8, "Thủ Kho Kiêm\nKế Toán", "Vận hành kho & Đối soát", '#0D9488')
+    # Draw 3 Human Actors on Left + 1 AI Actor on Right
+    draw_actor(1.6, 9.5, "Quản Trị Viên\n(Admin)", "Toàn quyền hệ thống", '#1E40AF')
+    draw_actor(1.6, 5.8, "Thủ Kho Kiêm\nKế Toán", "Vận hành kho & Đối soát", '#0D9488')
+    draw_actor(1.6, 2.0, "Nhân Viên Kho\n(Staff)", "Tra cứu & Xem cảnh báo", '#9333EA')
     draw_actor(14.4, 6.0, "Trợ Lý AI\n(Gemini 1.5)", "Phân tích & Khuyến nghị", '#7C3AED')
 
     def draw_usecase(x, y, text, subtext="", fillcolor='#EFF6FF', bordercolor='#3B82F6', width=2.6, height=0.72):
@@ -145,7 +147,7 @@ def draw_usecase_general(out_path):
         return (x, y)
 
     uc_nodes = {}
-    uc_nodes['login'] = draw_usecase(5.8, 10.3, "Đăng nhập & Xác thực JWT", "US01 (Admin & Thủ kho kiêm KT)", '#F1F5F9', '#64748B', 2.8, 0.65)
+    uc_nodes['login'] = draw_usecase(5.8, 10.3, "Đăng nhập & Xác thực JWT", "US01 (Admin, Thủ kho, Staff)", '#F1F5F9', '#64748B', 2.8, 0.65)
     uc_nodes['user_mgmt'] = draw_usecase(10.2, 10.3, "Quản lý Người Dùng & Quyền", "Chỉ Admin quản trị", '#F1F5F9', '#64748B', 2.8, 0.65)
     uc_nodes['catalog'] = draw_usecase(8.0, 9.1, "Quản lý Danh Mục Kho", "Hàng hóa, Nhóm, DVT, NCC (US02)", '#FEF3C7', '#D97706', 3.2, 0.65)
     uc_nodes['inbound'] = draw_usecase(5.8, 7.9, "Lập Phiếu Nhập Kho", "Tăng tồn kho qua ACID (US03)", '#DCFCE7', '#16A34A', 2.8, 0.65)
@@ -171,14 +173,19 @@ def draw_usecase_general(out_path):
                 bbox=dict(boxstyle='square,pad=0.1', facecolor='#FFFFFF', edgecolor='none', alpha=0.9))
 
     # Admin connections
-    admin_pos = (1.6, 9.2)
+    admin_pos = (1.6, 9.5)
     for k in ['login', 'user_mgmt', 'catalog', 'inbound', 'outbound', 'lookup', 'export', 'ai_advisory', 'ai_report']:
         draw_assoc(admin_pos, uc_nodes[k], '#1E40AF')
 
     # Thukho kiem Ketoan connections
-    thukho_pos = (1.6, 4.8)
+    thukho_pos = (1.6, 5.8)
     for k in ['login', 'catalog', 'inbound', 'outbound', 'lookup', 'export', 'ai_advisory', 'ai_report']:
         draw_assoc(thukho_pos, uc_nodes[k], '#0D9488')
+
+    # Staff connections (strictly read-only)
+    staff_pos = (1.6, 2.0)
+    for k in ['login', 'lookup', 'alert']:
+        draw_assoc(staff_pos, uc_nodes[k], '#9333EA')
 
     # AI connections
     ai_pos = (14.4, 6.0)
@@ -228,8 +235,9 @@ def draw_warehouse_usecase(out_path):
         ax.text(x, y - 0.95, name, ha='center', va='top', fontsize=10.0, fontweight='bold', color='#0F172A')
         ax.text(x, y - 1.25, role_desc, ha='center', va='top', fontsize=8.0, color='#64748B', style='italic')
 
-    draw_actor(1.5, 5.8, "Thủ Kho Kiêm\nKế Toán", "Vận hành kho & Đối soát", '#0D9488')
-    draw_actor(1.5, 2.3, "Admin\n(Quản trị viên)", "Giám sát & Quản trị", '#1E40AF')
+    draw_actor(1.5, 6.8, "Admin\n(Quản trị viên)", "Giám sát & Quản trị", '#1E40AF')
+    draw_actor(1.5, 4.2, "Thủ Kho Kiêm\nKế Toán", "Vận hành kho & Đối soát", '#0D9488')
+    draw_actor(1.5, 1.6, "Nhân Viên Kho\n(Staff)", "Tra cứu thẻ kho & Cảnh báo", '#9333EA')
 
     def draw_usecase(x, y, text, subtext="", fillcolor='#EFF6FF', bordercolor='#3B82F6', width=2.7, height=0.72):
         box = FancyBboxPatch(
@@ -247,11 +255,12 @@ def draw_warehouse_usecase(out_path):
 
     uc_nodes = {}
     uc_nodes['inbound'] = draw_usecase(5.2, 7.0, "Lập Phiếu Nhập Kho", "Inbound Transaction", '#DCFCE7', '#16A34A')
-    uc_nodes['outbound'] = draw_usecase(5.2, 5.2, "Lập Phiếu Xuất Kho", "Outbound Transaction", '#DCFCE7', '#16A34A')
-    uc_nodes['val_stock'] = draw_usecase(9.2, 5.2, "Thẩm Định Tồn Khả Dụng", "Chống âm tại Frontend", '#FEE2E2', '#DC2626')
+    uc_nodes['outbound'] = draw_usecase(5.2, 5.3, "Lập Phiếu Xuất Kho", "Outbound Transaction", '#DCFCE7', '#16A34A')
+    uc_nodes['lookup'] = draw_usecase(5.2, 3.6, "Tra Cứu Thẻ Kho & Báo Cáo", "Xem sổ thẻ kho & Cảnh báo min", '#E0E7FF', '#4F46E5')
+    uc_nodes['export_excel'] = draw_usecase(5.2, 2.0, "Xuất Báo Cáo Excel Tồn", "Tổng hợp Nhập - Xuất - Tồn", '#FEF3C7', '#D97706')
+    uc_nodes['val_stock'] = draw_usecase(9.2, 5.3, "Thẩm Định Tồn Khả Dụng", "Chống âm tại Frontend", '#FEE2E2', '#DC2626')
     uc_nodes['pessimistic'] = draw_usecase(9.2, 3.7, "Khóa Atomic Decrement", "Update SQL chống Race Condition", '#FEE2E2', '#DC2626')
     uc_nodes['card_update'] = draw_usecase(9.2, 7.0, "Ghi Sổ Thẻ Kho Tự Động", "TheKho Append-only", '#F1F5F9', '#475569')
-    uc_nodes['export_excel'] = draw_usecase(5.2, 2.2, "Xuất Báo Cáo Excel Tồn", "Tổng hợp Nhập - Xuất - Tồn", '#FEF3C7', '#D97706')
 
     def draw_assoc(p1, p2, color='#64748B'):
         ax.plot([p1[0], p2[0]], [p1[1], p2[1]], color=color, linewidth=1.2)
@@ -265,13 +274,16 @@ def draw_warehouse_usecase(out_path):
                 bbox=dict(boxstyle='square,pad=0.1', facecolor='#FFFFFF', edgecolor='none', alpha=0.9))
 
     # Connect Actors
-    thukho_pos = (1.5, 5.8)
-    for k in ['inbound', 'outbound', 'export_excel']:
+    admin_pos = (1.5, 6.8)
+    for k in ['inbound', 'outbound', 'lookup', 'export_excel']:
+        draw_assoc(admin_pos, uc_nodes[k], '#1E40AF')
+
+    thukho_pos = (1.5, 4.2)
+    for k in ['inbound', 'outbound', 'lookup', 'export_excel']:
         draw_assoc(thukho_pos, uc_nodes[k], '#0D9488')
 
-    admin_pos = (1.5, 2.3)
-    for k in ['inbound', 'outbound', 'export_excel']:
-        draw_assoc(admin_pos, uc_nodes[k], '#1E40AF')
+    staff_pos = (1.5, 1.6)
+    draw_assoc(staff_pos, uc_nodes['lookup'], '#9333EA')
 
     # Includes
     draw_include(uc_nodes['inbound'], uc_nodes['card_update'])
@@ -316,8 +328,9 @@ def draw_ai_usecase(out_path):
         ax.text(x, y - 0.95, name, ha='center', va='top', fontsize=10.0, fontweight='bold', color='#0F172A')
         ax.text(x, y - 1.25, role_desc, ha='center', va='top', fontsize=8.0, color='#64748B', style='italic')
 
-    draw_actor(1.5, 6.0, "Thủ Kho Kiêm\nKế Toán", "Vận hành & Theo dõi kho", '#0D9488')
-    draw_actor(1.5, 2.5, "Admin\n(Quản trị viên)", "Giám sát & Quản trị", '#1E40AF')
+    draw_actor(1.5, 7.0, "Thủ Kho Kiêm\nKế Toán", "Vận hành & Theo dõi kho", '#0D9488')
+    draw_actor(1.5, 4.3, "Admin\n(Quản trị viên)", "Giám sát & Quản trị", '#1E40AF')
+    draw_actor(1.5, 1.6, "Nhân Viên Kho\n(Staff)", "Xem khuyến nghị Dashboard", '#9333EA')
     draw_actor(12.5, 4.5, "Google Gemini\n1.5 Flash API", "Mô hình LLM Phân tích", '#7C3AED')
 
     def draw_usecase(x, y, text, subtext="", fillcolor='#EDE9FE', bordercolor='#7C3AED', width=2.8, height=0.72):
@@ -361,13 +374,16 @@ def draw_ai_usecase(out_path):
                 bbox=dict(boxstyle='square,pad=0.1', facecolor='#FFFFFF', edgecolor='none', alpha=0.9))
 
     # Connect Actors
-    thukho_pos = (1.5, 6.0)
+    thukho_pos = (1.5, 7.0)
     draw_assoc(thukho_pos, uc_nodes['advisory'], '#0D9488')
     draw_assoc(thukho_pos, uc_nodes['report'], '#0D9488')
 
-    admin_pos = (1.5, 2.5)
+    admin_pos = (1.5, 4.3)
     draw_assoc(admin_pos, uc_nodes['advisory'], '#1E40AF')
     draw_assoc(admin_pos, uc_nodes['report'], '#1E40AF')
+
+    staff_pos = (1.5, 1.6)
+    draw_assoc(staff_pos, uc_nodes['advisory'], '#9333EA')
 
     gemini_pos = (12.5, 4.5)
     draw_assoc(gemini_pos, uc_nodes['grounding'], '#7C3AED')
@@ -563,7 +579,7 @@ def draw_seq_the_kho_alert(out_path):
             ha='center', va='center', fontsize=12.5, fontweight='bold', color='#0F172A')
 
     lifelines = [
-        ("Thủ Kho Kiêm Kế Toán (Actor)", 2.0, '#0D9488'),
+        ("Người Dùng (Staff/Thủ kho/Admin)", 2.0, '#9333EA'),
         ("Web UI (Dashboard / Thẻ Kho)", 5.6, '#16A34A'),
         ("FastAPI Backend", 9.4, '#2563EB'),
         ("MySQL 8.0 Database", 13.2, '#D97706')
@@ -583,7 +599,7 @@ def draw_seq_the_kho_alert(out_path):
                     arrowprops=dict(arrowstyle="->", color=col, lw=1.3, linestyle=style))
         ax.text((x1+x2)/2, y + 0.14, text, ha='center', va='center', fontsize=7.5, color='#0F172A', fontweight='bold')
 
-    draw_msg(7.8, 2.0, 5.6, "1. Mở Dashboard / Chọn màn hình 'Tra Cứu Thẻ Kho'")
+    draw_msg(7.8, 2.0, 5.6, "1. Mở Dashboard / Chọn 'Tra Cứu Thẻ Kho' (Hỗ trợ cả Nhân viên kho)")
     draw_msg(7.0, 5.6, 9.4, "2. GET /api/v1/kho/the-kho?ma_hh=HH-001&from_date=...&to_date=...")
     draw_msg(6.2, 9.4, 13.2, "3. SELECT * FROM the_kho WHERE MaHH = :id ORDER BY NgayGiaoDich ASC")
     draw_msg(5.4, 13.2, 9.4, "4. Trả về lịch sử giao dịch (Nhập, Xuất, Tồn sau giao dịch)", is_dashed=True)
@@ -666,7 +682,7 @@ def draw_seq_jwt_auth(out_path):
             ha='center', va='center', fontsize=12.5, fontweight='bold', color='#0F172A')
 
     lifelines = [
-        ("Người Dùng (Admin/Thủ kho kiêm KT)", 2.0, '#1E40AF'),
+        ("Người Dùng (Admin/Thủ kho/Nhân viên)", 2.0, '#1E40AF'),
         ("Web UI (Auth Form /login)", 5.8, '#16A34A'),
         ("FastAPI Auth Router", 9.4, '#2563EB'),
         ("MySQL 8.0 Database", 13.2, '#D97706')
@@ -689,11 +705,11 @@ def draw_seq_jwt_auth(out_path):
     draw_msg(7.8, 2.0, 5.8, "1. Nhập Tên đăng nhập và Mật khẩu (hoặc bấm nút Đăng nhập mẫu)")
     draw_msg(7.0, 5.8, 9.4, "2. POST /api/v1/auth/login (TenDangNhap, MatKhau)")
     draw_msg(6.2, 9.4, 13.2, "3. Query NguoiDung WHERE TenDangNhap = :username AND KichHoat = true")
-    draw_msg(5.4, 13.2, 9.4, "4. Trả về thông tin NguoiDung kèm Bcrypt Hash", is_dashed=True)
+    draw_msg(5.4, 13.2, 9.4, "4. Trả về NguoiDung (Bcrypt Hash, VaiTro: Admin | Thukho | Nhanvien)", is_dashed=True)
     draw_msg(4.6, 9.4, 9.4, "5. verify_password(plain, hash) -> Khớp mật khẩu!")
     draw_msg(3.8, 9.4, 9.4, "6. create_access_token(payload: {sub, mand, vaitro, hoten})")
     draw_msg(3.0, 9.4, 5.8, "7. HTTP 200 OK + Set-Cookie: access_token=Bearer ... (HttpOnly, SameSite=Lax)", is_dashed=True)
-    draw_msg(2.2, 5.8, 2.0, "8. Chuyển hướng người dùng vào /dashboard theo phân quyền 2 vai trò", is_dashed=True)
+    draw_msg(2.2, 5.8, 2.0, "8. Chuyển hướng /dashboard theo phân quyền 3 vai trò (RBAC Guard)", is_dashed=True)
 
     plt.tight_layout()
     plt.savefig(out_path, dpi=300, bbox_inches='tight')
@@ -735,13 +751,13 @@ def draw_database_erd(out_path):
             ax.text(x + 0.15, line_y, f, ha='left', va='center', fontsize=7.5, color=col, fontweight='bold' if (is_pk or is_chk) else 'normal')
             line_y -= 0.26
 
-    # 1. NguoiDung (Updated to reflect 2 unified roles)
+    # 1. NguoiDung (Updated to reflect 3 roles)
     draw_table(0.6, 8.5, 3.2, 2.2, "NguoiDung (Người dùng)", [
         "MaND (PK): INT AUTO_INCREMENT",
         "TenDangNhap: VARCHAR(50)",
         "MatKhau: VARCHAR(255)",
         "HoTen: VARCHAR(100)",
-        "VaiTro: VARCHAR(20) [Admin/Thukho]",
+        "VaiTro: VARCHAR(20) [Admin/Thukho/Nhanvien]",
         "NgayTao: TIMESTAMP"
     ], '#1E40AF', '#EFF6FF')
 
@@ -1118,7 +1134,7 @@ def draw_class_diagram_backend(out_path):
         "+ get_password_hash(password: str) -> str",
         "+ verify_password(plain, hashed) -> bool",
         "+ create_access_token(payload: dict) -> str",
-        "+ require_role(roles: List[str]) -> Callable"
+        "+ require_role(roles: ['Admin','Thukho','Nhanvien'])"
     ], '#1E293B')
 
     draw_class_box(8.2, 0.5, 5.8, 2.7, "NguoiDungModel", "SQLAlchemy ORM Model", [
@@ -1126,7 +1142,7 @@ def draw_class_diagram_backend(out_path):
         "+ TenDangNhap: Column(String)",
         "+ MatKhau: Column(String)",
         "+ HoTen: Column(String)",
-        "+ VaiTro: Column(String) ['Admin', 'Thukho']",
+        "+ VaiTro: Column(String) ['Admin', 'Thukho', 'Nhanvien']",
         "+ KichHoat: Column(Boolean)"
     ], [], '#1E293B')
 
@@ -1137,7 +1153,7 @@ def draw_class_diagram_backend(out_path):
 
 
 def generate_all():
-    print("=== Generating All 14 High-Res Diagrams for SmartLogis AI (Unified Storekeeper & Accountant) ===")
+    print("=== Generating All 14 High-Res Diagrams for SmartLogis AI (3 Roles: Admin, Storekeeper & Employee) ===")
     draw_system_architecture(os.path.join(OUTPUT_DIR, "image3.png"))
     draw_usecase_general(os.path.join(OUTPUT_DIR, "image4.png"))
     draw_warehouse_usecase(os.path.join(OUTPUT_DIR, "image5.png"))

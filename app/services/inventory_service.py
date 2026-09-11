@@ -1,10 +1,10 @@
-# app/services/inventory_service.py
 import io
 from datetime import datetime
 from typing import List, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from fastapi import HTTPException, status
+from app.core.datetime_utils import utc_now
 import openpyxl
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
@@ -169,14 +169,14 @@ def create_hang_hoa(db: Session, item_in: HangHoaCreate) -> HangHoa:
     ton_kho = TonKho(
         MaHH=new_item.MaHH,
         SoLuongTon=item_in.SoLuongBanDau,
-        CapNhatCuoi=datetime.utcnow()
+        CapNhatCuoi=utc_now()
     )
     db.add(ton_kho)
 
     # Nếu có tồn ban đầu, ghi nhận giao dịch vào Thẻ kho
     if item_in.SoLuongBanDau > 0:
         the_kho = TheKho(
-            NgayGiaoDich=datetime.utcnow(),
+            NgayGiaoDich=utc_now(),
             MaHH=new_item.MaHH,
             MaChungTu="SODU-BANDAU",
             LoaiGiaoDich="NHAP",

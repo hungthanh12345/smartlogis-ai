@@ -7,6 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, status
 from app.models.inventory_models import PhieuXuat, ChiTietPhieuXuat, TonKho, TheKho, HangHoa
 from app.schemas.inventory_schemas import PhieuXuatCreate
+from app.core.datetime_utils import utc_now
 
 def execute_outbound_transaction(db: Session, phieu_in: PhieuXuatCreate, user_id: int) -> PhieuXuat:
     """
@@ -24,7 +25,7 @@ def execute_outbound_transaction(db: Session, phieu_in: PhieuXuatCreate, user_id
         ma_px = f"PX-{datetime.now().strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}"
         phieu_xuat = PhieuXuat(
             MaPX=ma_px,
-            NgayXuat=datetime.utcnow(),
+            NgayXuat=utc_now(),
             MaND=user_id,
             NguoiNhan=phieu_in.NguoiNhan,
             LyDoXuat=phieu_in.LyDoXuat
@@ -58,7 +59,7 @@ def execute_outbound_transaction(db: Session, phieu_in: PhieuXuatCreate, user_id
                 .where(TonKho.MaHH == item.MaHH, TonKho.SoLuongTon >= item.SoLuongXuat)
                 .values(
                     SoLuongTon=TonKho.SoLuongTon - item.SoLuongXuat,
-                    CapNhatCuoi=datetime.utcnow()
+                    CapNhatCuoi=utc_now()
                 )
             )
             result = db.execute(stmt)
@@ -92,7 +93,7 @@ def execute_outbound_transaction(db: Session, phieu_in: PhieuXuatCreate, user_id
 
             # Ghi Thẻ kho lưu vết biến động
             the_kho = TheKho(
-                NgayGiaoDich=datetime.utcnow(),
+                NgayGiaoDich=utc_now(),
                 MaHH=item.MaHH,
                 MaChungTu=ma_px,
                 LoaiGiaoDich="XUAT",

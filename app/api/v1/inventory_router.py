@@ -65,7 +65,7 @@ def api_get_all_items(
 def api_create_item(
     item_in: HangHoaCreate,
     db: Session = Depends(get_db),
-    current_user: NguoiDung = Depends(require_role(["Admin", "Thukho", "Ketoan"]))
+    current_user: NguoiDung = Depends(require_role(["Admin", "Thukho"]))
 ):
     """Thêm mới mặt hàng vào danh mục và tự động khởi tạo tồn kho (Admin & Thủ kho kiêm Kế toán)."""
     item = create_hang_hoa(db, item_in)
@@ -94,7 +94,7 @@ def api_update_item(
     ma_hh: str,
     item_in: HangHoaUpdate,
     db: Session = Depends(get_db),
-    current_user: NguoiDung = Depends(require_role(["Admin", "Thukho", "Ketoan"]))
+    current_user: NguoiDung = Depends(require_role(["Admin", "Thukho"]))
 ):
     """Cập nhật thông tin mặt hàng (Admin & Thủ kho kiêm Kế toán)."""
     item = update_hang_hoa(db, ma_hh, item_in)
@@ -122,7 +122,7 @@ def api_update_item(
 def api_delete_item(
     ma_hh: str,
     db: Session = Depends(get_db),
-    current_user: NguoiDung = Depends(require_role(["Admin", "Thukho", "Ketoan"]))
+    current_user: NguoiDung = Depends(require_role(["Admin", "Thukho"]))
 ):
     """Xóa mặt hàng (Admin & Thủ kho kiêm Kế toán, chỉ cho phép khi chưa phát sinh phiếu nhập/xuất kho)."""
     delete_hang_hoa(db, ma_hh)
@@ -187,7 +187,7 @@ def api_get_supplier_detail(
 def api_create_supplier(
     ncc_in: NhaCungCapCreate,
     db: Session = Depends(get_db),
-    current_user: NguoiDung = Depends(require_role(["Admin", "Thukho", "Ketoan"]))
+    current_user: NguoiDung = Depends(require_role(["Admin", "Thukho"]))
 ):
     """Thêm mới đối tác nhà cung cấp (Admin & Thủ kho kiêm Kế toán)."""
     return create_nha_cung_cap(db, ncc_in)
@@ -197,7 +197,7 @@ def api_update_supplier(
     ma_ncc: str,
     ncc_in: NhaCungCapUpdate,
     db: Session = Depends(get_db),
-    current_user: NguoiDung = Depends(require_role(["Admin", "Thukho", "Ketoan"]))
+    current_user: NguoiDung = Depends(require_role(["Admin", "Thukho"]))
 ):
     """Cập nhật thông tin nhà cung cấp (Admin & Thủ kho kiêm Kế toán)."""
     return update_nha_cung_cap(db, ma_ncc, ncc_in)
@@ -206,7 +206,7 @@ def api_update_supplier(
 def api_delete_supplier(
     ma_ncc: str,
     db: Session = Depends(get_db),
-    current_user: NguoiDung = Depends(require_role(["Admin", "Thukho", "Ketoan"]))
+    current_user: NguoiDung = Depends(require_role(["Admin", "Thukho"]))
 ):
     """Xóa nhà cung cấp (Admin & Thủ kho kiêm Kế toán, chỉ khi chưa có phiếu nhập liên kết)."""
     delete_nha_cung_cap(db, ma_ncc)
@@ -239,7 +239,7 @@ def api_check_single_stock(
 def api_tao_phieu_nhap(
     phieu_in: PhieuNhapCreate,
     db: Session = Depends(get_db),
-    current_user: NguoiDung = Depends(require_role(["Admin", "Thukho", "Ketoan"]))
+    current_user: NguoiDung = Depends(require_role(["Admin", "Thukho"]))
 ):
     """API Lập Phiếu Nhập Kho Inbound trong 1 Transaction ACID (Admin, Thủ kho, Kế toán)."""
     phieu = execute_inbound_transaction(db, phieu_in, user_id=current_user.MaND)
@@ -259,7 +259,7 @@ def api_get_phieu_nhap_list(
     limit: int = Query(100, ge=1, le=500),
     skip: int = Query(0, ge=0),
     db: Session = Depends(get_db),
-    current_user: NguoiDung = Depends(require_role(["Admin", "Thukho", "Ketoan"]))
+    current_user: NguoiDung = Depends(require_role(["Admin", "Thukho"]))
 ):
     """Xem danh sách các phiếu nhập kho (Admin, Thủ kho, Kế toán)."""
     return get_all_phieu_nhap(db, limit=limit, skip=skip)
@@ -268,7 +268,7 @@ def api_get_phieu_nhap_list(
 def api_get_phieu_nhap_detail(
     ma_pn: str,
     db: Session = Depends(get_db),
-    current_user: NguoiDung = Depends(require_role(["Admin", "Thukho", "Ketoan"]))
+    current_user: NguoiDung = Depends(require_role(["Admin", "Thukho"]))
 ):
     """Xem chi tiết một phiếu nhập kho kèm các dòng hàng (Admin, Thủ kho, Kế toán)."""
     return get_phieu_nhap_by_id(db, ma_pn)
@@ -277,7 +277,7 @@ def api_get_phieu_nhap_detail(
 def api_tao_phieu_xuat(
     phieu_in: PhieuXuatCreate,
     db: Session = Depends(get_db),
-    current_user: NguoiDung = Depends(require_role(["Admin", "Thukho", "Ketoan"]))
+    current_user: NguoiDung = Depends(require_role(["Admin", "Thukho"]))
 ):
     """API Lập Phiếu Xuất Kho Outbound có Atomic SQL Decrement chống race condition (Admin, Thủ kho, Kế toán)."""
     phieu = execute_outbound_transaction(db, phieu_in, user_id=current_user.MaND)
@@ -297,7 +297,7 @@ def api_get_phieu_xuat_list(
     limit: int = Query(100, ge=1, le=500),
     skip: int = Query(0, ge=0),
     db: Session = Depends(get_db),
-    current_user: NguoiDung = Depends(require_role(["Admin", "Thukho", "Ketoan"]))
+    current_user: NguoiDung = Depends(require_role(["Admin", "Thukho"]))
 ):
     """Xem danh sách các phiếu xuất kho (Admin, Thủ kho, Kế toán)."""
     return get_all_phieu_xuat(db, limit=limit, skip=skip)
@@ -306,7 +306,7 @@ def api_get_phieu_xuat_list(
 def api_get_phieu_xuat_detail(
     ma_px: str,
     db: Session = Depends(get_db),
-    current_user: NguoiDung = Depends(require_role(["Admin", "Thukho", "Ketoan"]))
+    current_user: NguoiDung = Depends(require_role(["Admin", "Thukho"]))
 ):
     """Xem chi tiết một phiếu xuất kho kèm các dòng hàng (Admin, Thủ kho, Kế toán)."""
     return get_phieu_xuat_by_id(db, ma_px)
@@ -316,7 +316,7 @@ def api_get_the_kho(
     ma_hh: str,
     limit: int = Query(100, ge=1, le=500),
     db: Session = Depends(get_db),
-    current_user: NguoiDung = Depends(require_role(["Admin", "Thukho", "Ketoan"]))
+    current_user: NguoiDung = Depends(get_current_active_user)
 ):
-    """Tra cứu lịch sử sổ thẻ kho của một mặt hàng (Admin, Thủ kho, Kế toán)."""
+    """Tra cứu lịch sử sổ thẻ kho của một mặt hàng (Admin, Thủ kho, Nhân viên)."""
     return get_the_kho_by_item(db, ma_hh, limit=limit)

@@ -47,7 +47,7 @@ async def run_servers():
     print(" [5] TAI LIEU API SWAGGER DOCS         : https://smartlogis-ai.com/docs")
     print(" [6] WEBSOCKET REALTIME STREAM         : wss://smartlogis-ai.com/ws/inventory")
     print("-" * 79)
-    print(" * Tai khoan Demo: admin / admin123  |  thukho / thukho123  |  ketoan / ketoan123")
+    print(" * Tai khoan Demo: admin / admin123 (Admin)  |  thukho / thukho123 (Thu Kho Kiem Ke Toan)")
     print(" * Nhan Ctrl + C de dung may chu.")
     print("=" * 79 + "\n")
 

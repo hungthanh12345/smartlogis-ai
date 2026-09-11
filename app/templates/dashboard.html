@@ -89,6 +89,7 @@
           </h2>
         </div>
         <div class="flex items-center gap-2.5">
+          {% if user and user.VaiTro in ['Admin', 'Thukho'] %}
           <a href="/api/v1/reports/export/excel"
              style="background-color: #059669; color: #ffffff;"
              class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold rounded-lg text-xs shadow-xs hover:shadow-md transition cursor-pointer whitespace-nowrap"
@@ -96,6 +97,7 @@
             <i class="fa-solid fa-file-excel"></i>
             <span>Xuất Excel</span>
           </a>
+          {% endif %}
           <span id="badge-alert-count" class="text-xs font-bold px-2.5 py-1 rounded-full bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-800">
             {{ alerts|length }} mặt hàng cảnh báo
           </span>
@@ -140,12 +142,16 @@
                 {% endif %}
               </td>
               <td class="py-3 px-4 text-center">
+                {% if user and user.VaiTro in ['Admin', 'Thukho'] %}
                 <a href="/inbound?ma_hh={{ item.MaHH }}"
                    style="background-color: #0284c7; color: #ffffff;"
                    class="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-sky-600 hover:bg-sky-500 active:bg-sky-700 text-white font-bold rounded-lg text-xs transition shadow-xs hover:shadow-md cursor-pointer whitespace-nowrap">
                   <i class="fa-solid fa-plus text-[10px]"></i>
                   <span>Nhập hàng</span>
                 </a>
+                {% else %}
+                <span class="text-[11px] text-slate-400 italic">Cần báo Thủ kho</span>
+                {% endif %}
               </td>
             </tr>
             {% else %}

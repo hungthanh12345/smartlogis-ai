@@ -243,7 +243,7 @@ def test_outbound_concurrency_race_condition():
 def test_rbac_matrix():
     """
     Kiểm thử Ma trận phân quyền Hợp nhất (Role-Based Access Control):
-    - Thủ kho kiêm Kế toán (Thukho / Ketoan):
+    - Thủ kho kiêm Kế toán (Thukho):
       + Được toàn quyền thực hiện các nghiệp vụ quản lý kho, Master Data SKU, NCC.
       + Được lập phiếu nhập, phiếu xuất, xem thẻ kho.
       + Được xuất báo cáo Excel tổng hợp tồn kho (/api/v1/reports/export/excel).
@@ -251,11 +251,9 @@ def test_rbac_matrix():
     """
     client = TestClient(app)
     admin_token = get_auth_token(client, "admin", "admin123")
-    ketoan_token = get_auth_token(client, "ketoan", "ketoan123")
     thukho_token = get_auth_token(client, "thukho", "thukho123")
 
     admin_headers = {"Authorization": f"Bearer {admin_token}"}
-    ketoan_headers = {"Authorization": f"Bearer {ketoan_token}"}
     thukho_headers = {"Authorization": f"Bearer {thukho_token}"}
 
     # 1. Thủ kho & Kế toán ĐƯỢC PHÉP xem danh mục hàng và nhà cung cấp
@@ -335,14 +333,68 @@ def test_rbac_matrix():
         # 9. Thủ kho kiêm Kế toán ĐƯỢC PHÉP xuất file Excel Báo cáo tồn kho
         res_excel = client.get("/api/v1/reports/export/excel", headers=thukho_headers)
         assert res_excel.status_code == 200, f"Thủ kho phải xuất được Excel, nhưng nhận: {res_excel.status_code}"
-
-        # 10. Tài khoản Ketoan (tương thích ngược) cũng xuất được Excel
-        res_excel_kt = client.get("/api/v1/reports/export/excel", headers=ketoan_headers)
-        assert res_excel_kt.status_code == 200
-
     finally:
         client.delete(f"/api/v1/kho/items/{test_sku}", headers=admin_headers)
         client.delete(f"/api/v1/kho/suppliers/{test_ncc}", headers=admin_headers)
+
+
+def test_employee_role_restrictions():
+    """
+    Kiểm thử Tác nhân Nhân viên (Employee / Staff - Nhanvien):
+    - ĐƯỢC PHÉP: Đăng nhập, xem danh mục hàng hóa, xem đối tác NCC, tra cứu thẻ kho.
+    - BỊ CHẶN (HTTP 403): Thêm SKU, thêm NCC, lập phiếu nhập, lập phiếu xuất, xuất file Excel.
+    """
+    client = TestClient(app)
+    emp_token = get_auth_token(client, "nhanvien", "nhanvien123")
+    emp_headers = {"Authorization": f"Bearer {emp_token}"}
+
+    # 1. Nhân viên ĐƯỢC PHÉP xem danh mục hàng hóa và nhà cung cấp (Read-only)
+    res_items = client.get("/api/v1/kho/items", headers=emp_headers)
+    assert res_items.status_code == 200, f"Nhân viên phải xem được danh mục hàng: {res_items.text}"
+
+    res_sup = client.get("/api/v1/kho/suppliers", headers=emp_headers)
+    assert res_sup.status_code == 200, f"Nhân viên phải xem được danh sách NCC: {res_sup.text}"
+
+    # 2. Nhân viên ĐƯỢC PHÉP tra cứu thẻ kho
+    first_sku = res_items.json()[0]["MaHH"]
+    res_tk = client.get(f"/api/v1/kho/the-kho/{first_sku}", headers=emp_headers)
+    assert res_tk.status_code == 200, f"Nhân viên phải tra cứu được thẻ kho: {res_tk.text}"
+
+    # 3. Nhân viên BỊ CHẶN (HTTP 403) khi cố tạo hàng hóa
+    res_block_item = client.post(
+        "/api/v1/kho/items",
+        json={"MaHH": "HH-EMP-FAIL", "TenHH": "Fail", "MaNhom": "NH-THEP", "MaDVT": "Bao", "TonToiThieu": 5},
+        headers=emp_headers
+    )
+    assert res_block_item.status_code == 403, f"Nhân viên không được phép tạo hàng: {res_block_item.status_code}"
+
+    # 4. Nhân viên BỊ CHẶN (HTTP 403) khi cố tạo nhà cung cấp
+    res_block_sup = client.post(
+        "/api/v1/kho/suppliers",
+        json={"MaNCC": "NCC-EMP-FAIL", "TenNCC": "Fail", "DiaChi": "HN", "SoDienThoai": "0123456789"},
+        headers=emp_headers
+    )
+    assert res_block_sup.status_code == 403, f"Nhân viên không được phép tạo NCC: {res_block_sup.status_code}"
+
+    # 5. Nhân viên BỊ CHẶN (HTTP 403) khi cố lập phiếu nhập kho
+    res_block_inb = client.post(
+        "/api/v1/kho/phieu-nhap",
+        json={"MaNCC": "NCC-01", "GhiChu": "Test", "items": [{"MaHH": first_sku, "SoLuongNhap": 10, "DonGiaNhap": 1000}]},
+        headers=emp_headers
+    )
+    assert res_block_inb.status_code == 403, f"Nhân viên không được phép lập phiếu nhập: {res_block_inb.status_code}"
+
+    # 6. Nhân viên BỊ CHẶN (HTTP 403) khi cố lập phiếu xuất kho
+    res_block_out = client.post(
+        "/api/v1/kho/phieu-xuat",
+        json={"NguoiNhan": "Test", "LyDoXuat": "Test", "items": [{"MaHH": first_sku, "SoLuongXuat": 1}]},
+        headers=emp_headers
+    )
+    assert res_block_out.status_code == 403, f"Nhân viên không được phép lập phiếu xuất: {res_block_out.status_code}"
+
+    # 7. Nhân viên BỊ CHẶN (HTTP 403) khi cố xuất báo cáo kế toán Excel
+    res_block_excel = client.get("/api/v1/reports/export/excel", headers=emp_headers)
+    assert res_block_excel.status_code == 403, f"Nhân viên không được phép xuất Excel: {res_block_excel.status_code}"
 
 
 def test_database_level_negative_stock_constraints():

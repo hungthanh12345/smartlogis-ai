@@ -1,7 +1,13 @@
 import os
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        case_sensitive=True,
+        env_file=".env",
+        extra="allow"
+    )
+
     # Application Info & Environment
     PROJECT_NAME: str = "SmartLogis AI - Hệ thống Quản lý Kho Thông minh Tích hợp AI"
     VERSION: str = "4.0.0"
@@ -52,11 +58,6 @@ class Settings(BaseSettings):
     PGADMIN_PORT: int = 5050
     PGADMIN_DEFAULT_EMAIL: str = "admin@smartlogis.vn"
     PGADMIN_DEFAULT_PASSWORD: str = "adminpassword"
-
-    class Config:
-        case_sensitive = True
-        env_file = ".env"
-        extra = "allow"
 
 settings = Settings()
 
