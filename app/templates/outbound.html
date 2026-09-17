@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 
-{% block title %}Lập Phiếu Xuất Kho - Chống Tồn Âm - SmartLogis AI{% endblock %}
-{% block header_title %}LẬP PHIẾU XUẤT KHO & KIỂM SOÁT CHỐNG TỒN ÂM (ACID LOCKING){% endblock %}
+{% block title %}Quản Lý Xuất Kho - Chống Tồn Âm - SmartLogis AI{% endblock %}
+{% block header_title %}QUẢN LÝ & LẬP PHIẾU XUẤT KHO (ACID LOCKING & CHỐNG TỒN ÂM){% endblock %}
 
 {% block content %}
-<div class="max-w-5xl mx-auto space-y-6">
+<div class="max-w-6xl mx-auto space-y-6">
 
   <!-- BANNER CẢNH BÁO VI PHẠM TỒN ÂM -->
   <div id="negative-warning-banner" class="hidden p-4 rounded-2xl bg-rose-50/90 dark:bg-rose-950/70 border-2 border-rose-500 text-rose-900 dark:text-rose-200 text-xs shadow-md flex items-start gap-3">
@@ -24,101 +24,241 @@
 
   <div id="alert-banner" class="hidden p-4 rounded-2xl text-xs font-semibold flex items-center gap-3"></div>
 
-  <!-- THÔNG TIN ĐẦU PHIẾU XUẤT (MASTER) -->
-  <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-6 shadow-xs transition">
-    <div class="text-sm font-bold text-slate-900 dark:text-white pb-3 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2 mb-4">
-      <span class="w-6 h-6 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center text-xs">
-        <i class="fa-solid fa-clipboard-list"></i>
-      </span>
-      <span>Thông Tin Đầu Phiếu Xuất Kho</span>
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <div>
-        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Mã Phiếu Xuất</label>
-        <input type="text" readonly value="PX-TỰ-ĐỘNG-TẠO"
-          class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono font-bold text-slate-600 dark:text-slate-300">
-      </div>
-
-      <div>
-        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Ngày Lập Phiếu</label>
-        <input type="date" id="out-ngay"
-          class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500">
-      </div>
-
-      <div>
-        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Đơn Vị / Người Nhận (*)</label>
-        <input type="text" id="out-nguoinhan" value="Đội thi công Công trình Tân Thịnh (Khu A)"
-          class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500">
-      </div>
-
-      <div>
-        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Thủ Kho Thực Hiện</label>
-        <input type="text" readonly value="{{ user.HoTen if user else 'Thủ kho' }}"
-          class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200">
-      </div>
-    </div>
-
-    <div class="mt-4">
-      <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Lý Do / Mục Đích Xuất Kho</label>
-      <input type="text" id="out-lydo" value="Xuất vật tư sơn chống rỉ và phụ kiện thi công kết cấu dầm cầu"
-        class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500">
-    </div>
-  </div>
-
-  <!-- BẢNG THẨM ĐỊNH TỒN KHO & DANH SÁCH HÀNG XUẤT -->
-  <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-6 shadow-xs transition">
-    <div class="text-sm font-bold text-slate-900 dark:text-white pb-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between mb-4">
-      <div class="flex items-center gap-2">
-        <span class="w-6 h-6 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center text-xs">
-          <i class="fa-solid fa-shield-halved"></i>
-        </span>
-        <span>Thẩm Định Tồn Kho & Chi Tiết Hàng Xuất (Real-time Validation)</span>
-      </div>
-      <button type="button" onclick="addRowXuat()"
-        class="px-3.5 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 font-semibold rounded-xl text-xs transition border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 cursor-pointer">
-        <i class="fa-solid fa-plus text-sky-600 dark:text-sky-400"></i>
-        <span>Thêm Mặt Hàng Xuất</span>
+  <!-- NAVIGATION TABS -->
+  <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+    <div class="inline-flex bg-slate-200/80 dark:bg-slate-800 p-1 rounded-xl text-xs font-semibold">
+      <button type="button" onclick="switchOutboundTab('create')" id="tab-btn-out-create"
+        class="px-4 py-2 rounded-lg bg-white dark:bg-slate-700 text-sky-700 dark:text-sky-300 shadow-xs font-bold transition flex items-center gap-2 cursor-pointer">
+        <i class="fa-solid fa-dolly"></i>
+        <span>Lập Phiếu Xuất Mới</span>
+      </button>
+      <button type="button" onclick="switchOutboundTab('list')" id="tab-btn-out-list"
+        class="px-4 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition flex items-center gap-2 cursor-pointer">
+        <i class="fa-solid fa-table-list"></i>
+        <span>Danh Sách Phiếu Xuất Kho</span>
       </button>
     </div>
 
-    <div class="overflow-x-auto">
-      <table class="w-full text-left text-xs border-collapse" id="tbl-xuat">
-        <thead>
-          <tr class="bg-slate-100/80 dark:bg-slate-850 text-slate-700 dark:text-slate-300 uppercase font-bold text-[11px] border-b border-slate-200 dark:border-slate-800">
-            <th class="py-2.5 px-3 w-10 text-center">STT</th>
-            <th class="py-2.5 px-3 min-w-[220px]">Mặt Hàng (*)</th>
-            <th class="py-2.5 px-3 w-16 text-center">ĐVT</th>
-            <th class="py-2.5 px-3 w-28 text-center">Tồn Khả Dụng</th>
-            <th class="py-2.5 px-3 w-32">Số Lượng Xuất</th>
-            <th class="py-2.5 px-3 w-28 text-center">Tồn Dự Kiến</th>
-            <th class="py-2.5 px-3 min-w-[180px] text-center">Trạng Thái Thẩm Định</th>
-            <th class="py-2.5 px-3 w-12 text-center">Xóa</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-200" id="body-xuat">
-        </tbody>
-      </table>
+    <div class="text-xs text-slate-500 dark:text-slate-400 hidden sm:flex items-center gap-1.5">
+      <i class="fa-solid fa-lock text-sky-600 dark:text-sky-400"></i>
+      <span>Cơ chế Atomic SQL Decrement chống race condition</span>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 1: LẬP PHIẾU XUẤT MỚI -->
+  <!-- ========================================================================= -->
+  <div id="section-create-outbound" class="space-y-6">
+
+    <!-- THÔNG TIN ĐẦU PHIẾU XUẤT (MASTER) -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-6 shadow-xs transition">
+      <div class="text-sm font-bold text-slate-900 dark:text-white pb-3 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2 mb-4">
+        <span class="w-6 h-6 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center text-xs">
+          <i class="fa-solid fa-clipboard-list"></i>
+        </span>
+        <span>Thông Tin Đầu Phiếu Xuất Kho</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Mã Phiếu Xuất</label>
+          <input type="text" readonly value="PX-TỰ-ĐỘNG-TẠO"
+            class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono font-bold text-slate-600 dark:text-slate-300">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Ngày Lập Phiếu</label>
+          <input type="date" id="out-ngay"
+            class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Đơn Vị / Người Nhận (*)</label>
+          <input type="text" id="out-nguoinhan" placeholder="Nhập tên người hoặc công trình nhận hàng..."
+            class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Thủ Kho Thực Hiện</label>
+          <input type="text" readonly value="{{ user.HoTen if user else 'Thủ kho' }}"
+            class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-200">
+        </div>
+      </div>
+
+      <div class="mt-4">
+        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Lý Do / Mục Đích Xuất Kho</label>
+        <input type="text" id="out-lydo" placeholder="Ví dụ: Xuất vật tư phục vụ dự án..."
+          class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500">
+      </div>
     </div>
 
-    <!-- KHỐI HÀNH ĐỘNG & BẢO VỆ GIAO DỊCH -->
-    <div class="mt-6 pt-4 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
-      <div class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2">
-        <i class="fa-solid fa-lock text-sky-600 dark:text-sky-400"></i>
-        <span>Khóa dòng dữ liệu giao dịch bằng <code class="bg-slate-100 dark:bg-slate-800 text-sky-700 dark:text-sky-400 px-1 py-0.5 rounded font-mono font-bold">SELECT ... FOR UPDATE</code>.</span>
-      </div>
-
-      <div class="flex items-center gap-3">
-        <button type="button" onclick="submitPhieuXuat()" id="btn-submit-xuat"
-          class="px-6 py-2.5 bg-sky-600 hover:bg-sky-500 active:bg-sky-700 text-white font-bold rounded-xl text-xs transition shadow-md flex items-center gap-2 cursor-pointer whitespace-nowrap">
-          <i class="fa-solid fa-check"></i>
-          <span>Xác Nhận Xuất Kho (ACID Transaction)</span>
+    <!-- BẢNG THẨM ĐỊNH TỒN KHO & DANH SÁCH HÀNG XUẤT -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-6 shadow-xs transition">
+      <div class="text-sm font-bold text-slate-900 dark:text-white pb-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between mb-4">
+        <div class="flex items-center gap-2">
+          <span class="w-6 h-6 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center text-xs">
+            <i class="fa-solid fa-shield-halved"></i>
+          </span>
+          <span>Thẩm Định Tồn Kho & Chi Tiết Hàng Xuất (Real-time Validation)</span>
+        </div>
+        <button type="button" onclick="addRowXuat()"
+          class="px-3.5 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 font-semibold rounded-xl text-xs transition border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 cursor-pointer">
+          <i class="fa-solid fa-plus text-sky-600 dark:text-sky-400"></i>
+          <span>Thêm Mặt Hàng Xuất</span>
         </button>
       </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs border-collapse" id="tbl-xuat">
+          <thead>
+            <tr class="bg-slate-100/80 dark:bg-slate-850 text-slate-700 dark:text-slate-300 uppercase font-bold text-[11px] border-b border-slate-200 dark:border-slate-800">
+              <th class="py-2.5 px-3 w-10 text-center">STT</th>
+              <th class="py-2.5 px-3 min-w-[220px]">Mặt Hàng (*)</th>
+              <th class="py-2.5 px-3 w-16 text-center">ĐVT</th>
+              <th class="py-2.5 px-3 w-28 text-center">Tồn Khả Dụng</th>
+              <th class="py-2.5 px-3 w-32">Số Lượng Xuất</th>
+              <th class="py-2.5 px-3 w-28 text-center">Tồn Dự Kiến</th>
+              <th class="py-2.5 px-3 min-w-[180px] text-center">Trạng Thái Thẩm Định</th>
+              <th class="py-2.5 px-3 w-12 text-center">Xóa</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-200" id="body-xuat">
+          </tbody>
+        </table>
+      </div>
+
+      <!-- KHỐI HÀNH ĐỘNG & BẢO VỆ GIAO DỊCH -->
+      <div class="mt-6 pt-4 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2">
+          <i class="fa-solid fa-lock text-sky-600 dark:text-sky-400"></i>
+          <span>Kiểm soát số dư tồn kho chặt chẽ — Tuyệt đối không cho phép âm tồn.</span>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <button type="button" onclick="submitPhieuXuat()" id="btn-submit-xuat"
+            class="px-6 py-2.5 bg-sky-600 hover:bg-sky-500 active:bg-sky-700 text-white font-bold rounded-xl text-xs transition shadow-md flex items-center gap-2 cursor-pointer whitespace-nowrap">
+            <i class="fa-solid fa-check"></i>
+            <span>Xác Nhận Xuất Kho (ACID Transaction)</span>
+          </button>
+        </div>
+      </div>
+
     </div>
 
   </div>
 
+  <!-- ========================================================================= -->
+  <!-- TAB 2: DANH SÁCH & LỊCH SỬ CÁC PHIẾU XUẤT KHO -->
+  <!-- ========================================================================= -->
+  <div id="section-list-outbound" class="space-y-4 hidden">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5 shadow-xs transition">
+      
+      <!-- Toolbar tìm kiếm & lọc -->
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
+        <div class="relative w-full sm:w-80">
+          <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-slate-400 text-xs"></i>
+          <input type="text" id="searchOutboundInput" onkeyup="filterOutboundTable()" placeholder="Tìm kiếm mã phiếu, người nhận, lý do xuất..."
+            class="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20">
+        </div>
+        <button type="button" onclick="loadOutboundHistory()"
+          class="px-3.5 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer">
+          <i class="fa-solid fa-rotate"></i>
+          <span>Làm Mới Danh Sách</span>
+        </button>
+      </div>
+
+      <!-- Bảng lịch sử phiếu xuất -->
+      <div class="overflow-x-auto mt-4">
+        <table class="w-full text-left text-xs border-collapse" id="tbl-history-outbound">
+          <thead>
+            <tr class="bg-slate-100/80 dark:bg-slate-850 text-slate-700 dark:text-slate-300 uppercase font-bold text-[11px] border-b border-slate-200 dark:border-slate-800">
+              <th class="py-3 px-3 w-12 text-center">STT</th>
+              <th class="py-3 px-3 w-36">Mã Phiếu Xuất</th>
+              <th class="py-3 px-3 w-32">Ngày Xuất</th>
+              <th class="py-3 px-3 min-w-[180px]">Người / Đơn Vị Nhận</th>
+              <th class="py-3 px-3 w-28 text-center">Mặt Hàng</th>
+              <th class="py-3 px-3 min-w-[200px]">Lý Do Xuất</th>
+              <th class="py-3 px-3 w-24 text-center">Chi Tiết</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-200" id="body-history-outbound">
+            <tr>
+              <td colspan="7" class="py-8 text-center text-slate-400">
+                <i class="fa-solid fa-spinner fa-spin text-lg mb-1 block"></i>
+                Đang nạp danh sách phiếu xuất kho...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- ========================================================================= -->
+<!-- MODAL XEM CHI TIẾT PHIẾU XUẤT KHO -->
+<!-- ========================================================================= -->
+<div id="modalDetailOutbound" class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+  <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col border border-slate-200 dark:border-slate-800 overflow-hidden transition">
+    <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-850">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center text-sm">
+          <i class="fa-solid fa-dolly"></i>
+        </div>
+        <div>
+          <h3 class="font-bold text-slate-800 dark:text-white text-sm" id="detail-px-code">PX-XXXXXX</h3>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400">Chi tiết chứng từ xuất kho</p>
+        </div>
+      </div>
+      <button type="button" onclick="closeDetailOutboundModal()" class="w-8 h-8 rounded-lg bg-slate-200/60 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 flex items-center justify-center cursor-pointer">
+        <i class="fa-solid fa-xmark text-sm"></i>
+      </button>
+    </div>
+
+    <div class="p-6 overflow-y-auto space-y-4 text-xs flex-1">
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl">
+        <div>
+          <span class="text-[10px] text-slate-400 uppercase font-bold">Ngày xuất</span>
+          <div class="font-semibold text-slate-800 dark:text-slate-200 mt-0.5" id="detail-px-date">--</div>
+        </div>
+        <div>
+          <span class="text-[10px] text-slate-400 uppercase font-bold">Người nhận</span>
+          <div class="font-semibold text-slate-800 dark:text-slate-200 mt-0.5 truncate" id="detail-px-receiver">--</div>
+        </div>
+        <div>
+          <span class="text-[10px] text-slate-400 uppercase font-bold">Người lập</span>
+          <div class="font-semibold text-slate-800 dark:text-slate-200 mt-0.5" id="detail-px-user">--</div>
+        </div>
+        <div>
+          <span class="text-[10px] text-slate-400 uppercase font-bold">Lý do</span>
+          <div class="font-semibold text-slate-800 dark:text-slate-200 mt-0.5 truncate" id="detail-px-reason">--</div>
+        </div>
+      </div>
+
+      <div class="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
+        <table class="w-full text-left text-xs border-collapse">
+          <thead>
+            <tr class="bg-slate-100/80 dark:bg-slate-850 text-slate-700 dark:text-slate-300 font-bold border-b border-slate-200 dark:border-slate-700">
+              <th class="py-2.5 px-3 w-10 text-center">STT</th>
+              <th class="py-2.5 px-3">Mã & Tên Hàng Hóa</th>
+              <th class="py-2.5 px-3 text-center w-24">Số Lượng Xuất</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300" id="detail-px-items">
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="px-6 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850 flex justify-end">
+      <button type="button" onclick="closeDetailOutboundModal()"
+        class="px-5 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold rounded-xl text-xs transition cursor-pointer">
+        Đóng
+      </button>
+    </div>
+  </div>
 </div>
 
 {% endblock %}
@@ -126,8 +266,30 @@
 {% block extra_scripts %}
 <script>
   let availableItems = [];
+  let outboundHistoryData = [];
 
-  // Tự động gán ngày hiện tại
+  // --- QUẢN LÝ TAB ---
+  function switchOutboundTab(tab) {
+    const btnCreate = document.getElementById('tab-btn-out-create');
+    const btnList = document.getElementById('tab-btn-out-list');
+    const secCreate = document.getElementById('section-create-outbound');
+    const secList = document.getElementById('section-list-outbound');
+
+    if (tab === 'create') {
+      btnCreate.className = 'px-4 py-2 rounded-lg bg-white dark:bg-slate-700 text-sky-700 dark:text-sky-300 shadow-xs font-bold transition flex items-center gap-2 cursor-pointer';
+      btnList.className = 'px-4 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition flex items-center gap-2 cursor-pointer';
+      secCreate.classList.remove('hidden');
+      secList.classList.add('hidden');
+    } else {
+      btnList.className = 'px-4 py-2 rounded-lg bg-white dark:bg-slate-700 text-sky-700 dark:text-sky-300 shadow-xs font-bold transition flex items-center gap-2 cursor-pointer';
+      btnCreate.className = 'px-4 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition flex items-center gap-2 cursor-pointer';
+      secList.classList.remove('hidden');
+      secCreate.classList.add('hidden');
+      loadOutboundHistory();
+    }
+  }
+
+  // --- KHỞI TẠO DỮ LIỆU ---
   document.addEventListener('DOMContentLoaded', () => {
     const d = new Date();
     const formatted = d.toISOString().split('T')[0];
@@ -135,6 +297,7 @@
     if (inpNgay && !inpNgay.value) {
       inpNgay.value = formatted;
     }
+    loadItems();
   });
 
   async function loadItems() {
@@ -142,11 +305,13 @@
       const res = await fetch('/api/v1/kho/items');
       availableItems = await res.json();
 
-      if (availableItems.length >= 2) {
-        addRowXuat(availableItems[0].MaHH, 5);
-        addRowXuat(availableItems[1].MaHH, 2);
-      } else if (availableItems.length > 0) {
-        addRowXuat(availableItems[0].MaHH, 1);
+      const params = new URLSearchParams(window.location.search);
+      const preselect = params.get('ma_hh');
+
+      // Khởi tạo 1 dòng ban đầu sạch sẽ với số lượng 1
+      if (availableItems.length > 0) {
+        const defaultSKU = preselect || availableItems[0].MaHH;
+        addRowXuat(defaultSKU, 1);
       }
     } catch (e) {
       console.error('[Outbound] Lỗi nạp danh mục hàng:', e);
@@ -158,6 +323,12 @@
     const rowIdx = tbody.children.length + 1;
     const tr = document.createElement('tr');
     tr.className = 'hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition border-b border-slate-100 dark:border-slate-800';
+
+    const existingSkus = Array.from(tbody.querySelectorAll('.sel-hh')).map(s => s.value);
+    if (!selectedHH && availableItems.length > 0) {
+      const firstAvailable = availableItems.find(i => !existingSkus.includes(i.MaHH));
+      selectedHH = firstAvailable ? firstAvailable.MaHH : availableItems[0].MaHH;
+    }
 
     let options = availableItems.map(item => 
       `<option value="${item.MaHH}" ${item.MaHH === selectedHH ? 'selected' : ''}>${item.MaHH} - ${item.TenHH}</option>`
@@ -184,12 +355,23 @@
       </td>
     `;
     tbody.appendChild(tr);
-    handleHHChange(tr.querySelector('.sel-hh'));
+    handleHHChange(tr.querySelector('.sel-hh'), false);
     validateAllRows();
   }
 
-  function handleHHChange(sel) {
+  function handleHHChange(sel, checkDuplicate = true) {
     const tr = sel.closest('tr');
+    if (!tr) return;
+
+    if (checkDuplicate) {
+      const tbody = document.getElementById('body-xuat');
+      const allSelects = Array.from(tbody.querySelectorAll('.sel-hh'));
+      const duplicateCount = allSelects.filter(s => s !== sel && s.value === sel.value).length;
+      if (duplicateCount > 0) {
+        alert(`Mặt hàng mã [${sel.value}] đã có trong danh sách xuất kho. Vui lòng tăng số lượng ở dòng đã có.`);
+      }
+    }
+
     const selectedItem = availableItems.find(i => i.MaHH === sel.value);
     if (selectedItem) {
       tr.querySelector('.lbl-dvt').innerText = selectedItem.TenDVT || selectedItem.MaDVT;
@@ -235,7 +417,7 @@
 
       if (tonDuKien < 0) {
         hasNegativeStock = true;
-        errorDetails.push(`Mặt hàng [${item ? item.MaHH : ''}] ${item ? item.TenHH : ''}: Tồn ${tonKhaDung}, yêu cầu xuất ${slXuat} (Thiếu ${Math.abs(tonDuKien)} ${item ? item.TenDVT : ''})`);
+        errorDetails.push(`Mặt hàng [${item ? item.MaHH : ''}] ${item ? item.TenHH : ''}: Tồn ${tonKhaDung}, yêu cầu xuất ${slXuat} (Thiếu ${Math.abs(tonDuKien)} ${item ? (item.TenDVT || item.MaDVT) : ''})`);
 
         tr.className = 'bg-rose-50/80 dark:bg-rose-950/40 border-l-4 border-l-rose-600 transition';
         qtyInput.className = 'w-full px-2.5 py-1.5 border-2 border-rose-500 bg-rose-50 dark:bg-rose-950 text-rose-900 dark:text-rose-200 font-bold rounded-lg text-xs inp-qty';
@@ -276,14 +458,21 @@
     }
 
     const items = [];
+    let hasInvalidQty = false;
     Array.from(tbody.children).forEach(tr => {
       const ma_hh = tr.querySelector('.sel-hh').value;
       const qty = parseInt(tr.querySelector('.inp-qty').value) || 0;
+      if (qty <= 0) hasInvalidQty = true;
       items.push({ MaHH: ma_hh, SoLuongXuat: qty });
     });
 
+    if (hasInvalidQty) {
+      alert('Số lượng xuất phải lớn hơn 0.');
+      return;
+    }
+
     btn.disabled = true;
-    btn.innerText = 'Đang thực thi Database Transaction with_for_update()...';
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Đang thực thi Database Transaction ACID...</span>';
 
     try {
       const res = await fetch('/api/v1/kho/phieu-xuat', {
@@ -298,19 +487,125 @@
       alertBox.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600 dark:text-emerald-400 text-base"></i> Xuất kho thành công! Mã chứng từ: <b>${data.MaPX}</b>. Tồn kho đã trừ và ghi sổ thẻ kho.`;
       alertBox.classList.remove('hidden');
 
+      // Reset form sạch sẽ sau khi xuất kho
+      document.getElementById('out-nguoinhan').value = '';
+      document.getElementById('out-lydo').value = '';
+      tbody.innerHTML = '';
+      if (availableItems.length > 0) {
+        addRowXuat(availableItems[0].MaHH, 1);
+      }
+
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-check"></i> <span>Xác Nhận Xuất Kho (ACID Transaction)</span>';
+
       setTimeout(() => {
-        window.location.href = '/dashboard';
-      }, 1200);
+        switchOutboundTab('list');
+      }, 1500);
+
     } catch (err) {
       alertBox.className = 'p-4 rounded-2xl text-xs font-semibold flex items-center gap-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-300';
       alertBox.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-rose-600 dark:text-rose-400 text-base"></i> ${err.message}`;
       alertBox.classList.remove('hidden');
       btn.disabled = false;
-      btn.innerText = 'Xác Nhận Xuất Kho (ACID Transaction)';
+      btn.innerHTML = '<i class="fa-solid fa-check"></i> <span>Xác Nhận Xuất Kho (ACID Transaction)</span>';
     }
   }
 
-  window.addEventListener('DOMContentLoaded', loadItems);
+  // --- LỊCH SỬ & DANH SÁCH PHIẾU XUẤT KHO (TAB 2) ---
+  async function loadOutboundHistory() {
+    const tbody = document.getElementById('body-history-outbound');
+    try {
+      const res = await fetch('/api/v1/kho/phieu-xuat?limit=100');
+      if (!res.ok) throw new Error('Không thể nạp danh sách phiếu xuất.');
+      outboundHistoryData = await res.json();
+
+      renderOutboundHistoryTable(outboundHistoryData);
+    } catch (e) {
+      tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-rose-500 font-semibold">Lỗi: ${e.message}</td></tr>`;
+    }
+  }
+
+  function renderOutboundHistoryTable(list) {
+    const tbody = document.getElementById('body-history-outbound');
+    if (!list || list.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-slate-400">Chưa có phiếu xuất kho nào trong CSDL.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = list.map((px, idx) => {
+      const d = new Date(px.NgayXuat);
+      const dateStr = d.toLocaleDateString('vi-VN') + ' ' + d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+      const itemCount = (px.items && px.items.length) || 0;
+
+      return `
+        <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition history-out-row" data-search="${(px.MaPX + ' ' + px.NguoiNhan + ' ' + (px.LyDoXuat||'')).toLowerCase()}">
+          <td class="py-3 px-3 text-center text-slate-400 font-mono">${idx + 1}</td>
+          <td class="py-3 px-3 font-mono font-bold text-amber-600 dark:text-amber-400">${px.MaPX}</td>
+          <td class="py-3 px-3 text-slate-600 dark:text-slate-300 font-medium">${dateStr}</td>
+          <td class="py-3 px-3 font-semibold text-slate-800 dark:text-slate-100">${px.NguoiNhan}</td>
+          <td class="py-3 px-3 text-center">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+              ${itemCount} SKU
+            </span>
+          </td>
+          <td class="py-3 px-3 text-slate-500 dark:text-slate-400 truncate max-w-[220px]" title="${px.LyDoXuat || ''}">${px.LyDoXuat || '--'}</td>
+          <td class="py-3 px-3 text-center">
+            <button type="button" onclick="viewOutboundDetail('${px.MaPX}')" 
+              class="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400 hover:bg-amber-100 flex items-center justify-center transition cursor-pointer mx-auto" title="Xem chi tiết phiếu">
+              <i class="fa-solid fa-eye text-xs"></i>
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function filterOutboundTable() {
+    const q = (document.getElementById('searchOutboundInput').value || '').toLowerCase().trim();
+    const rows = document.querySelectorAll('.history-out-row');
+    rows.forEach(r => {
+      const text = r.getAttribute('data-search') || '';
+      r.style.display = (!q || text.includes(q)) ? '' : 'none';
+    });
+  }
+
+  async function viewOutboundDetail(ma_px) {
+    try {
+      const res = await fetch(`/api/v1/kho/phieu-xuat/${encodeURIComponent(ma_px)}`);
+      if (!res.ok) throw new Error('Không thể tải chi tiết phiếu xuất.');
+      const data = await res.json();
+
+      document.getElementById('detail-px-code').innerText = data.MaPX;
+      document.getElementById('detail-px-date').innerText = new Date(data.NgayXuat).toLocaleString('vi-VN');
+      document.getElementById('detail-px-receiver').innerText = data.NguoiNhan;
+      document.getElementById('detail-px-user').innerText = (data.nguoi_dung ? data.nguoi_dung.HoTen : 'Thủ kho');
+      document.getElementById('detail-px-reason').innerText = data.LyDoXuat || '--';
+
+      const tbody = document.getElementById('detail-px-items');
+      tbody.innerHTML = (data.items || []).map((it, i) => {
+        const ten_hh = it.hang_hoa ? it.hang_hoa.TenHH : it.MaHH;
+        const dvt = it.hang_hoa ? (it.hang_hoa.don_vi_tinh ? it.hang_hoa.don_vi_tinh.TenDVT : (it.hang_hoa.MaDVT || '')) : '';
+        return `
+          <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
+            <td class="py-2 px-3 text-center text-slate-400 font-mono">${i + 1}</td>
+            <td class="py-2 px-3">
+              <span class="font-mono font-bold text-amber-600 dark:text-amber-400 mr-1.5">[${it.MaHH}]</span>
+              <span class="font-semibold text-slate-800 dark:text-slate-200">${ten_hh}</span>
+            </td>
+            <td class="py-2 px-3 text-center font-bold text-slate-800 dark:text-slate-100 font-mono">${it.SoLuongXuat} ${dvt}</td>
+          </tr>
+        `;
+      }).join('');
+
+      document.getElementById('modalDetailOutbound').classList.remove('hidden');
+    } catch (e) {
+      alert('Lỗi: ' + e.message);
+    }
+  }
+
+  function closeDetailOutboundModal() {
+    document.getElementById('modalDetailOutbound').classList.add('hidden');
+  }
 
   // Thẩm định lại số dư tồn khả dụng tức thời khi thiết bị khác vừa phát sinh giao dịch
   window.reloadStockValidation = async function() {
@@ -321,7 +616,7 @@
       const rows = document.querySelectorAll('#body-xuat tr');
       rows.forEach(tr => {
         const sel = tr.querySelector('.sel-hh');
-        if (sel) handleHHChange(sel);
+        if (sel) handleHHChange(sel, false);
       });
       validateAllRows();
     } catch (e) {
@@ -332,6 +627,11 @@
   window.addEventListener('smartlogis:inventory_updated', () => {
     if (typeof window.reloadStockValidation === 'function') {
       window.reloadStockValidation();
+    }
+    // Nếu đang mở tab danh sách, nạp lại luôn danh sách phiếu xuất
+    const secList = document.getElementById('section-list-outbound');
+    if (secList && !secList.classList.contains('hidden')) {
+      loadOutboundHistory();
     }
   });
 </script>

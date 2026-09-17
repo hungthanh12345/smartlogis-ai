@@ -34,7 +34,7 @@ class NhomHang(Base):
     hang_hoa = relationship("HangHoa", back_populates="nhom_hang")
 
 class DonViTinh(Base):
-    """??n v? t?nh chu?n h?a (C?y, Cu?n, Th?ng, H?p, Bao...)."""
+    """Đơn vị tính chuẩn hóa (Cây, Cuộn, Thùng, Hộp, Bao...)."""
     __tablename__ = "don_vi_tinh"
 
     MaDVT = Column(String(20), primary_key=True)
@@ -43,7 +43,7 @@ class DonViTinh(Base):
     hang_hoa = relationship("HangHoa", back_populates="don_vi_tinh")
 
 class NhaCungCap(Base):
-    """Th?ng tin c?c ??i t?c cung c?p nguy?n v?t t?, h?ng h?a."""
+    """Thông tin các đối tác cung cấp nguyên vật tư, hàng hóa."""
     __tablename__ = "nha_cung_cap"
 
     MaNCC = Column(String(50), primary_key=True)
@@ -55,7 +55,7 @@ class NhaCungCap(Base):
     phieu_nhap = relationship("PhieuNhap", back_populates="nha_cung_cap")
 
 class HangHoa(Base):
-    """Th?c th? h?ng h?a trong kho (SKU)."""
+    """Thực thể hàng hóa trong kho (SKU)."""
     __tablename__ = "hang_hoa"
 
     MaHH = Column(String(50), primary_key=True, index=True)
@@ -73,7 +73,7 @@ class HangHoa(Base):
     chi_tiet_xuat = relationship("ChiTietPhieuXuat", back_populates="hang_hoa")
 
 class TonKho(Base):
-    """Th?c th? l?u tr? s? l??ng t?n kho kh? d?ng hi?n th?i v?i r?ng bu?c CheckConstraint."""
+    """Thực thể lưu trữ số lượng tồn kho khả dụng hiện thời với ràng buộc CheckConstraint."""
     __tablename__ = "ton_kho"
     __table_args__ = (
         CheckConstraint("SoLuongTon >= 0", name="check_soluongton_khong_am"),

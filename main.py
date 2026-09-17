@@ -91,9 +91,11 @@ async def websocket_inventory_endpoint(websocket: WebSocket):
 # =============================================================================
 
 @app.get("/")
-def route_root():
-    """Chuyển hướng trang chủ về Dashboard."""
-    return RedirectResponse(url="/dashboard")
+def route_root(user = Depends(get_current_user_optional)):
+    """Chuyển hướng trang chủ: Nếu chưa đăng nhập thì đẩy ra giao diện đăng nhập /login ngay lập tức."""
+    if not user:
+        return RedirectResponse(url="/login", status_code=302)
+    return RedirectResponse(url="/dashboard", status_code=302)
 
 @app.get("/logout")
 @app.post("/logout")
@@ -250,4 +252,4 @@ def route_the_kho(request: Request, db: Session = Depends(get_db), user = Depend
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True, reload_dirs=["app"])

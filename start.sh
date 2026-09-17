@@ -55,4 +55,4 @@ echo "====================================================================="
 echo ""
 
 # 5. Khởi chạy Uvicorn Server
-exec uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+exec uvicorn main:app --host 0.0.0.0 --port 8000 --reload --reload-dir app

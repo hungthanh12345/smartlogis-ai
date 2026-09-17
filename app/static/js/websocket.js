@@ -174,15 +174,15 @@ class SmartLogisWebSocketClient {
     if (!badge || !dot || !text) return;
 
     if (status === 'connected') {
-      badge.className = 'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 transition-all';
+      badge.className = 'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 transition-all';
       dot.className = 'w-2 h-2 rounded-full bg-emerald-500 animate-pulse';
       text.innerText = 'Realtime Sync: Online';
     } else if (status === 'connecting') {
-      badge.className = 'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200 transition-all';
+      badge.className = 'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 dark:bg-amber-950/70 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 transition-all';
       dot.className = 'w-2 h-2 rounded-full bg-amber-400 animate-ping';
       text.innerText = 'Đang kết nối...';
     } else {
-      badge.className = 'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200 transition-all';
+      badge.className = 'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-50 dark:bg-rose-950/70 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 transition-all';
       dot.className = 'w-2 h-2 rounded-full bg-rose-500';
       text.innerText = 'Mất kết nối (Đang reconnect)';
     }
@@ -191,7 +191,7 @@ class SmartLogisWebSocketClient {
   updateActiveClientsCount(count) {
     const text = document.getElementById('realtimeText');
     if (text && this.isConnected) {
-      text.innerText = `Realtime Online (${count} thiết bị)`;
+      text.innerText = 'Realtime Sync: Online';
     }
   }
 

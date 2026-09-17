@@ -54,9 +54,9 @@ echo   - Thu kho kiem Ke toan:  thukho  / thukho123
 echo =====================================================================
 echo.
 
-:: Tu dong mo trinh duyet sau 2 giay
-start "" http://127.0.0.1:8000/login
+:: Tu dong mo trinh duyet sau 3 giay (cho server khoi dong xong)
+start "" /b cmd /c "timeout /t 3 >nul & start http://127.0.0.1:8000/login"
 
-:: Khoi chay Uvicorn Server
-%PYTHON_CMD% -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+:: Khoi chay Uvicorn Server (chi theo doi thu muc app de tranh reload khi ghi CSDL SQLite)
+%PYTHON_CMD% -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload --reload-dir app
 pause

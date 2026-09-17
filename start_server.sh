@@ -36,9 +36,9 @@ echo "[3/3] Dang khoi chay FastAPI Uvicorn Server tren 0.0.0.0:8000 (Ctrl+C de d
 echo ""
 
 if [ -f "./venv/bin/python" ]; then
-    ./venv/bin/python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    ./venv/bin/python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload --reload-dir app
 elif command -v python3 >/dev/null 2>&1; then
-    python3 -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    python3 -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload --reload-dir app
 else
-    python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload --reload-dir app
 fi

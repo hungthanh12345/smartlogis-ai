@@ -6,13 +6,13 @@ from app.schemas.auth_schemas import UserRegister, UserLogin
 from app.core.security import verify_password, get_password_hash, create_access_token
 
 def register_user(db: Session, user_in: UserRegister) -> NguoiDung:
-    """??ng k? t?i kho?n ng??i d?ng m?i v?i m?t kh?u Bcrypt Hash."""
-    # Ki?m tra tr?ng t?n ??ng nh?p
+    """Đăng ký tài khoản người dùng mới với mật khẩu Bcrypt Hash."""
+    # Kiểm tra trùng tên đăng nhập
     existing = db.query(NguoiDung).filter(NguoiDung.TenDangNhap == user_in.TenDangNhap).first()
     if existing:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"T?n ??ng nh?p '{user_in.TenDangNhap}' ?? t?n t?i trong h? th?ng."
+            detail=f"Tên đăng nhập '{user_in.TenDangNhap}' đã tồn tại trong hệ thống."
         )
 
     # Chuẩn hóa vai trò (Admin, Thukho, Nhanvien)
@@ -32,25 +32,25 @@ def register_user(db: Session, user_in: UserRegister) -> NguoiDung:
     return new_user
 
 def authenticate_user(db: Session, credentials: UserLogin) -> dict:
-    """X?c th?c ??ng nh?p v? c?p m? JWT Access Token."""
+    """Xác thực đăng nhập và cấp mã JWT Access Token."""
     user = db.query(NguoiDung).filter(NguoiDung.TenDangNhap == credentials.TenDangNhap).first()
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="T?n ??ng nh?p ho?c m?t kh?u kh?ng ch?nh x?c."
+            detail="Tên đăng nhập hoặc mật khẩu không chính xác."
         )
     if not verify_password(credentials.MatKhau, user.MatKhau):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="T?n ??ng nh?p ho?c m?t kh?u kh?ng ch?nh x?c."
+            detail="Tên đăng nhập hoặc mật khẩu không chính xác."
         )
     if not user.KichHoat:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="T?i kho?n n?y ?? b? t?m kh?a b?i Qu?n tr? vi?n."
+            detail="Tài khoản này đã bị tạm khóa bởi Quản trị viên."
         )
 
-    # T?o JWT token
+    # Tạo JWT token
     token_payload = {
         "sub": user.TenDangNhap,
         "mand": user.MaND,

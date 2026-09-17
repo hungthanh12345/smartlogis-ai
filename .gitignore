@@ -36,3 +36,5 @@ certbot/conf/keys/
 !certbot/conf/.gitkeep
 !certbot/www/.gitkeep
 
+
+git-exercises/
