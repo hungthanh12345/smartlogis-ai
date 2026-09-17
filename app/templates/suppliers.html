@@ -187,7 +187,7 @@
             <th class="py-3 px-4 min-w-[180px]">Thông Tin Liên Hệ</th>
             <th class="py-3 px-4 min-w-[180px]">Địa Chỉ Trụ Sở</th>
             <th class="py-3 px-4 text-center w-24">Đơn Nhập</th>
-            <th class="py-3 px-4 text-right min-w-[130px]">Tổng Tiền Nhập</th>
+            <th class="py-3 px-4 text-right min-w-[130px]">Dòng Tiền / Tổng Tiền Nhập</th>
             <th class="py-3 px-4 text-center w-28">Trạng Thái</th>
             <th class="py-3 px-4 text-right w-36">Thao Tác</th>
           </tr>
@@ -202,7 +202,7 @@
               data-phone="{{ (s.SoDienThoai or '')|lower }}"
               data-email="{{ (s.Email or '')|lower }}"
               data-address="{{ (s.DiaChi or '')|lower }}"
-              data-tongtien="{{ s.TongGiaTriNhap or 0 }}"
+              data-tongtien="{{ s.TongTien if s.TongTien is not none else (s.TongGiaTriNhap or 0) }}"
               data-has-orders="{{ 'true' if has_orders else 'false' }}">
             
             <td class="py-3.5 px-4 text-center text-slate-400 font-medium">{{ loop.index }}</td>
@@ -257,10 +257,10 @@
             <td class="py-3.5 px-4 text-right font-bold text-slate-800 dark:text-slate-200">
               <div class="flex items-center justify-end gap-1.5">
                 <span class="text-emerald-700 dark:text-emerald-400 font-extrabold" id="supplier-amount-{{ s.MaNCC }}">
-                  {{ "{:,.0f}".format(s.TongGiaTriNhap or 0) }} đ
+                  {{ "{:,.0f}".format(s.TongTien if (s.TongTien is not none and s.TongTien > 0) else (s.TongGiaTriNhap or 0)) }} đ
                 </span>
                 {% if user and user.VaiTro in ['Admin', 'Thukho'] %}
-                <button type="button" onclick="openCashflowModal('{{ s.MaNCC }}', '{{ s.TenNCC|e }}', {{ s.TongGiaTriNhap or 0 }})" 
+                <button type="button" onclick="openCashflowModal('{{ s.MaNCC }}', '{{ s.TenNCC|e }}', {{ s.TongTien if s.TongTien is not none else (s.TongGiaTriNhap or 0) }})" 
                         class="w-5 h-5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-emerald-600 transition flex items-center justify-center cursor-pointer" 
                         title="Chỉnh sửa số tiền dòng tiền">
                   <i class="fa-solid fa-pen text-[9px]"></i>
@@ -270,7 +270,7 @@
             </td>
 
             <td class="py-3.5 px-4 text-center">
-              {% if has_orders or (s.TongGiaTriNhap and s.TongGiaTriNhap > 0) %}
+              {% if has_orders or (s.TongGiaTriNhap and s.TongGiaTriNhap > 0) or (s.TongTien and s.TongTien > 0) %}
               <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Đang giao dịch
               </span>
@@ -291,7 +291,7 @@
               </a>
 
               <!-- Nút Điều chỉnh dòng tiền / số tiền -->
-              <button onclick="openCashflowModal('{{ s.MaNCC }}', '{{ s.TenNCC|e }}', {{ s.TongGiaTriNhap or 0 }})"
+              <button onclick="openCashflowModal('{{ s.MaNCC }}', '{{ s.TenNCC|e }}', {{ s.TongTien if s.TongTien is not none else (s.TongGiaTriNhap or 0) }})"
                       title="Điều chỉnh dòng tiền / số tiền"
                       class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-600 hover:text-white dark:hover:bg-emerald-600 transition cursor-pointer">
                 <i class="fa-solid fa-coins text-xs"></i>
@@ -313,7 +313,7 @@
                       data-diachi="{{ (s.DiaChi or '')|e }}"
                       data-sodienthoai="{{ (s.SoDienThoai or '')|e }}"
                       data-email="{{ (s.Email or '')|e }}"
-                      data-tongtien="{{ s.TongGiaTriNhap or 0 }}"
+                      data-tongtien="{{ s.TongTien if s.TongTien is not none else (s.TongGiaTriNhap or 0) }}"
                       title="Chỉnh sửa thông tin"
                       class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400 hover:bg-amber-600 hover:text-white dark:hover:bg-amber-600 transition cursor-pointer">
                 <i class="fa-solid fa-pen-to-square text-xs"></i>
@@ -731,6 +731,29 @@
     }, 3500);
   }
 
+  // Chuẩn hóa thông báo lỗi từ backend (hỗ trợ cả chuỗi và mảng lỗi từ Pydantic 422)
+  function formatErrorMessage(detail, defaultMsg = 'Đã có lỗi xảy ra') {
+    if (!detail) return defaultMsg;
+    if (typeof detail === 'string') return detail;
+    if (Array.isArray(detail)) {
+      return detail.map(item => {
+        let msg = item.msg || item.message || JSON.stringify(item);
+        if (typeof msg === 'string' && msg.startsWith('Value error, ')) {
+          msg = msg.substring('Value error, '.length);
+        }
+        return msg;
+      }).join('; ');
+    }
+    if (typeof detail === 'object') {
+      let msg = detail.msg || detail.message || JSON.stringify(detail);
+      if (typeof msg === 'string' && msg.startsWith('Value error, ')) {
+        msg = msg.substring('Value error, '.length);
+      }
+      return msg;
+    }
+    return String(detail);
+  }
+
   // --- LỌC TÌM KIẾM BẢNG DỮ LIỆU ---
   function setFilterStatus(status, btn) {
     currentFilter = status;
@@ -893,7 +916,10 @@
 
   function openCashflowFromDetail() {
     if (currentDetailSupplier) {
-      openCashflowModal(currentDetailSupplier.MaNCC, currentDetailSupplier.TenNCC, currentDetailSupplier.TongGiaTriNhap || 0);
+      const amount = (currentDetailSupplier.TongTien !== undefined && currentDetailSupplier.TongTien !== null)
+        ? currentDetailSupplier.TongTien
+        : (currentDetailSupplier.TongGiaTriNhap || 0);
+      openCashflowModal(currentDetailSupplier.MaNCC, currentDetailSupplier.TenNCC, amount);
     }
   }
 
@@ -915,7 +941,7 @@
       });
       const data = await res.json();
       if (!res.ok) {
-        showToast(data.detail || 'Không thể điều chỉnh dòng tiền', 'error');
+        showToast(formatErrorMessage(data.detail, 'Không thể điều chỉnh dòng tiền'), 'error');
         btn.disabled = false;
         btn.innerHTML = '<i class="fa-solid fa-check"></i> Xác Nhận Cập Nhật';
         return;
@@ -937,10 +963,17 @@
         editBtn.dataset.tongtien = tong_tien;
       }
 
+      // Cập nhật các nút mở cashflow modal trên dòng với số tiền mới
+      const cfBtns = document.querySelectorAll(`button[onclick*="openCashflowModal('${ma_ncc}'"]`);
+      cfBtns.forEach(b => {
+        b.setAttribute('onclick', `openCashflowModal('${ma_ncc}', '${(document.getElementById('cf_TenNCC').innerText || '').replace(/'/g, "\\'")}', ${tong_tien})`);
+      });
+
       // Nếu đang mở modal detail thì cập nhật luôn
       const detailAmount = document.getElementById('detail_TongTienNhap');
       if (detailAmount && currentDetailSupplier && currentDetailSupplier.MaNCC === ma_ncc) {
         currentDetailSupplier.TongGiaTriNhap = tong_tien;
+        currentDetailSupplier.TongTien = tong_tien;
         detailAmount.innerText = tong_tien.toLocaleString('vi-VN') + ' đ';
       }
 
@@ -1018,7 +1051,7 @@
       });
       const data = await res.json();
       if (!res.ok) {
-        showToast(data.detail || 'Không thể tạo nhà cung cấp', 'error');
+        showToast(formatErrorMessage(data.detail, 'Không thể tạo nhà cung cấp'), 'error');
         btn.disabled = false;
         btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Lưu Đối Tác';
         return;
@@ -1044,7 +1077,7 @@
     document.getElementById('edit_MaNCC_Display').value = d.mancc || '';
     document.getElementById('edit_TenNCC').value = d.tenncc || '';
     document.getElementById('edit_DiaChi').value = d.diachi || '';
-    document.getElementById('edit_SoDienThoai').value = d.sodienthoai || '';
+    document.getElementById('edit_SoDienThoai').value = (d.sodienthoai || '').replace(/[^0-9]/g, '');
     document.getElementById('edit_Email').value = d.email || '';
     document.getElementById('edit_TongTien').value = d.tongtien || '0';
     
@@ -1087,7 +1120,7 @@
       });
       const data = await res.json();
       if (!res.ok) {
-        showToast(data.detail || 'Không thể cập nhật đối tác', 'error');
+        showToast(formatErrorMessage(data.detail, 'Không thể cập nhật đối tác'), 'error');
         btn.disabled = false;
         btn.innerHTML = '<i class="fa-solid fa-check"></i> Lưu Cập Nhật';
         return;
@@ -1115,9 +1148,11 @@
         `;
       }
 
+      const effectiveTongTien = (data.TongTien !== undefined && data.TongTien !== null) ? data.TongTien : (data.TongGiaTriNhap || 0);
+
       const amountEl = document.getElementById(`supplier-amount-${ma_ncc}`);
       if (amountEl) {
-        amountEl.innerText = (data.TongGiaTriNhap || 0).toLocaleString('vi-VN') + ' đ';
+        amountEl.innerText = effectiveTongTien.toLocaleString('vi-VN') + ' đ';
       }
 
       const row = document.getElementById(`supplier-row-${ma_ncc}`);
@@ -1126,17 +1161,23 @@
         row.setAttribute('data-phone', (data.SoDienThoai || '').toLowerCase());
         row.setAttribute('data-email', (data.Email || '').toLowerCase());
         row.setAttribute('data-address', (data.DiaChi || '').toLowerCase());
-        row.setAttribute('data-tongtien', data.TongGiaTriNhap || 0);
+        row.setAttribute('data-tongtien', effectiveTongTien);
       }
 
       const editBtn = document.querySelector(`button[onclick*="openEditSupplierModal"][data-mancc="${ma_ncc}"]`);
       if (editBtn) {
         editBtn.dataset.tenncc = data.TenNCC;
         editBtn.dataset.diachi = data.DiaChi || '';
-        editBtn.dataset.sodienthoai = data.SoDienThoai || '';
+        editBtn.dataset.sodienthoai = (data.SoDienThoai || '').replace(/[^0-9]/g, '');
         editBtn.dataset.email = data.Email || '';
-        editBtn.dataset.tongtien = data.TongGiaTriNhap || 0;
+        editBtn.dataset.tongtien = effectiveTongTien;
       }
+
+      // Cập nhật nút cashflow modal trên bảng với số tiền mới
+      const cfBtns = document.querySelectorAll(`button[onclick*="openCashflowModal('${ma_ncc}'"]`);
+      cfBtns.forEach(b => {
+        b.setAttribute('onclick', `openCashflowModal('${ma_ncc}', '${(data.TenNCC || '').replace(/'/g, "\\'")}', ${effectiveTongTien})`);
+      });
 
       await refreshKPIs();
       closeEditSupplierModal();

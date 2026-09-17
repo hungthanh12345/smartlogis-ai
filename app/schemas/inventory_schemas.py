@@ -60,7 +60,7 @@ class NhaCungCapCreate(BaseModel):
     @classmethod
     def validate_phone(cls, v):
         if v is None or (isinstance(v, str) and v.strip() == ''):
-            return v
+            return None
         v = str(v).strip()
         if not re.match(r'^\d{8,15}$', v):
             raise ValueError('Số điện thoại chỉ được chứa chữ số (8–15 ký tự số liên tiếp, không có dấu chấm, gạch ngang hay khoảng trắng).')
@@ -70,7 +70,7 @@ class NhaCungCapCreate(BaseModel):
     @classmethod
     def validate_email(cls, v):
         if v is None or (isinstance(v, str) and v.strip() == ''):
-            return v
+            return None
         v = str(v).strip()
         if not re.match(r'^[a-zA-Z0-9_.+\-]+@[a-zA-Z0-9\-]+\.[a-zA-Z0-9\-.]+$', v):
             raise ValueError('Email không đúng định dạng chuẩn (VD: ten@congty.com.vn).')
@@ -87,7 +87,7 @@ class NhaCungCapUpdate(BaseModel):
     @classmethod
     def validate_phone(cls, v):
         if v is None or (isinstance(v, str) and v.strip() == ''):
-            return v
+            return None
         v = str(v).strip()
         if not re.match(r'^\d{8,15}$', v):
             raise ValueError('Số điện thoại chỉ được chứa chữ số (8–15 ký tự số liên tiếp, không có dấu chấm, gạch ngang hay khoảng trắng).')
@@ -97,7 +97,7 @@ class NhaCungCapUpdate(BaseModel):
     @classmethod
     def validate_email(cls, v):
         if v is None or (isinstance(v, str) and v.strip() == ''):
-            return v
+            return None
         v = str(v).strip()
         if not re.match(r'^[a-zA-Z0-9_.+\-]+@[a-zA-Z0-9\-]+\.[a-zA-Z0-9\-.]+$', v):
             raise ValueError('Email không đúng định dạng chuẩn (VD: ten@congty.com.vn).')

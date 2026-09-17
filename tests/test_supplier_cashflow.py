@@ -242,3 +242,62 @@ def test_supplier_address_field_persisted():
         except Exception:
             pass
         db.close()
+
+
+def test_supplier_empty_phone_email_to_none():
+    """Xac minh phone va email rong duoc chuan hoa ve None thay vi chuoi rong."""
+    ncc = NhaCungCapCreate(
+        MaNCC="NCC-OPTIONAL-TEST",
+        TenNCC="Test Optional Fields",
+        SoDienThoai="   ",
+        Email=""
+    )
+    assert ncc.SoDienThoai is None
+    assert ncc.Email is None
+
+    ncc_up = NhaCungCapUpdate(
+        TenNCC="Test Optional Update",
+        SoDienThoai="",
+        Email="   "
+    )
+    assert ncc_up.SoDienThoai is None
+    assert ncc_up.Email is None
+
+
+def test_supplier_cashflow_manual_zero():
+    """Xac minh dieu chinh dong tien ve 0 van hop le va luu vao DB."""
+    db = SessionLocal()
+    test_ma = "NCC-CF-ZERO"
+    headers = get_auth_headers()
+    try:
+        try:
+            delete_nha_cung_cap(db, test_ma)
+        except Exception:
+            pass
+
+        # Tao NCC voi TongTien 10 trieu
+        client.post(
+            "/api/v1/kho/suppliers",
+            json={
+                "MaNCC": test_ma,
+                "TenNCC": "Test Zero Cashflow",
+                "TongTien": 10000000.0
+            },
+            headers=headers
+        )
+
+        # Dieu chinh ve 0
+        res = client.put(
+            f"/api/v1/kho/suppliers/{test_ma}/cashflow",
+            json={"TongTien": 0.0, "GhiChu": "Tat toan cong no ve 0"},
+            headers=headers
+        )
+        assert res.status_code == 200
+        assert res.json()["TongTien"] == 0.0
+    finally:
+        try:
+            delete_nha_cung_cap(db, test_ma)
+        except Exception:
+            pass
+        db.close()
+

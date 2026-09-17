@@ -979,11 +979,14 @@
     btn.disabled = true;
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang lưu...';
 
+    const rawPhone = document.getElementById('quick_SoDienThoai').value.trim();
+    const cleanPhone = rawPhone ? rawPhone.replace(/[^0-9]/g, '') : null;
+
     const payload = {
       MaNCC: document.getElementById('quick_MaNCC').value.trim().toUpperCase(),
       TenNCC: document.getElementById('quick_TenNCC').value.trim(),
       DiaChi: document.getElementById('quick_DiaChi').value.trim() || null,
-      SoDienThoai: document.getElementById('quick_SoDienThoai').value.trim() || null,
+      SoDienThoai: cleanPhone || null,
       Email: document.getElementById('quick_Email').value.trim() || null
     };
 
@@ -994,7 +997,18 @@
         body: JSON.stringify(payload)
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || 'Không thể tạo nhà cung cấp.');
+      if (!res.ok) {
+        let errStr = 'Không thể tạo nhà cung cấp.';
+        if (typeof data.detail === 'string') {
+          errStr = data.detail;
+        } else if (Array.isArray(data.detail)) {
+          errStr = data.detail.map(d => {
+            let msg = d.msg || JSON.stringify(d);
+            return msg.startsWith('Value error, ') ? msg.substring('Value error, '.length) : msg;
+          }).join('\n');
+        }
+        throw new Error(errStr);
+      }
 
       // Thêm option mới vào select và chọn luôn
       const sel = document.getElementById('in-ncc');
