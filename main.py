@@ -125,7 +125,18 @@ async def auth_enforce_middleware(request: Request, call_next):
     Đồng thời áp dụng Anti-Cache headers chống lưu bfcache trình duyệt.
     """
     path = request.url.path
-    public_paths = ["/", "/login", "/logout", "/register", "/docs", "/redoc", "/openapi.json", "/favicon.ico"]
+    public_paths = [
+        "/",
+        "/login",
+        "/logout",
+        "/register",
+        "/landing",
+        "/about",
+        "/docs",
+        "/redoc",
+        "/openapi.json",
+        "/favicon.ico"
+    ]
     is_public = (
         path.startswith("/static")
         or path.startswith("/api")
@@ -172,8 +183,16 @@ async def auth_enforce_middleware(request: Request, call_next):
 # =============================================================================
 
 @app.get("/")
-def route_root(request: Request, user = Depends(get_current_user_optional)):
-    """Trang chủ Landing Page toàn màn hình với nút Log In ở góc trên bên phải."""
+def route_root(request: Request):
+    """Trang chủ root URL (/) trực tiếp trả về giao diện Đăng nhập (login.html) theo yêu cầu."""
+    response = templates.TemplateResponse(request=request, name="login.html")
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    return response
+
+@app.get("/landing")
+@app.get("/about")
+def route_landing(request: Request, user = Depends(get_current_user_optional)):
+    """Trang giới thiệu Landing Page toàn màn hình (chuyển từ root về /landing và /about)."""
     return templates.TemplateResponse(
         request=request,
         name="landing.html",

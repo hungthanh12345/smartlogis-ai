@@ -33,12 +33,16 @@ def test_1_unauthenticated_web_routes_redirect_to_login_302():
 
     print("[PASS] 1a. All unauthenticated web routes strictly redirect to /login with 302 and Anti-Cache headers")
 
-    # Trang chủ / khi truy cập lần đầu hiển thị Landing page toàn màn hình (200 OK)
+    # Trang chủ (/) khi truy cập lần đầu hiển thị trực tiếp màn hình Đăng nhập (login.html)
     res_root = client.get("/", follow_redirects=False)
-    assert res_root.status_code == 200, f"Expected 200 for landing page, got {res_root.status_code}"
-    assert "btnTopRightLogin" in res_root.text
-    assert "Log In" in res_root.text
-    print("[PASS] 1b. Initial load / displays full-screen landing page with top-right Log In button")
+    assert res_root.status_code == 200, f"Expected 200 for root login page, got {res_root.status_code}"
+    assert "Đăng Nhập" in res_root.text or "SmartLogis" in res_root.text
+
+    # Landing page truy cập qua /landing
+    res_landing = client.get("/landing", follow_redirects=False)
+    assert res_landing.status_code == 200, f"Expected 200 for /landing, got {res_landing.status_code}"
+    assert "btnTopRightLogin" in res_landing.text
+    print("[PASS] 1b. Initial load / displays login view directly, landing page available at /landing")
 
 
 def test_2_authenticated_web_route_succeeds_with_anti_cache():

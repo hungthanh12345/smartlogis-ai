@@ -43,8 +43,9 @@ if errorlevel 1 (
 echo.
 echo =====================================================================
 echo   MAY CHU DANG CHAY TAI:
-echo   - Giao dien Web:     http://127.0.0.1:8000
-echo   - Tai lieu API:      http://127.0.0.1:8000/docs
+echo   - Giao dien Dang nhap:  http://127.0.0.1:8000
+echo   - Trang Gioi thieu:     http://127.0.0.1:8000/landing
+echo   - Tai lieu API:         http://127.0.0.1:8000/docs
 echo.
 echo   TAI KHOAN DEMO:
 echo   - Admin:                 admin   / admin123

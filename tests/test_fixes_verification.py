@@ -20,15 +20,19 @@ from app.core.security import create_access_token
 
 client = TestClient(app)
 
-def test_1_root_renders_fullscreen_landing_page():
-    """1. Khi vào web trang chủ -> Hiển thị Landing page toàn màn hình với nút Log In ở góc trên bên phải."""
-    res = client.get("/", follow_redirects=False)
-    assert res.status_code == 200, f"Expected 200, got {res.status_code}"
-    assert "SmartLogis AI" in res.text
-    assert "btnTopRightLogin" in res.text
-    assert "Log In" in res.text
-    assert "loginModal" in res.text
-    print("[PASS] 1. Root renders full-screen landing page with top-right Log In button")
+def test_1_root_renders_login_page_and_landing_at_landing():
+    """1. Khi vào web trang chủ (/) -> Trực tiếp hiển thị giao diện Đăng nhập (login.html). Landing page ở /landing."""
+    res_root = client.get("/", follow_redirects=False)
+    assert res_root.status_code == 200, f"Expected 200, got {res_root.status_code}"
+    assert "Đăng Nhập" in res_root.text or "SmartLogis" in res_root.text
+    assert 'name="username"' in res_root.text or "TenDangNhap" in res_root.text or "username" in res_root.text
+
+    # Kiểm tra Landing page chuyển sang /landing
+    res_landing = client.get("/landing", follow_redirects=False)
+    assert res_landing.status_code == 200, f"Expected 200, got {res_landing.status_code}"
+    assert "btnTopRightLogin" in res_landing.text
+    assert "Log In" in res_landing.text
+    print("[PASS] 1. Root directly renders login view, landing page available at /landing")
 
 def test_2_protected_routes_strictly_redirect_unauthenticated():
     """Các trang quản lý kho khi chưa đăng nhập bắt buộc chuyển hướng 302 về /login."""
