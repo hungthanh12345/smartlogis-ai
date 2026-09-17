@@ -302,8 +302,42 @@
         if (!res.ok) {
           throw new Error(data.detail || 'Đăng nhập thất bại. Vui lòng kiểm tra lại tài khoản hoặc mật khẩu.');
         }
+        const sid = data.sid || ('ses_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9));
+        
+        // 1. Cập nhật phiên hoạt động toàn cục trên localStorage (phát tín hiệu đá tab cũ ra qua Storage Event)
         localStorage.setItem('access_token', data.access_token);
         localStorage.setItem('user_info', JSON.stringify(data.user));
+        localStorage.setItem('smartlogis_active_user', data.user.TenDangNhap);
+        localStorage.setItem('smartlogis_active_role', data.user.VaiTro);
+        localStorage.setItem('smartlogis_active_session_id', sid);
+        localStorage.setItem('smartlogis_login_timestamp', Date.now().toString());
+
+        // 2. Ghi nhận phiên của riêng tab này vào sessionStorage (Tab Isolation)
+        sessionStorage.setItem('access_token', data.access_token);
+        sessionStorage.setItem('smartlogis_tab_user', data.user.TenDangNhap);
+        sessionStorage.setItem('smartlogis_tab_role', data.user.VaiTro);
+        sessionStorage.setItem('smartlogis_tab_session_id', sid);
+        if (data.user.HoTen) {
+          sessionStorage.setItem('smartlogis_tab_fullname', data.user.HoTen);
+        }
+
+        // 3. Đảm bảo cookie được đồng bộ ngay cho phiên điều hướng này
+        document.cookie = `access_token=Bearer ${data.access_token}; path=/; SameSite=Lax; max-age=86400`;
+
+        // 4. Nếu đăng nhập tài khoản Admin -> Phát tín hiệu BroadcastChannel đá các tab Admin cũ ra ngoài
+        if (typeof BroadcastChannel !== 'undefined' && data.user && data.user.VaiTro === 'Admin') {
+          try {
+            const adminChannel = new BroadcastChannel('smartlogis_admin_tab_channel');
+            adminChannel.postMessage({
+              type: 'NEW_ADMIN_TAB_ACTIVE',
+              senderTabId: 'login_' + Date.now(),
+              username: data.user.TenDangNhap,
+              timestamp: Date.now()
+            });
+            setTimeout(() => { try { adminChannel.close(); } catch(e) {} }, 100);
+          } catch(e) {}
+        }
+
         window.location.href = '/dashboard';
       } catch (err) {
         errorBox.classList.remove('hidden');
@@ -314,10 +348,27 @@
       }
     }
 
-    // Tự động khởi tạo giao diện theme khi trang tải xong
+    // Tự động khởi tạo giao diện theme khi trang tải xong và kiểm tra lý do chuyển hướng
     document.addEventListener('DOMContentLoaded', () => {
       if (typeof initTheme === 'function') {
         initTheme();
+      }
+
+      const params = new URLSearchParams(window.location.search);
+      const reason = params.get('reason');
+      if (reason) {
+        const errorBox = document.getElementById('error-box');
+        const errorMsg = document.getElementById('error-message');
+        if (errorBox && errorMsg) {
+          errorBox.classList.remove('hidden');
+          if (reason === 'session_conflict') {
+            errorMsg.innerText = 'Phiên làm việc đã kết thúc do phát hiện đăng nhập mới trên một tab/thiết bị khác. Vui lòng đăng nhập lại.';
+          } else if (reason === 'logged_out') {
+            errorMsg.innerText = 'Bạn đã đăng xuất tài khoản từ một tab khác.';
+          } else if (reason === 'admin_duplicate_tab') {
+            errorMsg.innerText = 'Phiên Admin đã kết thúc do phát hiện một tab Admin mới được mở. Hệ thống chỉ cho phép duy nhất 1 tab Admin hoạt động.';
+          }
+        }
       }
     });
   </script>

@@ -82,19 +82,19 @@
 
   </div>
 
-  <!-- BẢNG GIẢI THÍCH NGUYÊN TẮC DÒNG TIỀN VÀ LIÊN KẾT NHẬP KHO -->
+  <!-- BẢNG HƯỚNG DẪN QUẢN LÝ DÒNG TIỀN VÀ ĐỐI TÁC CUNG CẤP -->
   <div class="bg-sky-50 dark:bg-slate-800/80 border border-sky-200 dark:border-slate-700 rounded-2xl p-4 text-xs text-slate-700 dark:text-slate-300 flex items-start gap-3.5 shadow-2xs">
-    <div class="w-8 h-8 rounded-xl bg-sky-100 dark:bg-sky-950 text-sky-600 dark:text-sky-400 flex items-center justify-center flex-shrink-0 mt-0.5">
-      <i class="fa-solid fa-circle-info text-sm"></i>
+    <div class="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0 mt-0.5">
+      <i class="fa-solid fa-coins text-sm"></i>
     </div>
     <div class="flex-1 min-w-0">
       <h4 class="font-bold text-slate-800 dark:text-white flex items-center gap-2">
-        <span>Nguyên Tắc Dòng Tiền & Quản Lý Đối Tác Cung Cấp</span>
-        <span class="text-[10px] font-mono px-2 py-0.2 rounded bg-sky-100 dark:bg-sky-900 text-sky-700 dark:text-sky-300 font-semibold">Chuẩn Kế Toán</span>
+        <span>Quản Lý Dòng Tiền & Đối Tác Cung Cấp</span>
+        <span class="text-[10px] font-mono px-2 py-0.2 rounded bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 font-semibold">Linh Hoạt</span>
       </h4>
       <p class="text-[11px] text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">
-        • <b>Dòng tiền mua hàng:</b> Chỉ số <i>"Tổng Chi Phí Mua Hàng"</i> và <i>"Tổng Tiền Nhập"</i> của từng đối tác được hệ thống <b>tự động kết chuyển</b> từ toàn bộ các <b>Phiếu Nhập Kho</b> hợp lệ trong CSDL theo chuẩn kế toán kép.<br>
-        • <b>Tạo hoặc điều chỉnh dòng tiền:</b> Để phát sinh giao dịch tiền hàng với nhà cung cấp, vui lòng bấm nút <b class="text-emerald-600 dark:text-emerald-400"><i class="fa-solid fa-cart-plus"></i> Nhập hàng</b> tại cột thao tác hoặc mở phân hệ <a href="/inbound" class="underline font-bold text-sky-600 dark:text-sky-400">Phiếu Nhập Kho</a>.
+        • <b>Theo dõi & Tự động kết chuyển:</b> Dòng tiền mua hàng được tự động tổng hợp từ các chứng từ <i>Phiếu Nhập Kho</i> của từng nhà cung cấp.<br>
+        • <b>Chỉnh sửa số tiền trực tiếp:</b> Bạn có thể chủ động điều chỉnh số tiền/công nợ bất kỳ lúc nào bằng cách bấm nút <b><i class="fa-solid fa-pen text-[10px]"></i> Sửa Tiền</b> tại cột <i>Tổng Tiền Nhập</i>, bấm biểu tượng <b class="text-emerald-600 dark:text-emerald-400"><i class="fa-solid fa-coins"></i></b> tại cột thao tác, hoặc trong form sửa nhà cung cấp.
       </p>
     </div>
   </div>
@@ -196,11 +196,13 @@
           {% for s in suppliers %}
           {% set has_orders = (s.SoPhieuNhap and s.SoPhieuNhap > 0) %}
           <tr class="hover:bg-slate-50/80 transition supplier-row" 
+              id="supplier-row-{{ s.MaNCC }}"
               data-code="{{ s.MaNCC|lower }}" 
               data-name="{{ s.TenNCC|lower }}"
               data-phone="{{ (s.SoDienThoai or '')|lower }}"
               data-email="{{ (s.Email or '')|lower }}"
               data-address="{{ (s.DiaChi or '')|lower }}"
+              data-tongtien="{{ s.TongGiaTriNhap or 0 }}"
               data-has-orders="{{ 'true' if has_orders else 'false' }}">
             
             <td class="py-3.5 px-4 text-center text-slate-400 font-medium">{{ loop.index }}</td>
@@ -212,7 +214,7 @@
             </td>
 
             <td class="py-3.5 px-4">
-              <div class="font-bold text-slate-800 dark:text-white">{{ s.TenNCC }}</div>
+              <div class="font-bold text-slate-800 dark:text-white" id="supplier-ten-{{ s.MaNCC }}">{{ s.TenNCC }}</div>
               {% if s.NgayNhapGanNhat %}
               <div class="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 flex items-center gap-1">
                 <i class="fa-regular fa-clock text-slate-400"></i> Giao dịch gần nhất: <span class="font-semibold text-slate-600 dark:text-slate-300">{{ s.NgayNhapGanNhat }}</span>
@@ -220,7 +222,7 @@
               {% endif %}
             </td>
 
-            <td class="py-3.5 px-4 space-y-1">
+            <td class="py-3.5 px-4 space-y-1" id="supplier-contact-{{ s.MaNCC }}">
               {% if s.SoDienThoai %}
               <div class="flex items-center gap-1.5 text-slate-700 dark:text-slate-300 font-medium">
                 <i class="fa-solid fa-phone text-slate-400 text-[10px]"></i>
@@ -238,7 +240,7 @@
               {% endif %}
             </td>
 
-            <td class="py-3.5 px-4 text-slate-600 dark:text-slate-300 leading-relaxed">
+            <td class="py-3.5 px-4 text-slate-600 dark:text-slate-300 leading-relaxed" id="supplier-address-{{ s.MaNCC }}">
               {{ s.DiaChi or "--" }}
             </td>
 
@@ -253,15 +255,22 @@
             </td>
 
             <td class="py-3.5 px-4 text-right font-bold text-slate-800 dark:text-slate-200">
-              {% if s.TongGiaTriNhap and s.TongGiaTriNhap > 0 %}
-              <span class="text-emerald-700 dark:text-emerald-400 font-extrabold">{{ "{:,.0f}".format(s.TongGiaTriNhap) }} đ</span>
-              {% else %}
-              <span class="text-slate-400">0 đ</span>
-              {% endif %}
+              <div class="flex items-center justify-end gap-1.5">
+                <span class="text-emerald-700 dark:text-emerald-400 font-extrabold" id="supplier-amount-{{ s.MaNCC }}">
+                  {{ "{:,.0f}".format(s.TongGiaTriNhap or 0) }} đ
+                </span>
+                {% if user and user.VaiTro in ['Admin', 'Thukho'] %}
+                <button type="button" onclick="openCashflowModal('{{ s.MaNCC }}', '{{ s.TenNCC|e }}', {{ s.TongGiaTriNhap or 0 }})" 
+                        class="w-5 h-5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-emerald-600 transition flex items-center justify-center cursor-pointer" 
+                        title="Chỉnh sửa số tiền dòng tiền">
+                  <i class="fa-solid fa-pen text-[9px]"></i>
+                </button>
+                {% endif %}
+              </div>
             </td>
 
             <td class="py-3.5 px-4 text-center">
-              {% if has_orders %}
+              {% if has_orders or (s.TongGiaTriNhap and s.TongGiaTriNhap > 0) %}
               <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Đang giao dịch
               </span>
@@ -280,6 +289,13 @@
                  class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-600 hover:text-white dark:hover:bg-emerald-600 transition">
                 <i class="fa-solid fa-cart-plus text-xs"></i>
               </a>
+
+              <!-- Nút Điều chỉnh dòng tiền / số tiền -->
+              <button onclick="openCashflowModal('{{ s.MaNCC }}', '{{ s.TenNCC|e }}', {{ s.TongGiaTriNhap or 0 }})"
+                      title="Điều chỉnh dòng tiền / số tiền"
+                      class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-600 hover:text-white dark:hover:bg-emerald-600 transition cursor-pointer">
+                <i class="fa-solid fa-coins text-xs"></i>
+              </button>
               {% endif %}
 
               <!-- Xem chi tiết & Lịch sử -->
@@ -293,18 +309,19 @@
               <!-- Sửa -->
               <button onclick="openEditSupplierModal(this)"
                       data-mancc="{{ s.MaNCC }}"
-                      data-tenncc="{{ s.TenNCC }}"
-                      data-diachi="{{ s.DiaChi or '' }}"
-                      data-sodienthoai="{{ s.SoDienThoai or '' }}"
-                      data-email="{{ s.Email or '' }}"
+                      data-tenncc="{{ s.TenNCC|e }}"
+                      data-diachi="{{ (s.DiaChi or '')|e }}"
+                      data-sodienthoai="{{ (s.SoDienThoai or '')|e }}"
+                      data-email="{{ (s.Email or '')|e }}"
+                      data-tongtien="{{ s.TongGiaTriNhap or 0 }}"
                       title="Chỉnh sửa thông tin"
-                      class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400 hover:bg-amber-600 hover:text-white dark:hover:bg-amber-600 transition">
+                      class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400 hover:bg-amber-600 hover:text-white dark:hover:bg-amber-600 transition cursor-pointer">
                 <i class="fa-solid fa-pen-to-square text-xs"></i>
               </button>
               <!-- Xóa -->
-              <button onclick="confirmDeleteSupplier('{{ s.MaNCC }}', '{{ s.TenNCC }}')"
+              <button onclick="confirmDeleteSupplier('{{ s.MaNCC }}', '{{ s.TenNCC|e }}')"
                       title="Xóa đối tác"
-                      class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-rose-50 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 hover:bg-rose-600 hover:text-white dark:hover:bg-rose-600 transition">
+                      class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-rose-50 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 hover:bg-rose-600 hover:text-white dark:hover:bg-rose-600 transition cursor-pointer">
                 <i class="fa-solid fa-trash-can text-xs"></i>
               </button>
               {% else %}
@@ -345,10 +362,10 @@
 <!-- ========================================================================= -->
 <!-- MODAL 1: THÊM NHÀ CUNG CẤP MỚI -->
 <!-- ========================================================================= -->
-<div id="createSupplierModal" onclick="if(event.target === this) closeCreateSupplierModal()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-  <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in-95 duration-200">
+<div id="createSupplierModal" onclick="if(event.target === this) closeCreateSupplierModal()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+  <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] flex flex-col overflow-hidden border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in-95 duration-200">
     
-    <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-850">
+    <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-850 shrink-0">
       <h3 class="font-bold text-slate-800 dark:text-white text-sm flex items-center gap-2">
         <i class="fa-solid fa-handshake text-sky-600 dark:text-sky-400"></i> Thêm Nhà Cung Cấp Mới
       </h3>
@@ -357,40 +374,56 @@
       </button>
     </div>
 
-    <form id="createSupplierForm" onsubmit="submitCreateSupplier(event)" class="p-6 space-y-4 text-xs">
-      <div>
-        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Mã Nhà Cung Cấp (*)</label>
-        <input type="text" id="create_MaNCC" required placeholder="VD: NCC-HOAPHAT" 
-               class="w-full px-3.5 py-2.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-white rounded-xl uppercase font-mono font-bold focus:ring-2 focus:ring-sky-500 outline-none transition">
-        <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Mã đối tác viết hoa, không dấu, duy nhất trong hệ thống.</p>
-      </div>
-
-      <div>
-        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Tên Đầy Đủ Công Ty / Đối Tác (*)</label>
-        <input type="text" id="create_TenNCC" required placeholder="VD: Tập đoàn Thép Hòa Phát" 
-               class="w-full px-3.5 py-2.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-white rounded-xl focus:ring-2 focus:ring-sky-500 outline-none transition">
-      </div>
-
-      <div>
-        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Địa Chỉ Trụ Sở / Kho Xuất</label>
-        <input type="text" id="create_DiaChi" placeholder="VD: KCN Phố Nối A, Xã Giai Phạm, Hưng Yên" 
-               class="w-full px-3.5 py-2.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-white rounded-xl focus:ring-2 focus:ring-sky-500 outline-none transition">
-      </div>
-
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <form id="createSupplierForm" onsubmit="submitCreateSupplier(event)" class="flex flex-col flex-1 overflow-hidden text-xs">
+      <div class="p-6 space-y-4 overflow-y-auto flex-1">
         <div>
-          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Số Điện Thoại Liên Hệ</label>
-          <input type="text" id="create_SoDienThoai" placeholder="024.xxxx.xxxx" 
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Mã Nhà Cung Cấp (*)</label>
+          <input type="text" id="create_MaNCC" required placeholder="VD: NCC-HOAPHAT" 
+                 class="w-full px-3.5 py-2.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-white rounded-xl uppercase font-mono font-bold focus:ring-2 focus:ring-sky-500 outline-none transition">
+          <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Mã đối tác viết hoa, không dấu, duy nhất trong hệ thống.</p>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Tên Đầy Đủ Công Ty / Đối Tác (*)</label>
+          <input type="text" id="create_TenNCC" required placeholder="VD: Tập đoàn Thép Hòa Phát" 
                  class="w-full px-3.5 py-2.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-white rounded-xl focus:ring-2 focus:ring-sky-500 outline-none transition">
         </div>
+
         <div>
-          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Hòm Thư Email</label>
-          <input type="email" id="create_Email" placeholder="contact@hoaphat.com.vn" 
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Địa Chỉ Trụ Sở / Kho Xuất</label>
+          <input type="text" id="create_DiaChi" placeholder="VD: KCN Phố Nối A, Xã Giai Phạm, Hưng Yên" 
                  class="w-full px-3.5 py-2.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-white rounded-xl focus:ring-2 focus:ring-sky-500 outline-none transition">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Số Điện Thoại Liên Hệ</label>
+            <input type="tel" id="create_SoDienThoai" placeholder="Chỉ nhập số, VD: 0243974777" 
+                   maxlength="15"
+                   oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                   pattern="[0-9]{8,15}"
+                   class="w-full px-3.5 py-2.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-white rounded-xl focus:ring-2 focus:ring-sky-500 outline-none transition">
+            <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Nhập số nguyên liên tiếp, không dấu chấm hay gạch ngang (8–15 ký tự số).</p>
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Hòm Thư Email</label>
+            <input type="email" id="create_Email" placeholder="contact@hoaphat.com.vn" 
+                   class="w-full px-3.5 py-2.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-white rounded-xl focus:ring-2 focus:ring-sky-500 outline-none transition">
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Dòng Tiền / Số Tiền Ban Đầu (VNĐ)</label>
+          <div class="relative">
+            <input type="number" id="create_TongTien" min="0" step="10000" placeholder="0" value="0" 
+                   class="w-full pl-3.5 pr-12 py-2.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-white rounded-xl font-mono font-bold focus:ring-2 focus:ring-sky-500 outline-none transition">
+            <span class="absolute right-3.5 top-2.5 text-xs font-bold text-slate-400">VNĐ</span>
+          </div>
+          <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Khởi tạo số tiền ban đầu hoặc công nợ đối tác nếu có (mặc định 0 VNĐ).</p>
         </div>
       </div>
 
-      <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-3">
+      <div class="px-6 py-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-850/60 flex justify-end gap-3 shrink-0">
         <button type="button" onclick="closeCreateSupplierModal()" 
                 class="px-4 py-2 border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold transition">Hủy</button>
         <button type="submit" id="btnCreateSupplier"
@@ -407,10 +440,10 @@
 <!-- ========================================================================= -->
 <!-- MODAL 2: CẬP NHẬT NHÀ CUNG CẤP -->
 <!-- ========================================================================= -->
-<div id="editSupplierModal" onclick="if(event.target === this) closeEditSupplierModal()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-  <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in-95 duration-200">
+<div id="editSupplierModal" onclick="if(event.target === this) closeEditSupplierModal()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+  <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] flex flex-col overflow-hidden border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in-95 duration-200">
     
-    <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-850">
+    <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-850 shrink-0">
       <h3 class="font-bold text-slate-800 dark:text-white text-sm flex items-center gap-2">
         <i class="fa-solid fa-pen-to-square text-amber-500"></i> Cập Nhật Thông Tin Nhà Cung Cấp
       </h3>
@@ -419,41 +452,61 @@
       </button>
     </div>
 
-    <form id="editSupplierForm" onsubmit="submitEditSupplier(event)" class="p-6 space-y-4 text-xs">
+    <form id="editSupplierForm" onsubmit="submitEditSupplier(event)" class="flex flex-col flex-1 overflow-hidden text-xs">
       <input type="hidden" id="edit_MaNCC">
       
-      <div>
-        <label class="block font-bold text-slate-500 dark:text-slate-400 mb-1">Mã Nhà Cung Cấp (Cố định)</label>
-        <input type="text" id="edit_MaNCC_Display" disabled 
-               class="w-full px-3.5 py-2.5 bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl font-mono font-bold text-slate-600 dark:text-slate-400">
-      </div>
-
-      <div>
-        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Tên Đầy Đủ Đối Tác (*)</label>
-        <input type="text" id="edit_TenNCC" required 
-               class="w-full px-3.5 py-2.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-white rounded-xl focus:ring-2 focus:ring-sky-500 outline-none transition">
-      </div>
-
-      <div>
-        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Địa Chỉ Trụ Sở / Kho Hàng</label>
-        <input type="text" id="edit_DiaChi" 
-               class="w-full px-3.5 py-2.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-white rounded-xl focus:ring-2 focus:ring-sky-500 outline-none transition">
-      </div>
-
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div class="p-6 space-y-4 overflow-y-auto flex-1">
         <div>
-          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Số Điện Thoại</label>
-          <input type="text" id="edit_SoDienThoai" 
+          <label class="block font-bold text-slate-500 dark:text-slate-400 mb-1">Mã Nhà Cung Cấp (Cố định)</label>
+          <input type="text" id="edit_MaNCC_Display" disabled 
+                 class="w-full px-3.5 py-2.5 bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl font-mono font-bold text-slate-600 dark:text-slate-400">
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Tên Đầy Đủ Đối Tác (*)</label>
+          <input type="text" id="edit_TenNCC" required 
                  class="w-full px-3.5 py-2.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-white rounded-xl focus:ring-2 focus:ring-sky-500 outline-none transition">
         </div>
+
         <div>
-          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Hòm Thư Email</label>
-          <input type="email" id="edit_Email" 
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Địa Chỉ Trụ Sở / Kho Hàng</label>
+          <input type="text" id="edit_DiaChi" 
                  class="w-full px-3.5 py-2.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-white rounded-xl focus:ring-2 focus:ring-sky-500 outline-none transition">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Số Điện Thoại</label>
+            <input type="tel" id="edit_SoDienThoai"
+                   maxlength="15"
+                   oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                   pattern="[0-9]{8,15}"
+                   placeholder="Chỉ nhập số, VD: 0243974777"
+                   class="w-full px-3.5 py-2.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-white rounded-xl focus:ring-2 focus:ring-sky-500 outline-none transition">
+            <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Nhập số nguyên liên tiếp (8–15 ký tự số).</p>
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Hòm Thư Email</label>
+            <input type="email" id="edit_Email" 
+                   class="w-full px-3.5 py-2.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-white rounded-xl focus:ring-2 focus:ring-sky-500 outline-none transition">
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+            <span>Dòng Tiền / Tổng Giá Trị Giao Dịch (VNĐ)</span>
+            <span class="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold"><i class="fa-solid fa-pen"></i> Chỉnh sửa số tiền</span>
+          </label>
+          <div class="relative">
+            <input type="number" id="edit_TongTien" min="0" step="10000" placeholder="0" 
+                   class="w-full pl-3.5 pr-12 py-2.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-white rounded-xl font-mono font-bold text-emerald-600 dark:text-emerald-400 focus:ring-2 focus:ring-emerald-500 outline-none transition">
+            <span class="absolute right-3.5 top-2.5 text-xs font-bold text-slate-400">VNĐ</span>
+          </div>
+          <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Có thể trực tiếp sửa số tiền dòng tiền để cập nhật công nợ/chi tiêu của đối tác.</p>
         </div>
       </div>
 
-      <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-3">
+      <div class="px-6 py-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-850/60 flex justify-end gap-3 shrink-0">
         <button type="button" onclick="closeEditSupplierModal()" 
                 class="px-4 py-2 border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold transition">Hủy</button>
         <button type="submit" id="btnEditSupplier"
@@ -517,10 +570,19 @@
           <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1">Lần nhập hàng thành công</p>
         </div>
 
-        <!-- Card 3: Tổng tiền -->
-        <div class="bg-emerald-50/60 dark:bg-emerald-950/40 p-4 rounded-xl border border-emerald-200/80 dark:border-emerald-900/60 flex flex-col justify-center">
-          <p class="text-[11px] font-bold text-emerald-800 dark:text-emerald-400 uppercase tracking-wider">Tổng Giá Trị Giao Dịch</p>
-          <h4 class="text-xl font-black text-emerald-800 dark:text-emerald-300 mt-1" id="detail_TongTienNhap">0 đ</h4>
+        <!-- Card 3: Tổng tiền & Nút sửa tiền -->
+        <div class="bg-emerald-50/60 dark:bg-emerald-950/40 p-4 rounded-xl border border-emerald-200/80 dark:border-emerald-900/60 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between">
+              <p class="text-[11px] font-bold text-emerald-800 dark:text-emerald-400 uppercase tracking-wider">Tổng Giá Trị Giao Dịch</p>
+              <button type="button" onclick="openCashflowFromDetail()" 
+                      class="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[10px] font-bold transition flex items-center gap-1 cursor-pointer"
+                      title="Chỉnh sửa số tiền dòng tiền">
+                <i class="fa-solid fa-pen text-[9px]"></i> Sửa Tiền
+              </button>
+            </div>
+            <h4 class="text-xl font-black text-emerald-800 dark:text-emerald-300 mt-1" id="detail_TongTienNhap">0 đ</h4>
+          </div>
           <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1" id="detail_NgayNhapGanNhat">Chưa có giao dịch</p>
         </div>
 
@@ -576,6 +638,62 @@
 </div>
 
 <!-- ========================================================================= -->
+<!-- MODAL 4: ĐIỀU CHỈNH DÒNG TIỀN / SỐ TIỀN GIAO DỊCH NHÀ CUNG CẤP -->
+<!-- ========================================================================= -->
+<div id="cashflowModal" onclick="if(event.target === this) closeCashflowModal()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+  <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] flex flex-col overflow-hidden border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in-95 duration-200">
+    
+    <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-850 shrink-0">
+      <h3 class="font-bold text-slate-800 dark:text-white text-sm flex items-center gap-2">
+        <i class="fa-solid fa-coins text-emerald-500"></i> Điều Chỉnh Dòng Tiền Nhà Cung Cấp
+      </h3>
+      <button onclick="closeCashflowModal()" class="w-7 h-7 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800 flex items-center justify-center transition">
+        <i class="fa-solid fa-xmark text-base"></i>
+      </button>
+    </div>
+
+    <form id="cashflowForm" onsubmit="submitCashflowAdjustment(event)" class="flex flex-col flex-1 overflow-hidden text-xs">
+      <input type="hidden" id="cf_MaNCC">
+      
+      <div class="p-6 space-y-4 overflow-y-auto flex-1">
+        <div class="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
+          <p class="text-[11px] text-slate-500 dark:text-slate-400">Nhà cung cấp:</p>
+          <p class="font-bold text-slate-800 dark:text-white text-sm mt-0.5" id="cf_TenNCC">--</p>
+          <p class="font-mono text-[11px] text-slate-400 dark:text-slate-500 mt-0.5" id="cf_MaNCC_Display">--</p>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Dòng Tiền / Tổng Giá Trị Nhập Mới (VNĐ) (*)</label>
+          <div class="relative">
+            <input type="number" id="cf_TongTien" required min="0" step="1000" placeholder="0" 
+                   class="w-full pl-3.5 pr-12 py-2.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-white rounded-xl font-mono font-bold text-base text-emerald-600 dark:text-emerald-400 focus:ring-2 focus:ring-emerald-500 outline-none transition">
+            <span class="absolute right-3.5 top-3 text-xs font-bold text-slate-400">VNĐ</span>
+          </div>
+          <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Nhập số tiền chính xác để ghi nhận chi tiêu hoặc dòng tiền công nợ với đối tác.</p>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Ghi Chú Điều Chỉnh (Tùy chọn)</label>
+          <textarea id="cf_GhiChu" rows="2" placeholder="VD: Đối soát công nợ quý 3, thanh toán bổ sung..." 
+                    class="w-full px-3.5 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-white rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition"></textarea>
+        </div>
+      </div>
+
+      <div class="px-6 py-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-850/60 flex justify-end gap-3 shrink-0">
+        <button type="button" onclick="closeCashflowModal()" 
+                class="px-4 py-2 border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold transition">Hủy</button>
+        <button type="submit" id="btnSubmitCashflow"
+                class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white rounded-xl font-bold shadow transition flex items-center gap-2 cursor-pointer">
+          <i class="fa-solid fa-check"></i>
+          <span>Xác Nhận Cập Nhật</span>
+        </button>
+      </div>
+    </form>
+
+  </div>
+</div>
+
+<!-- ========================================================================= -->
 <!-- TOAST THÔNG BÁO HIỆN ĐẠI -->
 <!-- ========================================================================= -->
 <div id="toastContainer" class="fixed top-5 right-5 z-50 space-y-2 pointer-events-none"></div>
@@ -585,6 +703,7 @@
 <!-- ========================================================================= -->
 <script>
   let currentFilter = 'all';
+  let currentDetailSupplier = null;
 
   // --- HỆ THỐNG TOAST NOTIFICATION ---
   function showToast(message, type = 'success') {
@@ -645,8 +764,11 @@
                           address.includes(searchVal);
 
       let matchFilter = true;
-      if (currentFilter === 'active') matchFilter = hasOrders;
-      if (currentFilter === 'new') matchFilter = !hasOrders;
+      if (currentFilter === 'active') {
+        matchFilter = hasOrders || (parseFloat(row.getAttribute('data-tongtien') || '0') > 0);
+      } else if (currentFilter === 'new') {
+        matchFilter = !hasOrders && (parseFloat(row.getAttribute('data-tongtien') || '0') === 0);
+      }
 
       if (matchSearch && matchFilter) {
         row.style.display = '';
@@ -656,13 +778,18 @@
       }
     });
 
-    document.getElementById('supplierCountBadge').innerText = `${visibleCount} đối tác hiển thị`;
-    
-    const emptyState = document.getElementById('emptySearchState');
-    if (visibleCount === 0) {
-      emptyState.classList.remove('hidden');
-    } else {
-      emptyState.classList.add('hidden');
+    const emptySearchState = document.getElementById('emptySearchState');
+    if (emptySearchState) {
+      if (visibleCount === 0 && rows.length > 0) {
+        emptySearchState.classList.remove('hidden');
+      } else {
+        emptySearchState.classList.add('hidden');
+      }
+    }
+
+    const countBadge = document.getElementById('supplierCountBadge');
+    if (countBadge) {
+      countBadge.innerText = `${visibleCount} đối tác hiển thị`;
     }
   }
 
@@ -671,11 +798,11 @@
     try {
       const res = await fetch(`/api/v1/kho/suppliers/${encodeURIComponent(ma_ncc)}`);
       if (!res.ok) {
-        const err = await res.json();
-        showToast(err.detail || 'Không thể tải thông tin đối tác', 'error');
+        showToast('Không tìm thấy thông tin nhà cung cấp', 'error');
         return;
       }
       const data = await res.json();
+      currentDetailSupplier = data;
 
       document.getElementById('detail_TenNCC').innerText = data.TenNCC;
       document.getElementById('detail_MaNCC').innerText = data.MaNCC;
@@ -726,29 +853,151 @@
         btnInbound.href = `/inbound?supplier=${encodeURIComponent(data.MaNCC)}`;
       }
 
-      document.getElementById('detailSupplierModal').classList.remove('hidden');
+      const modal = document.getElementById('detailSupplierModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
     } catch (err) {
       showToast('Lỗi kết nối khi tải chi tiết: ' + err.message, 'error');
     }
   }
 
   function closeSupplierDetailModal() {
-    document.getElementById('detailSupplierModal').classList.add('hidden');
+    const modal = document.getElementById('detailSupplierModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+
+  // --- MODAL ĐIỀU CHỈNH DÒNG TIỀN / SỐ TIỀN ---
+  function openCashflowModal(ma_ncc, ten_ncc, currentAmount) {
+    document.getElementById('cf_MaNCC').value = ma_ncc;
+    document.getElementById('cf_MaNCC_Display').innerText = `Mã: ${ma_ncc}`;
+    document.getElementById('cf_TenNCC').innerText = ten_ncc;
+    document.getElementById('cf_TongTien').value = currentAmount || 0;
+    document.getElementById('cf_GhiChu').value = '';
+    
+    const modal = document.getElementById('cashflowModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    
+    setTimeout(() => {
+      document.getElementById('cf_TongTien').focus();
+      document.getElementById('cf_TongTien').select();
+    }, 50);
+  }
+
+  function closeCashflowModal() {
+    const modal = document.getElementById('cashflowModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+
+  function openCashflowFromDetail() {
+    if (currentDetailSupplier) {
+      openCashflowModal(currentDetailSupplier.MaNCC, currentDetailSupplier.TenNCC, currentDetailSupplier.TongGiaTriNhap || 0);
+    }
+  }
+
+  async function submitCashflowAdjustment(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btnSubmitCashflow');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang lưu...';
+
+    const ma_ncc = document.getElementById('cf_MaNCC').value;
+    const tong_tien = parseFloat(document.getElementById('cf_TongTien').value) || 0;
+    const ghi_chu = document.getElementById('cf_GhiChu').value.trim() || null;
+
+    try {
+      const res = await fetch(`/api/v1/kho/suppliers/${encodeURIComponent(ma_ncc)}/cashflow`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ TongTien: tong_tien, GhiChu: ghi_chu })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        showToast(data.detail || 'Không thể điều chỉnh dòng tiền', 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> Xác Nhận Cập Nhật';
+        return;
+      }
+      showToast(data.message || `Đã cập nhật dòng tiền [${ma_ncc}] thành công!`, 'success');
+      closeCashflowModal();
+
+      // Cập nhật DOM trên bảng ngay lập tức
+      const amountSpan = document.getElementById(`supplier-amount-${ma_ncc}`);
+      if (amountSpan) {
+        amountSpan.innerText = tong_tien.toLocaleString('vi-VN') + ' đ';
+      }
+      const row = document.getElementById(`supplier-row-${ma_ncc}`);
+      if (row) {
+        row.setAttribute('data-tongtien', tong_tien);
+      }
+      const editBtn = document.querySelector(`button[onclick*="openEditSupplierModal"][data-mancc="${ma_ncc}"]`);
+      if (editBtn) {
+        editBtn.dataset.tongtien = tong_tien;
+      }
+
+      // Nếu đang mở modal detail thì cập nhật luôn
+      const detailAmount = document.getElementById('detail_TongTienNhap');
+      if (detailAmount && currentDetailSupplier && currentDetailSupplier.MaNCC === ma_ncc) {
+        currentDetailSupplier.TongGiaTriNhap = tong_tien;
+        detailAmount.innerText = tong_tien.toLocaleString('vi-VN') + ' đ';
+      }
+
+      // Làm mới các KPI tổng
+      await refreshKPIs();
+
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-check"></i> Xác Nhận Cập Nhật';
+    } catch (err) {
+      showToast('Lỗi kết nối: ' + err.message, 'error');
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-check"></i> Xác Nhận Cập Nhật';
+    }
+  }
+
+  // Làm mới các thẻ KPI trên giao diện
+  async function refreshKPIs() {
+    try {
+      const res = await fetch('/api/v1/kho/suppliers/summary/kpis');
+      if (!res.ok) return;
+      const kpi = await res.json();
+      
+      const totalAmountEl = document.getElementById('kpi_tong_chi_tieu');
+      if (totalAmountEl && kpi.tong_chi_tieu_fmt) {
+        totalAmountEl.innerText = kpi.tong_chi_tieu_fmt;
+      }
+      const topNccEl = document.getElementById('kpi_top_ncc_tien');
+      if (topNccEl && kpi.top_ncc_tien_fmt) {
+        topNccEl.innerText = kpi.top_ncc_tien_fmt;
+      }
+    } catch (e) {
+      console.warn('Could not refresh KPIs:', e);
+    }
   }
 
   // --- MODAL THÊM NCC ---
   function openCreateSupplierModal() {
     document.getElementById('createSupplierForm').reset();
-    document.getElementById('createSupplierModal').classList.remove('hidden');
-    document.getElementById('create_MaNCC').focus();
+    const modal = document.getElementById('createSupplierModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    setTimeout(() => {
+      const input = document.getElementById('create_MaNCC');
+      if (input) input.focus();
+    }, 50);
   }
+
   function closeCreateSupplierModal() {
-    document.getElementById('createSupplierModal').classList.add('hidden');
+    const modal = document.getElementById('createSupplierModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
   }
 
   async function submitCreateSupplier(e) {
     e.preventDefault();
     const btn = document.getElementById('btnCreateSupplier');
+    if (btn.disabled) return;
     btn.disabled = true;
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang lưu...';
 
@@ -757,7 +1006,8 @@
       TenNCC: document.getElementById('create_TenNCC').value.trim(),
       DiaChi: document.getElementById('create_DiaChi').value.trim() || null,
       SoDienThoai: document.getElementById('create_SoDienThoai').value.trim() || null,
-      Email: document.getElementById('create_Email').value.trim() || null
+      Email: document.getElementById('create_Email').value.trim() || null,
+      TongTien: parseFloat(document.getElementById('create_TongTien').value) || 0.0
     };
 
     try {
@@ -774,7 +1024,12 @@
         return;
       }
       showToast(`Đã thêm nhà cung cấp [${data.TenNCC}] thành công!`, 'success');
-      setTimeout(() => window.location.reload(), 1000);
+      closeCreateSupplierModal();
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Lưu Đối Tác';
+      
+      // Reload 1 lần để render bảng dữ liệu và phân trang Jinja2 chuẩn
+      setTimeout(() => window.location.reload(), 600);
     } catch (err) {
       showToast('Lỗi kết nối: ' + err.message, 'error');
       btn.disabled = false;
@@ -791,16 +1046,27 @@
     document.getElementById('edit_DiaChi').value = d.diachi || '';
     document.getElementById('edit_SoDienThoai').value = d.sodienthoai || '';
     document.getElementById('edit_Email').value = d.email || '';
-    document.getElementById('editSupplierModal').classList.remove('hidden');
+    document.getElementById('edit_TongTien').value = d.tongtien || '0';
+    
+    const modal = document.getElementById('editSupplierModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    setTimeout(() => {
+      const input = document.getElementById('edit_TenNCC');
+      if (input) input.focus();
+    }, 50);
   }
 
   function closeEditSupplierModal() {
-    document.getElementById('editSupplierModal').classList.add('hidden');
+    const modal = document.getElementById('editSupplierModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
   }
 
   async function submitEditSupplier(e) {
     e.preventDefault();
     const btn = document.getElementById('btnEditSupplier');
+    if (btn.disabled) return;
     btn.disabled = true;
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang cập nhật...';
 
@@ -809,7 +1075,8 @@
       TenNCC: document.getElementById('edit_TenNCC').value.trim(),
       DiaChi: document.getElementById('edit_DiaChi').value.trim() || null,
       SoDienThoai: document.getElementById('edit_SoDienThoai').value.trim() || null,
-      Email: document.getElementById('edit_Email').value.trim() || null
+      Email: document.getElementById('edit_Email').value.trim() || null,
+      TongTien: parseFloat(document.getElementById('edit_TongTien').value) || 0.0
     };
 
     try {
@@ -826,7 +1093,56 @@
         return;
       }
       showToast(`Đã cập nhật nhà cung cấp [${data.TenNCC}] thành công!`, 'success');
-      setTimeout(() => window.location.reload(), 1000);
+
+      // Cập nhật DOM trực tiếp không cần reload trang
+      const nameEl = document.getElementById(`supplier-ten-${ma_ncc}`);
+      if (nameEl) nameEl.innerText = data.TenNCC;
+      
+      const addrEl = document.getElementById(`supplier-address-${ma_ncc}`);
+      if (addrEl) addrEl.innerText = data.DiaChi || '--';
+
+      const contactEl = document.getElementById(`supplier-contact-${ma_ncc}`);
+      if (contactEl) {
+        contactEl.innerHTML = `
+          ${data.SoDienThoai ? `<div class="flex items-center gap-1.5 text-slate-700 dark:text-slate-300 font-medium">
+            <i class="fa-solid fa-phone text-slate-400 text-[10px]"></i>
+            <a href="tel:${data.SoDienThoai}" class="hover:text-sky-600 dark:hover:text-sky-400 transition">${data.SoDienThoai}</a>
+          </div>` : '<span class="text-slate-400 italic text-[11px]">Chưa có SĐT</span>'}
+          ${data.Email ? `<div class="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 text-[11px]">
+            <i class="fa-regular fa-envelope text-slate-400 text-[10px]"></i>
+            <a href="mailto:${data.Email}" class="hover:text-sky-600 dark:hover:text-sky-400 transition truncate max-w-[150px]">${data.Email}</a>
+          </div>` : ''}
+        `;
+      }
+
+      const amountEl = document.getElementById(`supplier-amount-${ma_ncc}`);
+      if (amountEl) {
+        amountEl.innerText = (data.TongGiaTriNhap || 0).toLocaleString('vi-VN') + ' đ';
+      }
+
+      const row = document.getElementById(`supplier-row-${ma_ncc}`);
+      if (row) {
+        row.setAttribute('data-name', (data.TenNCC || '').toLowerCase());
+        row.setAttribute('data-phone', (data.SoDienThoai || '').toLowerCase());
+        row.setAttribute('data-email', (data.Email || '').toLowerCase());
+        row.setAttribute('data-address', (data.DiaChi || '').toLowerCase());
+        row.setAttribute('data-tongtien', data.TongGiaTriNhap || 0);
+      }
+
+      const editBtn = document.querySelector(`button[onclick*="openEditSupplierModal"][data-mancc="${ma_ncc}"]`);
+      if (editBtn) {
+        editBtn.dataset.tenncc = data.TenNCC;
+        editBtn.dataset.diachi = data.DiaChi || '';
+        editBtn.dataset.sodienthoai = data.SoDienThoai || '';
+        editBtn.dataset.email = data.Email || '';
+        editBtn.dataset.tongtien = data.TongGiaTriNhap || 0;
+      }
+
+      await refreshKPIs();
+      closeEditSupplierModal();
+
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-check"></i> Lưu Cập Nhật';
     } catch (err) {
       showToast('Lỗi kết nối: ' + err.message, 'error');
       btn.disabled = false;
@@ -850,7 +1166,12 @@
         return;
       }
       showToast(data.message || `Đã xóa nhà cung cấp [${ma_ncc}] thành công!`, 'success');
-      setTimeout(() => window.location.reload(), 1000);
+      const row = document.getElementById(`supplier-row-${ma_ncc}`);
+      if (row) {
+        row.remove();
+        filterSuppliersTable();
+      }
+      await refreshKPIs();
     } catch (err) {
       showToast('Lỗi kết nối: ' + err.message, 'error');
     }
@@ -862,6 +1183,7 @@
       closeCreateSupplierModal();
       closeEditSupplierModal();
       closeSupplierDetailModal();
+      closeCashflowModal();
     }
   });
 </script>

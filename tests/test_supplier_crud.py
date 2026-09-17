@@ -63,7 +63,7 @@ def test_supplier_suite():
             MaNCC=test_ma_ncc,
             TenNCC="Công ty Cổ phần Thép Thử Nghiệm Tự Động",
             DiaChi="KCN Quang Minh, Mê Linh, Hà Nội",
-            SoDienThoai="0243.999.888",
+            SoDienThoai="02439998880",
             Email="contact@theptudong.vn"
         )
         created = create_nha_cung_cap(db, new_ncc)
@@ -84,7 +84,7 @@ def test_supplier_suite():
         update_data = NhaCungCapUpdate(
             TenNCC="Tập đoàn Thép Thử Nghiệm Tự Động (Đã Cập Nhật)",
             DiaChi="KCN Thăng Long II, Hưng Yên",
-            SoDienThoai="0221.888.777",
+            SoDienThoai="02218887770",
             Email="info@theptudong-updated.vn"
         )
         updated = update_nha_cung_cap(db, test_ma_ncc, update_data)

@@ -70,12 +70,163 @@ def get_stock_alerts(db: Session) -> list:
     alert_items.sort(key=lambda x: (0 if x["MucDo"] == "danger" else 1, -x["ThieuHut"]))
     return alert_items
 
+def recalculate_and_sync_the_kho(db: Session, ma_hh: Optional[str] = None) -> dict:
+    """
+    Chuẩn hóa và đồng bộ số dư Sổ Thẻ Kho & Tồn Kho (ACID Ledger Recalculation):
+    1. Bổ sung các bản ghi Thẻ kho còn thiếu từ các Phiếu Nhập / Xuất kho thực tế (Audit Recovery).
+    2. Duyệt toàn bộ giao dịch TheKho theo trình tự thời gian (NgayGiaoDich ASC, MaTK ASC).
+    3. Đảm bảo tính toán đúng chuẩn:
+       Tồn sau giao dịch (N) = Tồn sau giao dịch (N-1) + Số lượng biến động (N).
+    4. Khắc phục triệt để các lỗi tính toán sai lệch (ví dụ: Tồn 135 - Xuất 20 = 10 -> sửa thành 115).
+    5. Cập nhật TonKho.SoLuongTon đồng bộ tuyệt đối với số dư lũy kế cuối cùng trong Thẻ kho.
+    """
+    # 1. Bổ sung các chi tiết phiếu nhập còn thiếu vào Thẻ kho (nếu có)
+    ct_nhap_query = db.query(ChiTietPhieuNhap, PhieuNhap).join(PhieuNhap, ChiTietPhieuNhap.MaPN == PhieuNhap.MaPN)
+    if ma_hh:
+        ct_nhap_query = ct_nhap_query.filter(ChiTietPhieuNhap.MaHH == ma_hh)
+    
+    for ct, pn in ct_nhap_query.all():
+        exists = db.query(TheKho).filter(TheKho.MaChungTu == ct.MaPN, TheKho.MaHH == ct.MaHH).first()
+        if not exists:
+            the_kho_missing = TheKho(
+                NgayGiaoDich=pn.NgayNhap,
+                MaHH=ct.MaHH,
+                MaChungTu=ct.MaPN,
+                LoaiGiaoDich="NHAP",
+                SoLuongThayDoi=ct.SoLuongNhap,
+                TonSauGiaoDich=ct.SoLuongNhap
+            )
+            db.add(the_kho_missing)
+
+    # Bổ sung các chi tiết phiếu xuất còn thiếu vào Thẻ kho (nếu có)
+    ct_xuat_query = db.query(ChiTietPhieuXuat, PhieuXuat).join(PhieuXuat, ChiTietPhieuXuat.MaPX == PhieuXuat.MaPX)
+    if ma_hh:
+        ct_xuat_query = ct_xuat_query.filter(ChiTietPhieuXuat.MaHH == ma_hh)
+
+    for ct, px in ct_xuat_query.all():
+        exists = db.query(TheKho).filter(TheKho.MaChungTu == ct.MaPX, TheKho.MaHH == ct.MaHH).first()
+        if not exists:
+            the_kho_missing = TheKho(
+                NgayGiaoDich=px.NgayXuat,
+                MaHH=ct.MaHH,
+                MaChungTu=ct.MaPX,
+                LoaiGiaoDich="XUAT",
+                SoLuongThayDoi=-ct.SoLuongXuat,
+                TonSauGiaoDich=0
+            )
+            db.add(the_kho_missing)
+
+    db.flush()
+
+    # 2. Lấy danh sách hàng hóa cần tính toán
+    query = db.query(HangHoa.MaHH)
+    if ma_hh:
+        query = query.filter(HangHoa.MaHH == ma_hh)
+    skus = [s[0] for s in query.all()]
+
+    fixed_ledger_count = 0
+    synced_stock_count = 0
+
+    for sku in skus:
+        records = db.query(TheKho)\
+            .filter(TheKho.MaHH == sku)\
+            .order_by(TheKho.NgayGiaoDich.asc(), TheKho.MaTK.asc())\
+            .all()
+
+        # Kiểm tra trước tổng biến động để tránh tồn âm do lịch sử dữ liệu cũ
+        min_required_initial = 0
+        test_balance = 0
+        for r in records:
+            test_balance += r.SoLuongThayDoi
+            if test_balance < 0:
+                min_required_initial = max(min_required_initial, abs(test_balance))
+
+        # Nếu có giao dịch khởi tạo ban đầu, nâng số dư ban đầu nếu cần bù âm lịch sử
+        if min_required_initial > 0 and records:
+            init_row = records[0]
+            if "KHOITAO" in init_row.MaChungTu or "BANDAU" in init_row.MaChungTu:
+                init_row.SoLuongThayDoi += min_required_initial
+                fixed_ledger_count += 1
+
+        running_balance = 0
+        for r in records:
+            expected = max(0, running_balance + r.SoLuongThayDoi)
+            if r.TonSauGiaoDich != expected:
+                r.TonSauGiaoDich = expected
+                fixed_ledger_count += 1
+            running_balance = expected
+
+        tk = db.query(TonKho).filter(TonKho.MaHH == sku).first()
+        if records:
+            final_balance = records[-1].TonSauGiaoDich
+            if not tk:
+                tk = TonKho(MaHH=sku, SoLuongTon=final_balance, CapNhatCuoi=utc_now())
+                db.add(tk)
+                synced_stock_count += 1
+            elif tk.SoLuongTon != final_balance:
+                tk.SoLuongTon = final_balance
+                tk.CapNhatCuoi = utc_now()
+                synced_stock_count += 1
+        elif tk and tk.SoLuongTon != 0:
+            tk.SoLuongTon = 0
+            tk.CapNhatCuoi = utc_now()
+            synced_stock_count += 1
+
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+
+    return {
+        "processed_skus": len(skus),
+        "fixed_ledger_count": fixed_ledger_count,
+        "synced_stock_count": synced_stock_count
+    }
+
 def get_the_kho_by_item(db: Session, ma_hh: str, limit: int = 100) -> list:
-    """Tra cứu lịch sử thẻ kho của một mặt hàng cụ thể."""
+    """
+    Tra cứu lịch sử thẻ kho của một mặt hàng cụ thể, đảm bảo số dư lũy kế (Running balance)
+    tuân thủ nghiêm ngặt công thức: Tồn(N) = Tồn(N-1) +/- Số lượng biến động.
+    """
     records = db.query(TheKho)\
         .filter(TheKho.MaHH == ma_hh)\
         .order_by(TheKho.NgayGiaoDich.asc(), TheKho.MaTK.asc())\
-        .limit(limit).all()
+        .all()
+
+    if not records:
+        return []
+
+    # Thẩm tra và chuẩn hóa tính nhất quán của số dư lũy kế
+    needs_commit = False
+    running_balance = 0
+    for r in records:
+        expected = running_balance + r.SoLuongThayDoi
+        if r.TonSauGiaoDich != expected:
+            r.TonSauGiaoDich = expected
+            needs_commit = True
+        running_balance = expected
+
+    # Đồng bộ số dư vào TonKho
+    tk = db.query(TonKho).filter(TonKho.MaHH == ma_hh).first()
+    if tk:
+        if tk.SoLuongTon != running_balance:
+            tk.SoLuongTon = running_balance
+            tk.CapNhatCuoi = utc_now()
+            needs_commit = True
+    else:
+        tk = TonKho(MaHH=ma_hh, SoLuongTon=running_balance, CapNhatCuoi=utc_now())
+        db.add(tk)
+        needs_commit = True
+
+    if needs_commit:
+        try:
+            db.commit()
+        except Exception:
+            db.rollback()
+
+    if limit and len(records) > limit:
+        return records[-limit:]
     return records
 
 def get_all_phieu_nhap(db: Session, limit: int = 100, skip: int = 0) -> list:
@@ -248,7 +399,10 @@ def get_all_suppliers(db: Session):
     for s in suppliers:
         pns = s.phieu_nhap or []
         so_pn = len(pns)
-        tong_tien = sum(pn.TongTien for pn in pns)
+        # Tính tổng tiền chi tiết phiếu nhập (tự động fallback nếu TongTien trên master chưa cập nhật)
+        tien_pns = sum((pn.TongTien if pn.TongTien and pn.TongTien > 0 else sum(ct.ThanhTien for ct in pn.chi_tiet)) for pn in pns)
+        # Nếu s.TongTien được người dùng thiết lập / điều chỉnh trực tiếp (> 0) thì ưu tiên hiển thị s.TongTien
+        tong_tien = s.TongTien if (s.TongTien is not None and s.TongTien > 0) else tien_pns
         latest_date = None
         if pns:
             latest_pn = max(pns, key=lambda p: p.NgayNhap)
@@ -262,6 +416,7 @@ def get_all_suppliers(db: Session):
             "Email": s.Email or "",
             "SoPhieuNhap": so_pn,
             "TongGiaTriNhap": tong_tien,
+            "TongTien": s.TongTien if s.TongTien is not None else tong_tien,
             "NgayNhapGanNhat": latest_date
         })
     return results
@@ -277,13 +432,14 @@ def get_supplier_kpis(db: Session) -> dict:
 
     for s in suppliers:
         pns = s.phieu_nhap or []
-        if pns:
+        tien_pns = sum((pn.TongTien if pn.TongTien and pn.TongTien > 0 else sum(ct.ThanhTien for ct in pn.chi_tiet)) for pn in pns)
+        tien_s = s.TongTien if (s.TongTien is not None and s.TongTien > 0) else tien_pns
+        if pns or (s.TongTien and s.TongTien > 0):
             ncc_active += 1
-            tien_s = sum(pn.TongTien for pn in pns)
-            tong_chi_tieu += tien_s
-            if tien_s > top_ncc_tien:
-                top_ncc_tien = tien_s
-                top_ncc = s.TenNCC
+        tong_chi_tieu += tien_s
+        if tien_s > top_ncc_tien:
+            top_ncc_tien = tien_s
+            top_ncc = s.TenNCC
 
     return {
         "TongNCC": tong_ncc,
@@ -301,7 +457,8 @@ def get_supplier_detail(db: Session, ma_ncc: str) -> dict:
 
     pns = sorted(ncc.phieu_nhap, key=lambda p: p.NgayNhap, reverse=True)
     so_pn = len(pns)
-    tong_tien = sum(pn.TongTien for pn in pns)
+    tien_pns = sum((pn.TongTien if pn.TongTien and pn.TongTien > 0 else sum(ct.ThanhTien for ct in pn.chi_tiet)) for pn in pns)
+    tong_tien = ncc.TongTien if (ncc.TongTien is not None and ncc.TongTien > 0) else tien_pns
     latest_date = pns[0].NgayNhap.strftime("%d/%m/%Y") if pns else None
 
     history = []
@@ -321,7 +478,7 @@ def get_supplier_detail(db: Session, ma_ncc: str) -> dict:
             "MaPN": pn.MaPN,
             "NgayNhap": pn.NgayNhap,
             "NguoiLap": pn.nguoi_dung.HoTen if pn.nguoi_dung else "Thủ kho",
-            "TongTien": pn.TongTien,
+            "TongTien": pn.TongTien if pn.TongTien and pn.TongTien > 0 else sum(ct.ThanhTien for ct in pn.chi_tiet),
             "GhiChu": pn.GhiChu or "",
             "SoMatHang": len(pn.chi_tiet),
             "ChiTiet": ct_items
@@ -335,22 +492,24 @@ def get_supplier_detail(db: Session, ma_ncc: str) -> dict:
         "Email": ncc.Email or "",
         "SoPhieuNhap": so_pn,
         "TongGiaTriNhap": tong_tien,
+        "TongTien": ncc.TongTien if ncc.TongTien is not None else tong_tien,
         "NgayNhapGanNhat": latest_date,
         "LichSuNhap": history
     }
 
 def create_nha_cung_cap(db: Session, ncc_in: NhaCungCapCreate) -> NhaCungCap:
-    """Thêm mới nhà cung cấp."""
-    existing = db.query(NhaCungCap).filter(NhaCungCap.MaNCC == ncc_in.MaNCC).first()
+    """Thêm mới nhà cung cấp với hỗ trợ khởi tạo dòng tiền / số tiền ban đầu."""
+    existing = db.query(NhaCungCap).filter(func.lower(NhaCungCap.MaNCC) == func.lower(ncc_in.MaNCC.strip())).first()
     if existing:
         raise HTTPException(status_code=400, detail=f"Mã NCC [{ncc_in.MaNCC}] đã tồn tại.")
 
     ncc = NhaCungCap(
         MaNCC=ncc_in.MaNCC.strip().upper(),
         TenNCC=ncc_in.TenNCC.strip(),
-        DiaChi=ncc_in.DiaChi.strip() if ncc_in.DiaChi else None,
-        SoDienThoai=ncc_in.SoDienThoai.strip() if ncc_in.SoDienThoai else None,
-        Email=ncc_in.Email.strip() if ncc_in.Email else None
+        DiaChi=ncc_in.DiaChi.strip() if ncc_in.DiaChi and ncc_in.DiaChi.strip() else None,
+        SoDienThoai=ncc_in.SoDienThoai.strip() if ncc_in.SoDienThoai and ncc_in.SoDienThoai.strip() else None,
+        Email=ncc_in.Email.strip() if ncc_in.Email and ncc_in.Email.strip() else None,
+        TongTien=max(0.0, float(ncc_in.TongTien)) if ncc_in.TongTien is not None else 0.0
     )
     db.add(ncc)
     db.commit()
@@ -358,16 +517,28 @@ def create_nha_cung_cap(db: Session, ncc_in: NhaCungCapCreate) -> NhaCungCap:
     return ncc
 
 def update_nha_cung_cap(db: Session, ma_ncc: str, ncc_in: NhaCungCapUpdate) -> NhaCungCap:
-    """Cập nhật thông tin nhà cung cấp."""
+    """Cập nhật thông tin nhà cung cấp và cho phép điều chỉnh dòng tiền / số tiền."""
     ncc = db.query(NhaCungCap).filter(NhaCungCap.MaNCC == ma_ncc).first()
     if not ncc:
         raise HTTPException(status_code=404, detail=f"Không tìm thấy nhà cung cấp [{ma_ncc}].")
 
     ncc.TenNCC = ncc_in.TenNCC.strip()
-    ncc.DiaChi = ncc_in.DiaChi.strip() if ncc_in.DiaChi else None
-    ncc.SoDienThoai = ncc_in.SoDienThoai.strip() if ncc_in.SoDienThoai else None
-    ncc.Email = ncc_in.Email.strip() if ncc_in.Email else None
+    ncc.DiaChi = ncc_in.DiaChi.strip() if ncc_in.DiaChi and ncc_in.DiaChi.strip() else None
+    ncc.SoDienThoai = ncc_in.SoDienThoai.strip() if ncc_in.SoDienThoai and ncc_in.SoDienThoai.strip() else None
+    ncc.Email = ncc_in.Email.strip() if ncc_in.Email and ncc_in.Email.strip() else None
+    if ncc_in.TongTien is not None:
+        ncc.TongTien = max(0.0, float(ncc_in.TongTien))
 
+    db.commit()
+    db.refresh(ncc)
+    return ncc
+
+def update_supplier_cashflow(db: Session, ma_ncc: str, tong_tien: float, ghi_chu: Optional[str] = None) -> NhaCungCap:
+    """Điều chỉnh trực tiếp số tiền / dòng tiền cho nhà cung cấp."""
+    ncc = db.query(NhaCungCap).filter(NhaCungCap.MaNCC == ma_ncc).first()
+    if not ncc:
+        raise HTTPException(status_code=404, detail=f"Không tìm thấy nhà cung cấp [{ma_ncc}].")
+    ncc.TongTien = max(0.0, float(tong_tien))
     db.commit()
     db.refresh(ncc)
     return ncc

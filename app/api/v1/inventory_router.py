@@ -1,15 +1,17 @@
 # app/api/v1/inventory_router.py
 from typing import List, Optional
-from fastapi import APIRouter, Depends, status, HTTPException, Query
+from fastapi import APIRouter, Depends, status, HTTPException, Query, Header
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import get_current_active_user, require_role
+from app.core.idempotency import idempotency_store
 from app.models.inventory_models import NguoiDung, HangHoa, TonKho, NhaCungCap, NhomHang, DonViTinh, PhieuNhap, PhieuXuat
 from app.schemas.inventory_schemas import (
     PhieuNhapCreate, PhieuNhapOut,
     PhieuXuatCreate, PhieuXuatOut,
     KPISummary, StockAlertItem, HangHoaOut, HangHoaCreate, HangHoaUpdate,
     NhaCungCapCreate, NhaCungCapUpdate, NhaCungCapOut, NhaCungCapDetailOut, SupplierKPIs,
+    SupplierCashflowUpdate,
     NhomHangOut, DonViTinhOut, TheKhoRecord
 )
 from app.services.inbound_service import execute_inbound_transaction
@@ -19,6 +21,7 @@ from app.services.inventory_service import (
     create_hang_hoa, update_hang_hoa, delete_hang_hoa,
     get_all_suppliers, get_supplier_kpis, get_supplier_detail,
     create_nha_cung_cap, update_nha_cung_cap, delete_nha_cung_cap,
+    update_supplier_cashflow,
     get_all_phieu_nhap, get_phieu_nhap_by_id,
     get_all_phieu_xuat, get_phieu_xuat_by_id,
     get_the_kho_by_item
@@ -212,6 +215,22 @@ def api_delete_supplier(
     delete_nha_cung_cap(db, ma_ncc)
     return {"status": "success", "message": f"Đã xóa thành công nhà cung cấp [{ma_ncc}]."}
 
+@router.put("/suppliers/{ma_ncc}/cashflow")
+def api_update_supplier_cashflow(
+    ma_ncc: str,
+    cashflow_in: SupplierCashflowUpdate,
+    db: Session = Depends(get_db),
+    current_user: NguoiDung = Depends(require_role(["Admin", "Thukho"]))
+):
+    """Điều chỉnh trực tiếp số tiền / dòng tiền cho nhà cung cấp (Admin & Thủ kho kiêm Kế toán)."""
+    ncc = update_supplier_cashflow(db, ma_ncc, cashflow_in.TongTien, cashflow_in.GhiChu)
+    return {
+        "status": "success",
+        "message": f"Đã cập nhật dòng tiền đối tác [{ncc.TenNCC}] thành {ncc.TongTien:,.0f} VNĐ.",
+        "MaNCC": ncc.MaNCC,
+        "TongTien": ncc.TongTien
+    }
+
 # =============================================================================
 # KIỂM TRA TỒN KHO & GIAO DỊCH NHẬP / XUẤT (ACID & RBAC)
 # =============================================================================
@@ -238,11 +257,32 @@ def api_check_single_stock(
 @router.post("/phieu-nhap", response_model=PhieuNhapOut, status_code=status.HTTP_201_CREATED)
 def api_tao_phieu_nhap(
     phieu_in: PhieuNhapCreate,
+    idempotency_key: Optional[str] = Header(None, alias="Idempotency-Key"),
     db: Session = Depends(get_db),
     current_user: NguoiDung = Depends(require_role(["Admin", "Thukho"]))
 ):
-    """API Lập Phiếu Nhập Kho Inbound trong 1 Transaction ACID (Admin, Thủ kho, Kế toán)."""
+    """API Lập Phiếu Nhập Kho Inbound trong 1 Transaction ACID với cơ chế Idempotency chống gửi lặp."""
+    actual_key = idempotency_key or phieu_in.idempotency_key
+    fingerprint = idempotency_store.generate_fingerprint(
+        current_user.MaND, "inbound", phieu_in.model_dump(exclude={"idempotency_key"})
+    )
+
+    if actual_key:
+        cached = idempotency_store.get(f"idemp:inbound:{actual_key}")
+        if cached:
+            return cached
+
+    # Kiểm tra debounce trong 3 giây chống F5 hoặc double-click
+    debounced = idempotency_store.get(f"debounce:inbound:{fingerprint}")
+    if debounced:
+        return debounced
+
     phieu = execute_inbound_transaction(db, phieu_in, user_id=current_user.MaND)
+
+    if actual_key:
+        idempotency_store.set(f"idemp:inbound:{actual_key}", phieu)
+    idempotency_store.set(f"debounce:inbound:{fingerprint}", phieu)
+
     ws_manager.broadcast_sync({
         "type": "INVENTORY_UPDATED",
         "action": "INBOUND",
@@ -276,11 +316,32 @@ def api_get_phieu_nhap_detail(
 @router.post("/phieu-xuat", response_model=PhieuXuatOut, status_code=status.HTTP_201_CREATED)
 def api_tao_phieu_xuat(
     phieu_in: PhieuXuatCreate,
+    idempotency_key: Optional[str] = Header(None, alias="Idempotency-Key"),
     db: Session = Depends(get_db),
     current_user: NguoiDung = Depends(require_role(["Admin", "Thukho"]))
 ):
-    """API Lập Phiếu Xuất Kho Outbound có Atomic SQL Decrement chống race condition (Admin, Thủ kho, Kế toán)."""
+    """API Lập Phiếu Xuất Kho Outbound có Atomic SQL Decrement và Idempotency chống lặp chứng từ."""
+    actual_key = idempotency_key or phieu_in.idempotency_key
+    fingerprint = idempotency_store.generate_fingerprint(
+        current_user.MaND, "outbound", phieu_in.model_dump(exclude={"idempotency_key"})
+    )
+
+    if actual_key:
+        cached = idempotency_store.get(f"idemp:outbound:{actual_key}")
+        if cached:
+            return cached
+
+    # Kiểm tra debounce trong 3 giây chống F5 hoặc double-click
+    debounced = idempotency_store.get(f"debounce:outbound:{fingerprint}")
+    if debounced:
+        return debounced
+
     phieu = execute_outbound_transaction(db, phieu_in, user_id=current_user.MaND)
+
+    if actual_key:
+        idempotency_store.set(f"idemp:outbound:{actual_key}", phieu)
+    idempotency_store.set(f"debounce:outbound:{fingerprint}", phieu)
+
     ws_manager.broadcast_sync({
         "type": "INVENTORY_UPDATED",
         "action": "OUTBOUND",

@@ -86,18 +86,13 @@ class SmartLogisWebSocketClient {
 
   handleIncomingMessage(data) {
     if (data.type === 'PONG') {
-      if (data.active_clients !== undefined) {
-        this.updateActiveClientsCount(data.active_clients);
-      }
       return;
     }
 
     if (data.type === 'CONNECTION_ESTABLISHED') {
-      if (data.active_clients !== undefined) {
-        this.updateActiveClientsCount(data.active_clients);
-      }
       return;
     }
+
 
     if (data.type === 'INVENTORY_UPDATED') {
       console.log('[WebSocket Realtime Event]', data);

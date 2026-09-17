@@ -109,11 +109,11 @@ def reset_and_seed_database(force_reset: bool = False):
 
         print("[*] Dang khoi tao 5 Nha cung cap chien luoc...")
         suppliers = [
-            NhaCungCap(MaNCC="NCC-01", TenNCC="Công ty CP Tập đoàn Hòa Phát", DiaChi="KCN Phố Nối A, Giai Phạm, Yên Mỹ, Hưng Yên", SoDienThoai="024.3974.7777", Email="sales@hoaphat.com.vn"),
-            NhaCungCap(MaNCC="NCC-02", TenNCC="Công ty CP Nhựa Thiếu Niên Tiền Phong", DiaChi="Số 2 An Đà, Lạch Tray, Ngô Quyền, Hải Phòng", SoDienThoai="0225.3813.979", Email="contact@nhuatienphong.vn"),
-            NhaCungCap(MaNCC="NCC-03", TenNCC="Tổng Công ty Xi măng Việt Nam (Vicem)", DiaChi="Tòa tháp Vicem, 228 Lê Duẩn, Đống Đa, Hà Nội", SoDienThoai="0243.8512.441", Email="contact@vicem.vn"),
-            NhaCungCap(MaNCC="NCC-04", TenNCC="Công ty CP Tập đoàn Kim Tín", DiaChi="KCN Tiên Sơn, Hoàn Sơn, Tiên Du, Bắc Ninh", SoDienThoai="0222.3714.888", Email="kinhdoanh@kimtingroup.com"),
-            NhaCungCap(MaNCC="NCC-05", TenNCC="Công ty CP Sơn Hải Phòng", DiaChi="Số 12 Lạch Tray, Ngô Quyền, Hải Phòng", SoDienThoai="0225.3847.003", Email="info@haiphongpaint.vn")
+            NhaCungCap(MaNCC="NCC-01", TenNCC="Công ty CP Tập đoàn Hòa Phát", DiaChi="KCN Phố Nối A, Giai Phạm, Yên Mỹ, Hưng Yên", SoDienThoai="02439747777", Email="sales@hoaphat.com.vn"),
+            NhaCungCap(MaNCC="NCC-02", TenNCC="Công ty CP Nhựa Thiếu Niên Tiền Phong", DiaChi="Số 2 An Đà, Lạch Tray, Ngô Quyền, Hải Phòng", SoDienThoai="02258137979", Email="contact@nhuatienphong.vn"),
+            NhaCungCap(MaNCC="NCC-03", TenNCC="Tổng Công ty Xi măng Việt Nam (Vicem)", DiaChi="Tòa tháp Vicem, 228 Lê Duẩn, Đống Đa, Hà Nội", SoDienThoai="02438512441", Email="contact@vicem.vn"),
+            NhaCungCap(MaNCC="NCC-04", TenNCC="Công ty CP Tập đoàn Kim Tín", DiaChi="KCN Tiên Sơn, Hoàn Sơn, Tiên Du, Bắc Ninh", SoDienThoai="02223714888", Email="kinhdoanh@kimtingroup.com"),
+            NhaCungCap(MaNCC="NCC-05", TenNCC="Công ty CP Sơn Hải Phòng", DiaChi="Số 12 Lạch Tray, Ngô Quyền, Hải Phòng", SoDienThoai="02253847003", Email="info@haiphongpaint.vn")
         ]
         db.add_all(suppliers)
         db.flush()
@@ -172,14 +172,20 @@ def reset_and_seed_database(force_reset: bool = False):
             )
             db.add(tk)
 
+        # Theo dõi số dư lũy kế thực tế của từng SKU
+        running_balances = {}
+        for ma_hh, ten_hh, ma_nhom, ma_dvt, ton_min, ton_hientai, gia_nhap in skus_definition:
+            init_stock = ton_hientai + 40
+            running_balances[ma_hh] = init_stock
+
             # Khởi tạo bản ghi Thẻ kho ban đầu (Cách đây 45 ngày)
             the_kho_init = TheKho(
                 NgayGiaoDich=now - timedelta(days=45),
                 MaHH=ma_hh,
                 MaChungTu="PN-KHOITAO-01",
                 LoaiGiaoDich="NHAP",
-                SoLuongThayDoi=ton_hientai + 40,
-                TonSauGiaoDich=ton_hientai + 40
+                SoLuongThayDoi=init_stock,
+                TonSauGiaoDich=init_stock
             )
             db.add(the_kho_init)
 
@@ -195,7 +201,9 @@ def reset_and_seed_database(force_reset: bool = False):
             ("PN-20260905-04", now - timedelta(days=2), "NCC-04", thukho_id, "Nhập que hàn và vật tư cơ điện định kỳ")
         ]
 
+        pn_dates = {}
         for ma_pn, ngay_nhap, ma_ncc, ma_nd, ghi_chu in inbound_fixtures:
+            pn_dates[ma_pn] = ngay_nhap
             pn = PhieuNhap(
                 MaPN=ma_pn,
                 NgayNhap=ngay_nhap,
@@ -230,8 +238,14 @@ def reset_and_seed_database(force_reset: bool = False):
             )
             db.add(ct)
 
+        db.flush()
+        # Đồng bộ tổng tiền vào Phiếu Nhập Master từ các chi tiết
+        for pn in db.query(PhieuNhap).all():
+            tong = sum(c.ThanhTien for c in pn.chi_tiet)
+            if tong > 0:
+                pn.TongTien = tong
+
         # 2. Các phiếu xuất kho trong 30 ngày qua (Tạo Burn-rate mạnh cho Nhóm 1 & Nhóm 2)
-        # CHÚ Ý: KHÔNG XUẤT các SKU Nhóm 3 (Dead Stock) để AI nhận diện là hàng tồn ứ đọng > 60 ngày!
         outbound_fixtures = [
             ("PX-20260818-01", now - timedelta(days=20), thukho_id, "Ban Quản Lý Dự Án Cao Tốc", "Xuất thép thi công dầm cầu"),
             ("PX-20260825-02", now - timedelta(days=13), thukho_id, "Công ty Xây Lắp Điện 1", "Xuất vật tư cơ điện và ống nước"),
@@ -240,7 +254,9 @@ def reset_and_seed_database(force_reset: bool = False):
             ("PX-20260906-05", now - timedelta(days=1), thukho_id, "Đội Thi Công Sơn Hoàn Thiện", "Xuất sơn Alkyd và que hàn 3.2mm")
         ]
 
+        px_dates = {}
         for ma_px, ngay_xuat, ma_nd, nguoi_nhan, ly_do in outbound_fixtures:
+            px_dates[ma_px] = ngay_xuat
             px = PhieuXuat(
                 MaPX=ma_px,
                 NgayXuat=ngay_xuat,
@@ -252,7 +268,7 @@ def reset_and_seed_database(force_reset: bool = False):
 
         db.flush()
 
-        # Chi tiết phiếu xuất kho (Tạo burn rate cao cho Thép D10, Xi măng Bút Sơn, Que hàn 3.2, Sơn Alkyd)
+        # Chi tiết phiếu xuất kho
         outbound_details = [
             # Ngày -20
             ("PX-20260818-01", "HH-THEP-D10", 25),
@@ -263,15 +279,15 @@ def reset_and_seed_database(force_reset: bool = False):
             ("PX-20260825-02", "HH-NHUA-D90", 18),
             ("PX-20260825-02", "HH-BULONG-M16", 100),
             # Ngày -9
-            ("PX-20260829-03", "HH-XIMANG-BUTSON", 55), # Xuất mạnh
+            ("PX-20260829-03", "HH-XIMANG-BUTSON", 55),
             ("PX-20260829-03", "HH-XIMANG-HOAPOW", 40),
             # Ngày -4
-            ("PX-20260903-04", "HH-THEP-D10", 25),      # Xuất tiếp -> Gây tụt tồn còn 4 cuộn
-            ("PX-20260903-04", "HH-QUEHAN-32", 22),     # Gây tụt tồn còn 8 hộp
-            ("PX-20260903-04", "HH-DACAT-355", 20),     # Gây tụt tồn còn 10 hộp
+            ("PX-20260903-04", "HH-THEP-D10", 25),
+            ("PX-20260903-04", "HH-QUEHAN-32", 22),
+            ("PX-20260903-04", "HH-DACAT-355", 20),
             # Ngày -1
-            ("PX-20260906-05", "HH-SON-ALKYD", 19),     # Gây tụt tồn còn 6 thùng
-            ("PX-20260906-05", "HH-XIMANG-BUTSON", 20), # Gây tụt tồn còn 15 bao
+            ("PX-20260906-05", "HH-SON-ALKYD", 19),
+            ("PX-20260906-05", "HH-XIMANG-BUTSON", 20),
         ]
 
         for ma_px, ma_hh, qty in outbound_details:
@@ -282,16 +298,55 @@ def reset_and_seed_database(force_reset: bool = False):
             )
             db.add(ct_px)
 
-            # Ghi thẻ kho phản ánh xuất kho
-            tk_rec = TheKho(
-                NgayGiaoDich=now - timedelta(days=2),
-                MaHH=ma_hh,
-                MaChungTu=ma_px,
-                LoaiGiaoDich="XUAT",
-                SoLuongThayDoi=-qty,
-                TonSauGiaoDich=10 # Mức đại diện
+        # 3. Gộp toàn bộ giao dịch Nhập và Xuất, sắp xếp CHRONOLOGICAL (Thời gian tăng dần)
+        # để đảm bảo bất biến Sổ Thẻ Kho: Tồn(N) = Tồn(N-1) +/- Lượng biến động
+        all_txs = []
+        for ma_pn, ma_hh, qty, price in inbound_details:
+            dt = pn_dates.get(ma_pn, now - timedelta(days=15))
+            all_txs.append({
+                "date": dt,
+                "type": "NHAP",
+                "ma_hh": ma_hh,
+                "ma_chung_tu": ma_pn,
+                "qty": qty
+            })
+        for ma_px, ma_hh, qty in outbound_details:
+            dt = px_dates.get(ma_px, now - timedelta(days=2))
+            all_txs.append({
+                "date": dt,
+                "type": "XUAT",
+                "ma_hh": ma_hh,
+                "ma_chung_tu": ma_px,
+                "qty": qty
+            })
+
+        all_txs.sort(key=lambda x: x["date"])
+
+        for tx in all_txs:
+            sku = tx["ma_hh"]
+            if tx["type"] == "NHAP":
+                running_balances[sku] = running_balances.get(sku, 0) + tx["qty"]
+                delta = tx["qty"]
+            else:
+                running_balances[sku] = running_balances.get(sku, 0) - tx["qty"]
+                delta = -tx["qty"]
+
+            the_kho_row = TheKho(
+                NgayGiaoDich=tx["date"],
+                MaHH=sku,
+                MaChungTu=tx["ma_chung_tu"],
+                LoaiGiaoDich=tx["type"],
+                SoLuongThayDoi=delta,
+                TonSauGiaoDich=running_balances[sku]
             )
-            db.add(tk_rec)
+            db.add(the_kho_row)
+
+        # Cập nhật số dư cuối cùng vào bảng TonKho để đồng bộ 100% với Sổ Thẻ Kho
+        for sku, final_ton in running_balances.items():
+            tk_row = db.query(TonKho).filter(TonKho.MaHH == sku).first()
+            if tk_row:
+                tk_row.SoLuongTon = final_ton
+                tk_row.CapNhatCuoi = now
 
         db.commit()
         print("[SUCCESS] Da nap thanh cong 100% du lieu mau chuan cho SmartLogis AI:")

@@ -20,21 +20,22 @@ from app.core.security import create_access_token
 
 client = TestClient(app)
 
-def test_1_root_redirect_unauthenticated():
-    """1. Khi vao web chua dang nhap -> Chuyen huong den /login (302)"""
-    # Clear any cookies
+def test_1_root_renders_fullscreen_landing_page():
+    """1. Khi vào web trang chủ -> Hiển thị Landing page toàn màn hình với nút Log In ở góc trên bên phải."""
     res = client.get("/", follow_redirects=False)
-    assert res.status_code == 302, f"Expected 302, got {res.status_code}"
-    assert res.headers.get("location") == "/login", f"Expected /login redirect, got {res.headers.get('location')}"
-    print("[PASS] 1. Root redirect unauthenticated: 302 -> /login")
+    assert res.status_code == 200, f"Expected 200, got {res.status_code}"
+    assert "SmartLogis AI" in res.text
+    assert "btnTopRightLogin" in res.text
+    assert "Log In" in res.text
+    assert "loginModal" in res.text
+    print("[PASS] 1. Root renders full-screen landing page with top-right Log In button")
 
-def test_2_root_redirect_authenticated():
-    """Root khi da dang nhap -> Chuyen huong den /dashboard (302)"""
-    token = create_access_token({"sub": "admin", "vaitro": "Admin", "hoten": "Quản trị viên"})
-    res = client.get("/", cookies={"access_token": f"Bearer {token}"}, follow_redirects=False)
+def test_2_protected_routes_strictly_redirect_unauthenticated():
+    """Các trang quản lý kho khi chưa đăng nhập bắt buộc chuyển hướng 302 về /login."""
+    res = client.get("/dashboard", follow_redirects=False)
     assert res.status_code == 302, f"Expected 302, got {res.status_code}"
-    assert res.headers.get("location") == "/dashboard", f"Expected /dashboard redirect, got {res.headers.get('location')}"
-    print("[PASS] 2. Root redirect authenticated: 302 -> /dashboard")
+    assert res.headers.get("location") == "/login"
+    print("[PASS] 2. Protected routes strictly redirect unauthenticated requests to /login")
 
 def test_3_websocket_client_badge_removed():
     """2. Tab switch count badge removed from websocket.js"""
@@ -158,7 +159,95 @@ def test_7_scripts_reload_dir_applied():
         if f.exists():
             text = f.read_text(encoding="utf-8")
             assert ("reload-dir" in text or "reload_dirs" in text), f"Missing reload dir configuration in {f.name}"
-            print(f"[PASS] 7. Verified reload-dir in {f.name}")
+def test_8_inbound_duplicate_sku_and_validation():
+    """8. Nhập kho - Hợp nhất SKU trùng lặp và tính giá vốn bình quân gia quyền, từ chối số âm/0"""
+    token = create_access_token({"sub": "admin", "vaitro": "Admin", "mand": 1, "hoten": "Quản trị viên"})
+    headers = {"Authorization": f"Bearer {token}"}
+    cookies = {"access_token": f"Bearer {token}"}
+
+    # Test invalid qty <= 0 or price < 0
+    invalid_payload = {
+        "MaNCC": "NCC-01",
+        "items": [
+            {"MaHH": "HH-THEP-D08", "SoLuongNhap": 0, "DonGiaNhap": 100000}
+        ]
+    }
+    res_inv = client.post("/api/v1/kho/phieu-nhap", json=invalid_payload, headers=headers, cookies=cookies)
+    assert res_inv.status_code in [400, 422], f"Expected 400 or 422, got {res_inv.status_code}"
+
+    # Test duplicate SKU in same payload -> backend consolidates
+    dup_payload = {
+        "MaNCC": "NCC-01",
+        "GhiChu": "Test consolidation SKU trung lap",
+        "items": [
+            {"MaHH": "HH-THEP-D08", "SoLuongNhap": 2, "DonGiaNhap": 100000},
+            {"MaHH": "HH-THEP-D08", "SoLuongNhap": 3, "DonGiaNhap": 150000}
+        ]
+    }
+    res_dup = client.post("/api/v1/kho/phieu-nhap", json=dup_payload, headers=headers, cookies=cookies)
+    assert res_dup.status_code in [200, 201], f"Expected success, got {res_dup.text}"
+    dup_data = res_dup.json()
+    # Total qty: 2 + 3 = 5, total amount: 2*100000 + 3*150000 = 650000
+    assert dup_data["TongTien"] == 650000, f"Expected 650000, got {dup_data['TongTien']}"
+    # Verify receipt detail has 1 consolidated line
+    pn_detail = client.get(f"/api/v1/kho/phieu-nhap/{dup_data['MaPN']}", headers=headers, cookies=cookies)
+    assert pn_detail.status_code == 200
+    items_saved = pn_detail.json()["items"]
+    assert len(items_saved) == 1, f"Expected 1 consolidated item line, got {len(items_saved)}"
+    assert items_saved[0]["SoLuongNhap"] == 5
+    assert items_saved[0]["DonGiaNhap"] == 130000 # (2*100k + 3*150k) / 5 = 130k
+    print("[PASS] 8. Inbound duplicate SKU consolidated with weighted average cost successfully")
+
+def test_9_outbound_duplicate_sku_and_validation():
+    """9. Xuất kho - Hợp nhất SKU trùng lặp và chặn tổng số lượng vượt tồn kho"""
+    token = create_access_token({"sub": "admin", "vaitro": "Admin", "mand": 1, "hoten": "Quản trị viên"})
+    headers = {"Authorization": f"Bearer {token}"}
+    cookies = {"access_token": f"Bearer {token}"}
+
+    # Test invalid qty <= 0
+    inv_res = client.post("/api/v1/kho/phieu-xuat", json={
+        "NguoiNhan": "Test Receiver",
+        "items": [{"MaHH": "HH-THEP-D08", "SoLuongXuat": -1}]
+    }, headers=headers, cookies=cookies)
+    assert inv_res.status_code in [400, 422], f"Expected 400 or 422, got {inv_res.status_code}"
+
+    # Get current stock of HH-THEP-D08
+    stock_res = client.get("/api/v1/kho/items", headers=headers, cookies=cookies)
+    all_items = stock_res.json()
+    thep_item = next(i for i in all_items if i["MaHH"] == "HH-THEP-D08")
+    current_ton = thep_item["SoLuongTon"]
+    assert current_ton >= 5
+
+    # Test duplicate rows where sum exceeds stock
+    excessive_dup = {
+        "NguoiNhan": "Test Receiver",
+        "items": [
+            {"MaHH": "HH-THEP-D08", "SoLuongXuat": current_ton},
+            {"MaHH": "HH-THEP-D08", "SoLuongXuat": 1}
+        ]
+    }
+    exc_res = client.post("/api/v1/kho/phieu-xuat", json=excessive_dup, headers=headers, cookies=cookies)
+    assert exc_res.status_code == 400
+    assert "tồn" in exc_res.json()["detail"].lower()
+
+    # Test valid duplicate rows that sum <= current_ton
+    valid_dup = {
+        "NguoiNhan": "Test Receiver Valid Duplicate",
+        "LyDoXuat": "Test aggregate dispatch",
+        "items": [
+            {"MaHH": "HH-THEP-D08", "SoLuongXuat": 1},
+            {"MaHH": "HH-THEP-D08", "SoLuongXuat": 1}
+        ]
+    }
+    val_res = client.post("/api/v1/kho/phieu-xuat", json=valid_dup, headers=headers, cookies=cookies)
+    assert val_res.status_code in [200, 201]
+    px_data = val_res.json()
+    px_detail = client.get(f"/api/v1/kho/phieu-xuat/{px_data['MaPX']}", headers=headers, cookies=cookies)
+    assert px_detail.status_code == 200
+    out_items = px_detail.json()["items"]
+    assert len(out_items) == 1
+    assert out_items[0]["SoLuongXuat"] == 2
+    print("[PASS] 9. Outbound duplicate SKU consolidated and stock verified successfully")
 
 if __name__ == "__main__":
     print("==================================================")
@@ -171,6 +260,8 @@ if __name__ == "__main__":
     test_5_outbound_dispatch_and_stock_preservation()
     test_6_supplier_workflow_and_null_fields()
     test_7_scripts_reload_dir_applied()
+    test_8_inbound_duplicate_sku_and_validation()
+    test_9_outbound_duplicate_sku_and_validation()
     print("==================================================")
-    print("  TẤT CẢ 7/7 TEST SUITE KIỂM THỬ ĐỀU ĐẠT 100%!")
+    print("  TẤT CẢ 9/9 TEST SUITE KIỂM THỬ ĐỀU ĐẠT 100%!")
     print("==================================================")

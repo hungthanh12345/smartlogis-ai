@@ -27,6 +27,7 @@ class Token(BaseModel):
     access_token: str
     token_type: str
     user: UserOut
+    sid: Optional[str] = None
 
 class TokenData(BaseModel):
     username: Optional[str] = None

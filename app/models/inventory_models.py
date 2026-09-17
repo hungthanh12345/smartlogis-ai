@@ -51,6 +51,7 @@ class NhaCungCap(Base):
     DiaChi = Column(String(255), nullable=True)
     SoDienThoai = Column(String(50), nullable=True)
     Email = Column(String(100), nullable=True)
+    TongTien = Column(Float, default=0.0, nullable=True)
 
     phieu_nhap = relationship("PhieuNhap", back_populates="nha_cung_cap")
 

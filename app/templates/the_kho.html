@@ -16,7 +16,7 @@
       <select id="sel-ma-hh" onchange="loadTheKho()"
         class="px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-100 font-semibold focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 min-w-[280px] cursor-pointer">
         {% for item in items %}
-        <option value="{{ item.MaHH }}">{{ item.MaHH }} - {{ item.TenHH }} (Tồn: {{ item.SoLuongTon }} {{ item.MaDVT }})</option>
+        <option value="{{ item.MaHH }}" data-dvt="{{ item.MaDVT }}">{{ item.MaHH }} - {{ item.TenHH }} (Tồn: {{ item.SoLuongTon }} {{ item.MaDVT }})</option>
         {% endfor %}
       </select>
     </div>
@@ -67,8 +67,30 @@
 
 {% block extra_scripts %}
 <script>
+  async function syncDropdownStocks() {
+    try {
+      const res = await fetch('/api/v1/kho/items');
+      if (!res.ok) return;
+      const items = await res.json();
+      const sel = document.getElementById('sel-ma-hh');
+      if (!sel) return;
+      items.forEach(item => {
+        for (let i = 0; i < sel.options.length; i++) {
+          if (sel.options[i].value === item.MaHH) {
+            sel.options[i].text = `${item.MaHH} - ${item.TenHH} (Tồn: ${item.SoLuongTon} ${item.MaDVT})`;
+            sel.options[i].dataset.dvt = item.MaDVT;
+            break;
+          }
+        }
+      });
+    } catch (e) {
+      console.warn('Sync dropdown stocks failed:', e);
+    }
+  }
+
   async function loadTheKho() {
-    const ma_hh = document.getElementById('sel-ma-hh').value;
+    const sel = document.getElementById('sel-ma-hh');
+    const ma_hh = sel.value;
     const tbody = document.getElementById('body-the-kho');
     const lblStock = document.getElementById('item-current-stock');
 
@@ -78,11 +100,28 @@
 
       if (data.length === 0) {
         tbody.innerHTML = '<tr><td colspan="6" class="py-10 text-center text-slate-400 dark:text-slate-500 italic">Chưa có giao dịch phát sinh cho mặt hàng này.</td></tr>';
-        lblStock.innerText = '';
+        lblStock.innerText = 'Tồn hiện thời: 0';
+        const opt = sel.options[sel.selectedIndex];
+        if (opt) {
+          const dvt = opt.dataset.dvt || '';
+          const baseName = opt.dataset.name || opt.text.split('(Tồn:')[0].trim();
+          opt.dataset.name = baseName;
+          opt.text = `${baseName} (Tồn: 0 ${dvt})`.trim();
+        }
         return;
       }
 
-      lblStock.innerText = `Tồn hiện thời: ${data[data.length - 1].TonSauGiaoDich.toLocaleString('vi-VN')}`;
+      const latestBalance = data[data.length - 1].TonSauGiaoDich;
+      lblStock.innerText = `Tồn hiện thời: ${latestBalance.toLocaleString('vi-VN')}`;
+
+      // Đồng bộ ngay lập tức dòng option đang chọn trong dropdown
+      const opt = sel.options[sel.selectedIndex];
+      if (opt) {
+        const dvt = opt.dataset.dvt || '';
+        const baseName = opt.dataset.name || opt.text.split('(Tồn:')[0].trim();
+        opt.dataset.name = baseName;
+        opt.text = `${baseName} (Tồn: ${latestBalance} ${dvt})`.trim();
+      }
 
       tbody.innerHTML = data.map(row => {
         const isNhap = row.LoaiGiaoDich === 'NHAP';
@@ -122,14 +161,15 @@
         }
       }
     }
-    loadTheKho();
+    syncDropdownStocks().then(() => loadTheKho());
   });
 
   // Đăng ký toàn cục để WebSocket Engine tự động làm mới sổ thẻ kho
   window.loadTheKho = loadTheKho;
+  window.syncDropdownStocks = syncDropdownStocks;
   window.addEventListener('smartlogis:inventory_updated', (e) => {
     console.log('[Thẻ Kho Realtime] Phát hiện biến động kho, tự động tải lại sổ sách...');
-    loadTheKho();
+    syncDropdownStocks().then(() => loadTheKho());
   });
 </script>
 {% endblock %}

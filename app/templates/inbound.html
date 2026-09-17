@@ -65,7 +65,7 @@
               <i class="fa-solid fa-plus-circle"></i> + Thêm NCC Nhanh
             </button>
           </div>
-          <select id="in-ncc" onchange="handleSupplierSelectChange()" 
+          <select id="in-ncc" onchange="handleSupplierSelectChange(); saveInboundDraft();" 
                   class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 cursor-pointer">
             {% if suppliers %}
               {% for s in suppliers %}
@@ -100,7 +100,7 @@
 
       <div class="mt-4">
         <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Ghi Chú Nhập Kho</label>
-        <input type="text" id="in-ghichu" placeholder="Ví dụ: Nhập bổ sung nguyên vật tư định kỳ..."
+        <input type="text" id="in-ghichu" oninput="saveInboundDraft()" placeholder="Ví dụ: Nhập bổ sung nguyên vật tư định kỳ..."
           class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500">
       </div>
     </div>
@@ -126,12 +126,12 @@
           <thead>
             <tr class="bg-slate-100/80 dark:bg-slate-850 text-slate-700 dark:text-slate-300 uppercase font-bold text-[11px] border-b border-slate-200 dark:border-slate-800">
               <th class="py-2.5 px-3 w-12 text-center">STT</th>
-              <th class="py-2.5 px-3 min-w-[240px]">Mặt Hàng (*)</th>
+              <th class="py-2.5 px-3 min-w-[260px]">Mặt Hàng (*)</th>
               <th class="py-2.5 px-3 w-20 text-center">ĐVT</th>
-              <th class="py-2.5 px-3 w-32">Số Lượng Nhập</th>
-              <th class="py-2.5 px-3 w-40">Đơn Giá Nhập (VNĐ)</th>
-              <th class="py-2.5 px-3 w-40 text-right">Thành Tiền (VNĐ)</th>
-              <th class="py-2.5 px-3 w-16 text-center">Xóa</th>
+              <th class="py-2.5 px-3 w-32 min-w-[120px]">Số Lượng Nhập</th>
+              <th class="py-2.5 px-3 w-40 min-w-[140px]">Đơn Giá Nhập (VNĐ)</th>
+              <th class="py-2.5 px-3 w-44 min-w-[150px] text-right">Thành Tiền (VNĐ)</th>
+              <th class="py-2.5 px-3 w-14 text-center">Xóa</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-200" id="body-nhap">
@@ -284,9 +284,9 @@
 <!-- ========================================================================= -->
 <!-- MODAL TẠO NHANH NHÀ CUNG CẤP NGAY TRÊN PHIẾU NHẬP -->
 <!-- ========================================================================= -->
-<div id="modalQuickAddSupplier" class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-  <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200 dark:border-slate-800 transition animate-in fade-in zoom-in-95 duration-150">
-    <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-850">
+<div id="modalQuickAddSupplier" onclick="if(event.target === this) closeQuickAddSupplierModal()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+  <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] flex flex-col overflow-hidden border border-slate-200 dark:border-slate-800 transition animate-in fade-in zoom-in-95 duration-150">
+    <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-850 flex-shrink-0">
       <h3 class="font-bold text-slate-800 dark:text-white text-sm flex items-center gap-2">
         <i class="fa-solid fa-handshake text-sky-600 dark:text-sky-400"></i>
         <span>Thêm Nhanh Nhà Cung Cấp</span>
@@ -296,38 +296,44 @@
       </button>
     </div>
 
-    <form onsubmit="submitQuickAddSupplier(event)" class="p-6 space-y-3.5 text-xs">
-      <div>
-        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Mã NCC (*)</label>
-        <input type="text" id="quick_MaNCC" required placeholder="VD: NCC-VICEM"
-          class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl uppercase font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500/20">
-      </div>
-      <div>
-        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Tên Đầy Đủ Nhà Cung Cấp (*)</label>
-        <input type="text" id="quick_TenNCC" required placeholder="VD: Công ty Xi măng Vicem Hoàng Mai"
-          class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500/20">
-      </div>
-      <div class="grid grid-cols-2 gap-3">
+    <form onsubmit="submitQuickAddSupplier(event)" class="flex flex-col flex-1 overflow-hidden">
+      <div class="p-6 space-y-3.5 text-xs overflow-y-auto flex-1">
         <div>
-          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Số Điện Thoại</label>
-          <input type="text" id="quick_SoDienThoai" placeholder="024.xxx.xxxx"
-            class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500/20">
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Mã NCC (*)</label>
+          <input type="text" id="quick_MaNCC" required placeholder="VD: NCC-VICEM"
+            class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl uppercase font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500/20">
         </div>
         <div>
-          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Hòm Thư Email</label>
-          <input type="email" id="quick_Email" placeholder="contact@vicem.vn"
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Tên Đầy Đủ Nhà Cung Cấp (*)</label>
+          <input type="text" id="quick_TenNCC" required placeholder="VD: Công ty Xi măng Vicem Hoàng Mai"
             class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500/20">
         </div>
-      </div>
-      <div>
-        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Địa Chỉ Trụ Sở</label>
-        <input type="text" id="quick_DiaChi" placeholder="Khu CN Hoàng Mai, Nghệ An"
-          class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500/20">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Số Điện Thoại</label>
+            <input type="tel" id="quick_SoDienThoai" placeholder="Chỉ nhập số, VD: 0225381397"
+              maxlength="15"
+              oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+              pattern="[0-9]{8,15}"
+              class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500/20">
+            <p class="text-[11px] text-slate-400 mt-0.5">Nhập số liên tiếp, không dấu chấm (8–15 ký tự số).</p>
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Hòm Thư Email</label>
+            <input type="email" id="quick_Email" placeholder="contact@vicem.vn"
+              class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500/20">
+          </div>
+        </div>
+        <div>
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Địa Chỉ Trụ Sở</label>
+          <input type="text" id="quick_DiaChi" placeholder="Khu CN Hoàng Mai, Nghệ An"
+            class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500/20">
+        </div>
       </div>
 
-      <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2.5">
+      <div class="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-850 flex justify-end gap-2.5 flex-shrink-0">
         <button type="button" onclick="closeQuickAddSupplierModal()"
-          class="px-4 py-2 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold cursor-pointer">
+          class="px-4 py-2 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold cursor-pointer transition">
           Hủy
         </button>
         <button type="submit" id="btnQuickAddSupplier"
@@ -346,6 +352,20 @@
 <script>
   let availableItems = [];
   let inboundHistoryData = [];
+  let isSubmittingInbound = false;
+  let currentInboundIdempotencyKey = null;
+
+  function getInboundIdempotencyKey() {
+    if (!currentInboundIdempotencyKey) {
+      currentInboundIdempotencyKey = 'pn_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+    }
+    return currentInboundIdempotencyKey;
+  }
+
+  function renewInboundIdempotencyKey() {
+    currentInboundIdempotencyKey = 'pn_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+    return currentInboundIdempotencyKey;
+  }
 
   // --- QUẢN LÝ TAB ---
   function switchInboundTab(tab) {
@@ -394,27 +414,151 @@
     }
   }
 
+  function saveInboundDraft() {
+    try {
+      const ncc = document.getElementById('in-ncc')?.value || '';
+      const ghichu = document.getElementById('in-ghichu')?.value || '';
+      const tbody = document.getElementById('body-nhap');
+      const rows = [];
+      if (tbody) {
+        Array.from(tbody.children).forEach(tr => {
+          const sel = tr.querySelector('.sel-hh');
+          const inpQ = tr.querySelector('.inp-qty');
+          const inpP = tr.querySelector('.inp-price');
+          if (sel && sel.value) {
+            rows.push({
+              ma_hh: sel.value,
+              qty: parseInt(inpQ ? inpQ.value : 1) || 1,
+              price: parseFloat(inpP ? inpP.value : 0) || 0
+            });
+          }
+        });
+      }
+      if (ncc || ghichu || rows.length > 0) {
+        sessionStorage.setItem('smartlogis_inbound_draft', JSON.stringify({
+          ncc, ghichu, rows, savedAt: Date.now()
+        }));
+      }
+    } catch (e) {}
+  }
+
+  function loadInboundDraft() {
+    try {
+      const raw = sessionStorage.getItem('smartlogis_inbound_draft');
+      if (!raw) return false;
+      const draft = JSON.parse(raw);
+      if (draft.ncc) {
+        const selNcc = document.getElementById('in-ncc');
+        if (selNcc) {
+          selNcc.value = draft.ncc;
+          handleSupplierSelectChange();
+        }
+      }
+      if (draft.ghichu) {
+        const inpGhiChu = document.getElementById('in-ghichu');
+        if (inpGhiChu) inpGhiChu.value = draft.ghichu;
+      }
+      if (draft.rows && draft.rows.length > 0) {
+        const tbody = document.getElementById('body-nhap');
+        if (tbody) {
+          tbody.innerHTML = '';
+          draft.rows.forEach(r => {
+            addRowNhap(r.ma_hh, r.qty, r.price);
+          });
+          calculateTotal();
+          return true;
+        }
+      }
+    } catch (e) {}
+    return false;
+  }
+
+  function clearInboundDraft() {
+    try {
+      sessionStorage.removeItem('smartlogis_inbound_draft');
+    } catch (e) {}
+  }
+
+  function restoreLastInboundSuccess(createdCode = null) {
+    try {
+      let s = null;
+      const raw = sessionStorage.getItem('smartlogis_inbound_last_success');
+      if (raw) {
+        s = JSON.parse(raw);
+      }
+      const code = createdCode || (s ? s.maPN : null);
+      if (!code) return;
+      const itemCount = (s && s.maPN === code) ? s.itemCount : 1;
+      const tongTien = (s && s.maPN === code) ? s.tongTien : 0;
+
+      const alertBox = document.getElementById('alert-banner');
+      if (!alertBox) return;
+      alertBox.className = 'p-5 rounded-2xl text-xs font-semibold space-y-3 bg-emerald-50 dark:bg-emerald-950/70 border-2 border-emerald-500 text-emerald-900 dark:text-emerald-200 shadow-md transition';
+      alertBox.innerHTML = `
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2 font-bold text-sm">
+            <i class="fa-solid fa-circle-check text-emerald-600 dark:text-emerald-400 text-lg"></i>
+            <span>Giao dịch nhập kho thành công! Mã chứng từ: <b class="font-mono text-slate-900 dark:text-white">${code}</b></span>
+          </div>
+          <span class="bg-emerald-200 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase">Đã ghi sổ Thẻ Kho</span>
+        </div>
+        <p class="text-xs text-slate-700 dark:text-slate-300">
+          Đã tăng số lượng tồn cho <b>${itemCount} mặt hàng</b>${tongTien > 0 ? ` với tổng giá trị: <b class="text-emerald-700 dark:text-emerald-300 font-mono">${tongTien.toLocaleString('vi-VN')} đ</b>` : ''}. Dữ liệu chứng từ được lưu vết nguyên tử ACID.
+        </p>
+        <div class="flex flex-wrap items-center gap-3 pt-2 border-t border-emerald-200/70 dark:border-emerald-800">
+          <button type="button" onclick="viewInboundDetail('${code}')" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold flex items-center gap-1.5 transition cursor-pointer">
+            <i class="fa-solid fa-file-invoice"></i> Xem Chi Tiết Phiếu Nhập
+          </button>
+          <button type="button" onclick="resetInboundForm()" class="px-3.5 py-1.5 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 rounded-xl font-bold flex items-center gap-1.5 transition cursor-pointer">
+            <i class="fa-solid fa-plus"></i> Lập Phiếu Mới Tiếp Theo
+          </button>
+          <button type="button" onclick="switchInboundTab('list')" class="px-3.5 py-1.5 bg-sky-50 dark:bg-sky-950 hover:bg-sky-100 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 rounded-xl font-bold flex items-center gap-1.5 transition cursor-pointer">
+            <i class="fa-solid fa-table-list"></i> Xem Sổ Lịch Sử Phiếu
+          </button>
+        </div>
+      `;
+      alertBox.classList.remove('hidden');
+    } catch (e) {}
+  }
+
   async function loadItems() {
     try {
       const res = await fetch('/api/v1/kho/items');
       availableItems = await res.json();
       
       const params = new URLSearchParams(window.location.search);
-      const preselect = params.get('ma_hh');
-      const preselectSupplier = params.get('supplier');
-      
-      if (preselectSupplier) {
-        const selNcc = document.getElementById('in-ncc');
-        if (selNcc) {
-          selNcc.value = preselectSupplier;
-          handleSupplierSelectChange();
-        }
+      const createdCode = params.get('created');
+
+      if (createdCode) {
+        // PRG Pattern: Trang vừa chuyển hướng GET sau khi tạo thành công
+        clearInboundDraft();
+        restoreLastInboundSuccess(createdCode);
+        // Làm sạch URL bằng History API để F5/reload không bị resubmit
+        window.history.replaceState({}, document.title, window.location.pathname);
+      } else {
+        restoreLastInboundSuccess();
       }
 
-      // Khởi tạo 1 dòng ban đầu sạch sẽ (số lượng = 1, giá = 0)
-      if (availableItems.length > 0) {
-        const defaultSKU = preselect || availableItems[0].MaHH;
-        addRowNhap(defaultSKU, 1, 0);
+      const draftRestored = createdCode ? false : loadInboundDraft();
+
+      if (!draftRestored) {
+        const preselect = params.get('ma_hh');
+        const preselectSupplier = params.get('supplier');
+        
+        if (preselectSupplier) {
+          const selNcc = document.getElementById('in-ncc');
+          if (selNcc) {
+            selNcc.value = preselectSupplier;
+            handleSupplierSelectChange();
+          }
+        }
+
+        // Khởi tạo 1 dòng ban đầu sạch sẽ (số lượng = 1, giá = 0) nếu bảng đang rỗng
+        const tbody = document.getElementById('body-nhap');
+        if (tbody && tbody.children.length === 0 && availableItems.length > 0) {
+          const defaultSKU = preselect || availableItems[0].MaHH;
+          addRowNhap(defaultSKU, 1, 0);
+        }
       }
     } catch (e) {
       console.error('[Inbound] Lỗi nạp danh mục hàng:', e);
@@ -427,13 +571,17 @@
     const tr = document.createElement('tr');
     tr.className = 'hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition';
 
-    // Tìm danh sách mặt hàng đã được chọn ở các dòng khác để gợi ý hợp lý
+    // Tìm danh sách mặt hàng đã được chọn ở các dòng khác
     const existingSkus = Array.from(tbody.querySelectorAll('.sel-hh')).map(s => s.value);
     
     // Nếu chưa chỉ định selectedHH, ưu tiên chọn SKU chưa có trong danh sách
     if (!selectedHH && availableItems.length > 0) {
       const firstAvailable = availableItems.find(i => !existingSkus.includes(i.MaHH));
-      selectedHH = firstAvailable ? firstAvailable.MaHH : availableItems[0].MaHH;
+      if (!firstAvailable) {
+        alert('Tất cả các mặt hàng trong danh mục đã có trong danh sách nhập. Bạn có thể tăng số lượng tại dòng tương ứng.');
+        return;
+      }
+      selectedHH = firstAvailable.MaHH;
     }
 
     let options = availableItems.map(item => 
@@ -441,22 +589,22 @@
     ).join('');
 
     tr.innerHTML = `
-      <td class="py-3 px-3 text-center text-slate-400 font-mono font-semibold">${rowIdx}</td>
-      <td class="py-3 px-3">
-        <select class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs sel-hh text-slate-800 dark:text-slate-100" onchange="handleHHChange(this)">
+      <td class="py-3 px-3 text-center text-slate-400 font-mono font-semibold row-stt w-12">${rowIdx}</td>
+      <td class="py-3 px-3 min-w-[260px]">
+        <select class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs sel-hh text-slate-800 dark:text-slate-100" onfocus="this.dataset.prevVal = this.value" onchange="handleHHChange(this)">
           ${options}
         </select>
       </td>
-      <td class="py-3 px-3 text-center font-medium text-slate-600 dark:text-slate-400 cell-dvt">--</td>
-      <td class="py-3 px-3">
-        <input type="number" min="1" value="${defaultQty}" class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-mono font-bold inp-qty text-slate-800 dark:text-slate-100" oninput="calculateTotal()">
+      <td class="py-3 px-3 text-center font-medium text-slate-600 dark:text-slate-400 cell-dvt w-20">--</td>
+      <td class="py-3 px-3 w-32 min-w-[120px]">
+        <input type="number" min="1" step="1" value="${defaultQty}" class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-mono font-bold inp-qty text-slate-800 dark:text-slate-100" oninput="calculateTotal()">
       </td>
-      <td class="py-3 px-3">
+      <td class="py-3 px-3 w-40 min-w-[140px]">
         <input type="number" min="0" step="1000" value="${defaultPrice}" class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-mono font-bold inp-price text-slate-800 dark:text-slate-100" oninput="calculateTotal()">
       </td>
-      <td class="py-3 px-3 text-right font-mono font-bold text-sky-600 dark:text-sky-400 cell-total">0 VNĐ</td>
-      <td class="py-3 px-3 text-center">
-        <button type="button" onclick="removeRow(this)" class="w-7 h-7 rounded-lg bg-rose-50 dark:bg-rose-950/80 hover:bg-rose-100 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 flex items-center justify-center transition cursor-pointer">
+      <td class="py-3 px-3 text-right font-mono font-bold text-sky-600 dark:text-sky-400 cell-total w-44 min-w-[150px]">0 VNĐ</td>
+      <td class="py-3 px-3 text-center w-14">
+        <button type="button" onclick="removeRow(this)" class="w-7 h-7 rounded-lg bg-rose-50 dark:bg-rose-950/80 hover:bg-rose-100 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 flex items-center justify-center transition cursor-pointer" title="Xóa dòng này">
           <i class="fa-solid fa-trash text-[11px]"></i>
         </button>
       </td>
@@ -464,34 +612,72 @@
 
     tbody.appendChild(tr);
     const sel = tr.querySelector('.sel-hh');
+    sel.dataset.prevVal = sel.value;
     handleHHChange(sel, false);
     calculateTotal();
   }
 
   function removeRow(btn) {
+    const tbody = document.getElementById('body-nhap');
+    if (tbody.children.length <= 1) {
+      alert('Phiếu nhập kho phải có tối thiểu 1 mặt hàng.');
+      return;
+    }
     const row = btn.closest('tr');
     row.remove();
-    const tbody = document.getElementById('body-nhap');
     Array.from(tbody.children).forEach((tr, idx) => {
-      tr.children[0].innerText = idx + 1;
+      tr.querySelector('.row-stt').innerText = idx + 1;
     });
     calculateTotal();
   }
 
   function handleHHChange(selectEl, checkDuplicate = true) {
     const val = selectEl.value;
+    const prevVal = selectEl.dataset.prevVal || '';
     const row = selectEl.closest('tr');
+    const tbody = document.getElementById('body-nhap');
 
     // Kiểm tra trùng lặp SKU
     if (checkDuplicate) {
-      const tbody = document.getElementById('body-nhap');
-      const allSelects = Array.from(tbody.querySelectorAll('.sel-hh'));
-      const duplicateCount = allSelects.filter(s => s !== selectEl && s.value === val).length;
-      if (duplicateCount > 0) {
-        alert(`Mặt hàng mã [${val}] đã tồn tại trong danh sách nhập kho. Vui lòng tăng số lượng ở dòng đã có thay vì tạo thêm dòng trùng lặp.`);
+      const allRows = Array.from(tbody.children);
+      const existingRow = allRows.find(r => r !== row && r.querySelector('.sel-hh') && r.querySelector('.sel-hh').value === val);
+
+      if (existingRow) {
+        const confirmMerge = confirm(`Mặt hàng mã [${val}] đã có trong danh sách nhập kho.\nBạn có muốn tự động GỘP số lượng dòng này vào dòng đã có không?`);
+        if (confirmMerge) {
+          const currentQty = parseInt(row.querySelector('.inp-qty').value) || 1;
+          const currentPrice = parseFloat(row.querySelector('.inp-price').value) || 0;
+          const existQtyInput = existingRow.querySelector('.inp-qty');
+          const existPriceInput = existingRow.querySelector('.inp-price');
+
+          const existQty = parseInt(existQtyInput.value) || 1;
+          const existPrice = parseFloat(existPriceInput.value) || 0;
+
+          // Tính tổng lượng và đơn giá bình quân
+          const newTotalQty = existQty + currentQty;
+          const newAvgPrice = (newTotalQty > 0) ? Math.round(((existQty * existPrice) + (currentQty * currentPrice)) / newTotalQty) : existPrice;
+
+          existQtyInput.value = newTotalQty;
+          if (newAvgPrice > 0) existPriceInput.value = newAvgPrice;
+
+          // Xóa dòng trùng lặp hiện tại
+          row.remove();
+          Array.from(tbody.children).forEach((tr, idx) => {
+            tr.querySelector('.row-stt').innerText = idx + 1;
+          });
+          calculateTotal();
+          return;
+        } else {
+          // Hoàn tác về giá trị SKU cũ
+          if (prevVal) {
+            selectEl.value = prevVal;
+          }
+          return;
+        }
       }
     }
 
+    selectEl.dataset.prevVal = val;
     const found = availableItems.find(i => i.MaHH === val);
     if (found && row) {
       row.querySelector('.cell-dvt').innerText = found.TenDVT || found.MaDVT || '--';
@@ -503,31 +689,76 @@
     let totalSKUs = 0;
     let totalQty = 0;
     let grandTotal = 0;
+    let hasInvalidLine = false;
 
     const rows = document.querySelectorAll('#body-nhap tr');
     rows.forEach(tr => {
-      const qty = parseInt(tr.querySelector('.inp-qty').value) || 0;
-      const price = parseFloat(tr.querySelector('.inp-price').value) || 0;
-      const rowTotal = qty * price;
+      const inpQty = tr.querySelector('.inp-qty');
+      const inpPrice = tr.querySelector('.inp-price');
+      if (!inpQty || !inpPrice) return;
 
-      tr.querySelector('.cell-total').innerText = rowTotal.toLocaleString('vi-VN') + ' VNĐ';
+      let qty = parseInt(inpQty.value);
+      if (isNaN(qty) || qty <= 0) {
+        qty = 0;
+        hasInvalidLine = true;
+      }
+
+      let price = parseFloat(inpPrice.value);
+      if (isNaN(price) || price <= 0) {
+        price = 0;
+        hasInvalidLine = true;
+      }
+
+      const rowTotal = qty * price;
+      const cellTotal = tr.querySelector('.cell-total');
+      if (cellTotal) {
+        cellTotal.innerText = rowTotal.toLocaleString('vi-VN') + ' VNĐ';
+      }
 
       totalSKUs++;
       totalQty += qty;
       grandTotal += rowTotal;
     });
 
-    document.getElementById('lbl-tong-sku').innerText = totalSKUs;
-    document.getElementById('lbl-tong-sl').innerText = totalQty.toLocaleString('vi-VN');
-    document.getElementById('lbl-tong-tien').innerText = grandTotal.toLocaleString('vi-VN') + ' VNĐ';
+    const elTongSku = document.getElementById('lbl-tong-sku');
+    const elTongSl = document.getElementById('lbl-tong-sl');
+    const elTongTien = document.getElementById('lbl-tong-tien');
+    if (elTongSku) elTongSku.innerText = totalSKUs;
+    if (elTongSl) elTongSl.innerText = totalQty.toLocaleString('vi-VN');
+    if (elTongTien) elTongTien.innerText = grandTotal.toLocaleString('vi-VN') + ' VNĐ';
 
     const btnSubmit = document.getElementById('btn-submit-nhap');
     if (btnSubmit) {
-      btnSubmit.disabled = (totalSKUs === 0);
+      btnSubmit.disabled = (totalSKUs === 0 || totalQty === 0 || grandTotal <= 0 || hasInvalidLine);
+      if (hasInvalidLine || grandTotal <= 0) {
+        btnSubmit.className = 'px-6 py-2.5 bg-slate-400 dark:bg-slate-700 text-white font-bold rounded-xl text-xs cursor-not-allowed opacity-70 flex items-center gap-2 whitespace-nowrap';
+        btnSubmit.innerHTML = '<i class="fa-solid fa-lock"></i> <span>Khóa Lưu Phiếu (SL hoặc Đơn Giá ≤ 0)</span>';
+      } else {
+        btnSubmit.className = 'px-6 py-2.5 bg-sky-600 hover:bg-sky-500 active:bg-sky-700 text-white font-bold rounded-xl text-xs transition shadow-md flex items-center gap-2 cursor-pointer whitespace-nowrap';
+        btnSubmit.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> <span>Xác Nhận Lưu Phiếu (ACID)</span>';
+      }
     }
+    saveInboundDraft();
+  }
+
+  function resetInboundForm() {
+    clearInboundDraft();
+    renewInboundIdempotencyKey();
+    try { sessionStorage.removeItem('smartlogis_inbound_last_success'); } catch (e) {}
+    document.getElementById('in-ghichu').value = '';
+    const alertBox = document.getElementById('alert-banner');
+    if (alertBox) alertBox.classList.add('hidden');
+    const tbody = document.getElementById('body-nhap');
+    tbody.innerHTML = '';
+    if (availableItems.length > 0) {
+      addRowNhap(availableItems[0].MaHH, 1, 50000);
+    }
+    calculateTotal();
   }
 
   async function submitPhieuNhap() {
+    if (isSubmittingInbound) return;
+
     const ncc = document.getElementById('in-ncc').value;
     const ghichu = document.getElementById('in-ghichu').value;
     const tbody = document.getElementById('body-nhap');
@@ -546,52 +777,80 @@
 
     const items = [];
     let hasInvalidQty = false;
+    let hasInvalidPrice = false;
 
     Array.from(tbody.children).forEach(tr => {
-      const ma_hh = tr.querySelector('.sel-hh').value;
-      const qty = parseInt(tr.querySelector('.inp-qty').value) || 0;
-      const price = parseFloat(tr.querySelector('.inp-price').value) || 0;
+      const sel = tr.querySelector('.sel-hh');
+      const inpQ = tr.querySelector('.inp-qty');
+      const inpP = tr.querySelector('.inp-price');
+      if (!sel || !inpQ || !inpP) return;
+
+      const ma_hh = sel.value;
+      const qty = parseInt(inpQ.value) || 0;
+      const price = parseFloat(inpP.value);
+
       if (qty <= 0) hasInvalidQty = true;
-      items.push({ MaHH: ma_hh, SoLuongNhap: qty, DonGiaNhap: price });
+      if (isNaN(price) || price <= 0) hasInvalidPrice = true;
+
+      items.push({ MaHH: ma_hh, SoLuongNhap: qty, DonGiaNhap: isNaN(price) ? 0 : price });
     });
 
     if (hasInvalidQty) {
-      alert('Số lượng nhập của mọi mặt hàng phải lớn hơn 0.');
+      alert('Số lượng nhập của mọi mặt hàng phải là số nguyên dương lớn hơn 0.');
+      return;
+    }
+    if (hasInvalidPrice) {
+      alert('Đơn giá nhập của mọi mặt hàng phải lớn hơn 0 VNĐ.');
       return;
     }
 
+    const totalImportVal = items.reduce((sum, it) => sum + (it.SoLuongNhap * it.DonGiaNhap), 0);
+    if (totalImportVal <= 0) {
+      alert('Tổng giá trị phiếu nhập kho phải lớn hơn 0 VNĐ.');
+      return;
+    }
+
+    isSubmittingInbound = true;
     btn.disabled = true;
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Đang xử lý Transaction ACID...</span>';
 
     try {
+      const idemKey = getInboundIdempotencyKey();
       const res = await fetch('/api/v1/kho/phieu-nhap', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ MaNCC: ncc, GhiChu: ghichu, items: items })
+        headers: { 
+          'Content-Type': 'application/json',
+          'Idempotency-Key': idemKey
+        },
+        body: JSON.stringify({ 
+          MaNCC: ncc, 
+          GhiChu: ghichu, 
+          items: items,
+          idempotency_key: idemKey
+        })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || 'Lỗi lập phiếu nhập kho.');
 
-      alertBox.className = 'p-4 rounded-2xl text-xs font-semibold flex items-center gap-3 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300';
-      alertBox.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600 dark:text-emerald-400 text-base"></i> Giao dịch thành công! Mã phiếu: <b>${data.MaPN}</b> (${items.length} mặt hàng). Tồn kho và dòng tiền NCC đã được ghi nhận tự động.`;
-      alertBox.classList.remove('hidden');
+      // Xóa bản nháp và làm mới key để lần lập phiếu tiếp theo không trùng
+      clearInboundDraft();
+      renewInboundIdempotencyKey();
 
-      // Reset form sạch sẽ sau khi lập phiếu thành công
-      document.getElementById('in-ghichu').value = '';
-      tbody.innerHTML = '';
-      if (availableItems.length > 0) {
-        addRowNhap(availableItems[0].MaHH, 1, 0);
-      }
+      try {
+        sessionStorage.setItem('smartlogis_inbound_last_success', JSON.stringify({
+          maPN: data.MaPN,
+          tongTien: data.TongTien || 0,
+          itemCount: items.length
+        }));
+      } catch (e) {}
 
-      btn.disabled = false;
-      btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> <span>Xác Nhận Lưu Phiếu (ACID)</span>';
-
-      // Tự động chuyển qua tab danh sách để xem phiếu vừa lập
-      setTimeout(() => {
-        switchInboundTab('list');
-      }, 1500);
+      // PRG (Post/Redirect/Get) Pattern:
+      // Chuyển hướng sang GET /inbound?created=...
+      // Ngăn F5 / reload resubmit và nhân đôi thẻ kho
+      window.location.replace('/inbound?created=' + encodeURIComponent(data.MaPN));
 
     } catch (err) {
+      isSubmittingInbound = false;
       alertBox.className = 'p-4 rounded-2xl text-xs font-semibold flex items-center gap-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-300';
       alertBox.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-rose-600 dark:text-rose-400 text-base"></i> Lỗi: ${err.message}`;
       alertBox.classList.remove('hidden');
@@ -759,5 +1018,12 @@
       btn.innerHTML = '<i class="fa-solid fa-check"></i> <span>Lưu & Chọn Ngay</span>';
     }
   }
+
+  // Đóng modal khi nhấn phím ESC
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      closeQuickAddSupplierModal();
+    }
+  });
 </script>
 {% endblock %}

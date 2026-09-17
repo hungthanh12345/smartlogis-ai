@@ -74,7 +74,7 @@
 
         <div>
           <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Đơn Vị / Người Nhận (*)</label>
-          <input type="text" id="out-nguoinhan" placeholder="Nhập tên người hoặc công trình nhận hàng..."
+          <input type="text" id="out-nguoinhan" oninput="saveOutboundDraft()" placeholder="Nhập tên người hoặc công trình nhận hàng..."
             class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500">
         </div>
 
@@ -87,7 +87,7 @@
 
       <div class="mt-4">
         <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Lý Do / Mục Đích Xuất Kho</label>
-        <input type="text" id="out-lydo" placeholder="Ví dụ: Xuất vật tư phục vụ dự án..."
+        <input type="text" id="out-lydo" oninput="saveOutboundDraft()" placeholder="Ví dụ: Xuất vật tư phục vụ dự án..."
           class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500">
       </div>
     </div>
@@ -267,6 +267,20 @@
 <script>
   let availableItems = [];
   let outboundHistoryData = [];
+  let isSubmittingOutbound = false;
+  let currentOutboundIdempotencyKey = null;
+
+  function getOutboundIdempotencyKey() {
+    if (!currentOutboundIdempotencyKey) {
+      currentOutboundIdempotencyKey = 'px_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+    }
+    return currentOutboundIdempotencyKey;
+  }
+
+  function renewOutboundIdempotencyKey() {
+    currentOutboundIdempotencyKey = 'px_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+    return currentOutboundIdempotencyKey;
+  }
 
   // --- QUẢN LÝ TAB ---
   function switchOutboundTab(tab) {
@@ -300,18 +314,136 @@
     loadItems();
   });
 
+  function saveOutboundDraft() {
+    try {
+      const nguoiNhan = document.getElementById('out-nguoinhan')?.value || '';
+      const lyDo = document.getElementById('out-lydo')?.value || '';
+      const tbody = document.getElementById('body-xuat');
+      const rows = [];
+      if (tbody) {
+        Array.from(tbody.children).forEach(tr => {
+          const sel = tr.querySelector('.sel-hh');
+          const inp = tr.querySelector('.inp-qty');
+          if (sel && sel.value) {
+            rows.push({ ma_hh: sel.value, qty: parseInt(inp ? inp.value : 1) || 1 });
+          }
+        });
+      }
+      if (nguoiNhan || lyDo || rows.length > 0) {
+        sessionStorage.setItem('smartlogis_outbound_draft', JSON.stringify({
+          nguoiNhan, lyDo, rows, savedAt: Date.now()
+        }));
+      }
+    } catch (e) {}
+  }
+
+  function loadOutboundDraft() {
+    try {
+      const raw = sessionStorage.getItem('smartlogis_outbound_draft');
+      if (!raw) return false;
+      const draft = JSON.parse(raw);
+      if (draft.nguoiNhan) {
+        const inpNguoiNhan = document.getElementById('out-nguoinhan');
+        if (inpNguoiNhan) inpNguoiNhan.value = draft.nguoiNhan;
+      }
+      if (draft.lyDo) {
+        const inpLyDo = document.getElementById('out-lydo');
+        if (inpLyDo) inpLyDo.value = draft.lyDo;
+      }
+      if (draft.rows && draft.rows.length > 0) {
+        const tbody = document.getElementById('body-xuat');
+        if (tbody) {
+          tbody.innerHTML = '';
+          draft.rows.forEach(r => {
+            addRowXuat(r.ma_hh, r.qty);
+          });
+          return true;
+        }
+      }
+    } catch (e) {}
+    return false;
+  }
+
+  function clearOutboundDraft() {
+    try {
+      sessionStorage.removeItem('smartlogis_outbound_draft');
+    } catch (e) {}
+  }
+
+  function restoreLastSuccess(createdCode = null) {
+    try {
+      let s = null;
+      const raw = sessionStorage.getItem('smartlogis_outbound_last_success');
+      if (raw) {
+        s = JSON.parse(raw);
+      }
+      const code = createdCode || (s ? s.maPX : null);
+      if (!code) return;
+      const nguoiNhan = (s && s.maPX === code) ? s.nguoiNhan : 'Khách hàng / Đơn vị nhận';
+      const itemCount = (s && s.maPX === code) ? s.itemCount : 1;
+
+      const alertBox = document.getElementById('alert-banner');
+      if (!alertBox) return;
+      alertBox.className = 'p-5 rounded-2xl text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 transition shadow-sm';
+      alertBox.innerHTML = `
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <i class="fa-solid fa-circle-check text-emerald-600 dark:text-emerald-400 text-xl"></i>
+            <div>
+              <div class="font-bold text-sm text-emerald-900 dark:text-emerald-200">
+                Xuất kho thành công! Mã chứng từ: <span class="font-mono underline">${code}</span>
+              </div>
+              <div class="text-[11px] text-emerald-700 dark:text-emerald-400 font-normal mt-0.5">
+                Đã trừ tồn kho an toàn và ghi sổ thẻ kho${s ? ` cho ${itemCount} mặt hàng. Người nhận: <b>${nguoiNhan}</b>.` : '.'}
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 w-full sm:w-auto justify-end flex-wrap">
+            <button type="button" onclick="viewOutboundDetail('${code}')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
+              <i class="fa-solid fa-eye"></i> Xem Chi Tiết / In Phiếu
+            </button>
+            <button type="button" onclick="resetOutboundForm()" class="px-3 py-1.5 bg-white dark:bg-slate-800 hover:bg-slate-100 text-emerald-800 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
+              <i class="fa-solid fa-plus"></i> Lập Phiếu Xuất Mới
+            </button>
+            <button type="button" onclick="switchOutboundTab('list')" class="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold transition cursor-pointer">
+              Lịch Sử Phiếu
+            </button>
+          </div>
+        </div>
+      `;
+      alertBox.classList.remove('hidden');
+    } catch(e){}
+  }
+
   async function loadItems() {
     try {
       const res = await fetch('/api/v1/kho/items');
       availableItems = await res.json();
 
       const params = new URLSearchParams(window.location.search);
-      const preselect = params.get('ma_hh');
+      const createdCode = params.get('created');
 
-      // Khởi tạo 1 dòng ban đầu sạch sẽ với số lượng 1
-      if (availableItems.length > 0) {
-        const defaultSKU = preselect || availableItems[0].MaHH;
-        addRowXuat(defaultSKU, 1);
+      if (createdCode) {
+        // PRG Pattern: Trang vừa được chuyển hướng GET sau khi tạo phiếu thành công
+        clearOutboundDraft();
+        restoreLastSuccess(createdCode);
+        // Làm sạch URL bằng History API để F5/reload không bị lặp tham số hoặc resubmit
+        window.history.replaceState({}, document.title, window.location.pathname);
+      } else {
+        restoreLastSuccess();
+      }
+
+      const draftRestored = createdCode ? false : loadOutboundDraft();
+
+      if (!draftRestored) {
+        const preselect = params.get('ma_hh');
+
+        // Khởi tạo 1 dòng ban đầu sạch sẽ với số lượng 1 nếu bảng đang rỗng
+        const tbody = document.getElementById('body-xuat');
+        if (tbody && tbody.children.length === 0 && availableItems.length > 0) {
+          const defaultSKU = preselect || availableItems[0].MaHH;
+          addRowXuat(defaultSKU, 1);
+        }
       }
     } catch (e) {
       console.error('[Outbound] Lỗi nạp danh mục hàng:', e);
@@ -326,36 +458,45 @@
 
     const existingSkus = Array.from(tbody.querySelectorAll('.sel-hh')).map(s => s.value);
     if (!selectedHH && availableItems.length > 0) {
-      const firstAvailable = availableItems.find(i => !existingSkus.includes(i.MaHH));
-      selectedHH = firstAvailable ? firstAvailable.MaHH : availableItems[0].MaHH;
+      // Ưu tiên chọn mặt hàng chưa có trong bảng và có tồn kho > 0
+      const inStockUnselected = availableItems.find(i => !existingSkus.includes(i.MaHH) && i.SoLuongTon > 0);
+      const anyUnselected = availableItems.find(i => !existingSkus.includes(i.MaHH));
+      if (!anyUnselected && !inStockUnselected) {
+        alert('Tất cả các mặt hàng trong kho đã có trong danh sách xuất. Bạn có thể tăng số lượng tại dòng tương ứng.');
+        return;
+      }
+      const chosen = inStockUnselected || anyUnselected || availableItems[0];
+      selectedHH = chosen.MaHH;
     }
 
     let options = availableItems.map(item => 
-      `<option value="${item.MaHH}" ${item.MaHH === selectedHH ? 'selected' : ''}>${item.MaHH} - ${item.TenHH}</option>`
+      `<option value="${item.MaHH}" ${item.MaHH === selectedHH ? 'selected' : ''}>${item.MaHH} - ${item.TenHH} (Tồn: ${item.SoLuongTon})</option>`
     ).join('');
 
     tr.innerHTML = `
-      <td class="py-3 px-3 text-center text-slate-400 font-mono font-semibold">${rowIdx}</td>
-      <td class="py-3 px-3">
-        <select class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs sel-hh text-slate-800 dark:text-slate-100" onchange="handleHHChange(this)">
+      <td class="py-3 px-3 text-center text-slate-400 font-mono font-semibold row-stt w-10">${rowIdx}</td>
+      <td class="py-3 px-3 min-w-[220px]">
+        <select class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs sel-hh text-slate-800 dark:text-slate-100" onfocus="this.dataset.prevVal = this.value" onchange="handleHHChange(this)">
           ${options}
         </select>
       </td>
-      <td class="py-3 px-3 text-center text-slate-500 dark:text-slate-400 lbl-dvt">-</td>
-      <td class="py-3 px-3 text-center font-mono font-bold text-slate-800 dark:text-slate-200 lbl-ton">-</td>
-      <td class="py-3 px-3">
+      <td class="py-3 px-3 text-center text-slate-500 dark:text-slate-400 lbl-dvt w-16">-</td>
+      <td class="py-3 px-3 text-center font-mono font-bold text-slate-800 dark:text-slate-200 lbl-ton w-28">-</td>
+      <td class="py-3 px-3 w-32 min-w-[100px]">
         <input type="number" min="1" value="${defaultQty}" class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-mono font-bold inp-qty text-slate-800 dark:text-slate-100" oninput="validateAllRows()">
       </td>
-      <td class="py-3 px-3 text-center font-mono font-bold lbl-du-kien">-</td>
-      <td class="py-3 px-3 text-center lbl-status">-</td>
-      <td class="py-3 px-3 text-center">
-        <button type="button" onclick="removeRow(this)" class="w-7 h-7 rounded-lg bg-rose-50 dark:bg-rose-950/80 hover:bg-rose-100 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 flex items-center justify-center transition cursor-pointer">
+      <td class="py-3 px-3 text-center font-mono font-bold lbl-du-kien w-28">-</td>
+      <td class="py-3 px-3 text-center lbl-status min-w-[180px]">-</td>
+      <td class="py-3 px-3 text-center w-12">
+        <button type="button" onclick="removeRow(this)" class="w-7 h-7 rounded-lg bg-rose-50 dark:bg-rose-950/80 hover:bg-rose-100 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 flex items-center justify-center transition cursor-pointer" title="Xóa dòng này">
           <i class="fa-solid fa-trash text-[11px]"></i>
         </button>
       </td>
     `;
     tbody.appendChild(tr);
-    handleHHChange(tr.querySelector('.sel-hh'), false);
+    const sel = tr.querySelector('.sel-hh');
+    sel.dataset.prevVal = sel.value;
+    handleHHChange(sel, false);
     validateAllRows();
   }
 
@@ -365,16 +506,43 @@
 
     if (checkDuplicate) {
       const tbody = document.getElementById('body-xuat');
-      const allSelects = Array.from(tbody.querySelectorAll('.sel-hh'));
-      const duplicateCount = allSelects.filter(s => s !== sel && s.value === sel.value).length;
-      if (duplicateCount > 0) {
-        alert(`Mặt hàng mã [${sel.value}] đã có trong danh sách xuất kho. Vui lòng tăng số lượng ở dòng đã có.`);
+      const allRows = Array.from(tbody.children);
+      const dupRow = allRows.find(r => r !== tr && r.querySelector('.sel-hh')?.value === sel.value);
+      if (dupRow) {
+        const item = availableItems.find(i => i.MaHH === sel.value);
+        const itemName = item ? item.TenHH : sel.value;
+        const confirmMerge = confirm(
+          `Mặt hàng [${sel.value}] - ${itemName} đã có trong danh sách xuất kho!\n\n` +
+          `Bạn có muốn tự động GỘP số lượng dòng này vào dòng đã có và xóa dòng trùng này không?`
+        );
+        if (confirmMerge) {
+          const currentQty = parseInt(tr.querySelector('.inp-qty')?.value) || 1;
+          const targetQtyInput = dupRow.querySelector('.inp-qty');
+          if (targetQtyInput) {
+            targetQtyInput.value = (parseInt(targetQtyInput.value) || 0) + currentQty;
+          }
+          tr.remove();
+          Array.from(tbody.children).forEach((row, i) => {
+            const sttEl = row.querySelector('.row-stt');
+            if (sttEl) sttEl.innerText = i + 1;
+          });
+          validateAllRows();
+          return;
+        } else {
+          // Khôi phục giá trị chọn trước đó
+          if (sel.dataset.prevVal) {
+            sel.value = sel.dataset.prevVal;
+          }
+          validateAllRows();
+          return;
+        }
       }
     }
 
+    sel.dataset.prevVal = sel.value;
     const selectedItem = availableItems.find(i => i.MaHH === sel.value);
     if (selectedItem) {
-      tr.querySelector('.lbl-dvt').innerText = selectedItem.TenDVT || selectedItem.MaDVT;
+      tr.querySelector('.lbl-dvt').innerText = selectedItem.TenDVT || selectedItem.MaDVT || '--';
       tr.querySelector('.lbl-ton').innerText = selectedItem.SoLuongTon;
     }
     validateAllRows();
@@ -383,12 +551,13 @@
   function removeRow(btn) {
     const tbody = document.getElementById('body-xuat');
     if (tbody.children.length <= 1) {
-      alert('Phiếu xuất phải có tối thiểu 1 mặt hàng.');
+      alert('Phiếu xuất kho phải có tối thiểu 1 mặt hàng.');
       return;
     }
     btn.closest('tr').remove();
     Array.from(tbody.children).forEach((tr, i) => {
-      tr.children[0].innerText = i + 1;
+      const sttEl = tr.querySelector('.row-stt') || tr.children[0];
+      if (sttEl) sttEl.innerText = i + 1;
     });
     validateAllRows();
   }
@@ -399,25 +568,45 @@
     const warningDetail = document.getElementById('negative-warning-detail');
     const submitBtn = document.getElementById('btn-submit-xuat');
 
-    let hasNegativeStock = false;
+    let hasError = false;
     let errorDetails = [];
+
+    // Tổng hợp số lượng yêu cầu xuất cho từng mã hàng (Multi-row aggregate validation)
+    const totalRequestedPerSKU = {};
+    Array.from(tbody.children).forEach(tr => {
+      const sel = tr.querySelector('.sel-hh');
+      if (!sel) return;
+      const sku = sel.value;
+      const qtyInput = tr.querySelector('.inp-qty');
+      const qty = parseInt(qtyInput ? qtyInput.value : 0) || 0;
+      totalRequestedPerSKU[sku] = (totalRequestedPerSKU[sku] || 0) + qty;
+    });
 
     Array.from(tbody.children).forEach(tr => {
       const sel = tr.querySelector('.sel-hh');
+      if (!sel) return;
       const item = availableItems.find(i => i.MaHH === sel.value);
       const tonKhaDung = item ? item.SoLuongTon : 0;
       const qtyInput = tr.querySelector('.inp-qty');
       const slXuat = parseInt(qtyInput.value) || 0;
-      const tonDuKien = tonKhaDung - slXuat;
+      const totalReq = totalRequestedPerSKU[sel.value] || 0;
+      const tonDuKien = tonKhaDung - totalReq;
 
       const lblDuKien = tr.querySelector('.lbl-du-kien');
       const lblStatus = tr.querySelector('.lbl-status');
 
       lblDuKien.innerText = tonDuKien;
 
-      if (tonDuKien < 0) {
-        hasNegativeStock = true;
-        errorDetails.push(`Mặt hàng [${item ? item.MaHH : ''}] ${item ? item.TenHH : ''}: Tồn ${tonKhaDung}, yêu cầu xuất ${slXuat} (Thiếu ${Math.abs(tonDuKien)} ${item ? (item.TenDVT || item.MaDVT) : ''})`);
+      if (slXuat <= 0) {
+        hasError = true;
+        errorDetails.push(`Mặt hàng [${item ? item.MaHH : ''}] ${item ? item.TenHH : ''}: Số lượng xuất phải lớn hơn 0.`);
+        tr.className = 'bg-rose-50/80 dark:bg-rose-950/40 border-l-4 border-l-rose-600 transition';
+        qtyInput.className = 'w-full px-2.5 py-1.5 border-2 border-rose-500 bg-rose-50 dark:bg-rose-950 text-rose-900 dark:text-rose-200 font-bold rounded-lg text-xs inp-qty';
+        lblStatus.innerHTML = `<span class="bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-300 border border-rose-300 dark:border-rose-800 font-bold px-2 py-0.5 rounded-full text-[10px] flex items-center justify-center gap-1"><i class="fa-solid fa-triangle-exclamation"></i> LỖI: SL ≤ 0</span>`;
+      } else if (tonDuKien < 0) {
+        hasError = true;
+        const unitName = item ? (item.TenDVT || item.MaDVT || 'đơn vị') : '';
+        errorDetails.push(`Mặt hàng [${item ? item.MaHH : ''}] ${item ? item.TenHH : ''}: Tồn ${tonKhaDung}, tổng yêu cầu xuất ${totalReq} (Thiếu ${Math.abs(tonDuKien)} ${unitName})`);
 
         tr.className = 'bg-rose-50/80 dark:bg-rose-950/40 border-l-4 border-l-rose-600 transition';
         qtyInput.className = 'w-full px-2.5 py-1.5 border-2 border-rose-500 bg-rose-50 dark:bg-rose-950 text-rose-900 dark:text-rose-200 font-bold rounded-lg text-xs inp-qty';
@@ -427,25 +616,50 @@
         tr.className = 'hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition border-b border-slate-100 dark:border-slate-800';
         qtyInput.className = 'w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-mono font-bold inp-qty text-slate-800 dark:text-slate-100';
         lblDuKien.className = 'py-3 px-3 text-center font-bold text-emerald-600 dark:text-emerald-400 lbl-du-kien';
-        lblStatus.innerHTML = `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800"><i class="fa-solid fa-check"></i> ĐỦ HÀNG XUẤT</span>`;
+        lblStatus.innerHTML = `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800"><i class="fa-solid fa-check"></i> ĐỦ HÀNG (${tonDuKien})</span>`;
       }
     });
 
-    if (hasNegativeStock) {
+    if (hasError) {
       warningBanner.classList.remove('hidden');
       warningDetail.innerHTML = errorDetails.join('<br>');
       submitBtn.disabled = true;
       submitBtn.className = 'px-6 py-2.5 bg-slate-400 dark:bg-slate-700 text-white font-bold rounded-xl text-xs cursor-not-allowed opacity-70 flex items-center gap-2 whitespace-nowrap';
-      submitBtn.innerHTML = '<i class="fa-solid fa-lock"></i> <span>Khóa Xuất Kho (Phát Hiện Tồn Âm)</span>';
+      submitBtn.innerHTML = '<i class="fa-solid fa-lock"></i> <span>Khóa Xuất Kho (Phát Hiện Lỗi Tồn)</span>';
     } else {
       warningBanner.classList.add('hidden');
       submitBtn.disabled = false;
       submitBtn.className = 'px-6 py-2.5 bg-sky-600 hover:bg-sky-500 active:bg-sky-700 text-white font-bold rounded-xl text-xs transition shadow-md flex items-center gap-2 cursor-pointer whitespace-nowrap';
       submitBtn.innerHTML = '<i class="fa-solid fa-check"></i> <span>Xác Nhận Xuất Kho (ACID Transaction)</span>';
     }
+    saveOutboundDraft();
+  }
+
+  function resetOutboundForm() {
+    clearOutboundDraft();
+    renewOutboundIdempotencyKey();
+    try { sessionStorage.removeItem('smartlogis_outbound_last_success'); } catch(e){}
+    document.getElementById('out-nguoinhan').value = '';
+    document.getElementById('out-lydo').value = '';
+    const alertBox = document.getElementById('alert-banner');
+    if (alertBox) {
+      alertBox.classList.add('hidden');
+      alertBox.innerHTML = '';
+    }
+    const tbody = document.getElementById('body-xuat');
+    tbody.innerHTML = '';
+    if (availableItems.length > 0) {
+      const inStock = availableItems.find(i => i.SoLuongTon > 0) || availableItems[0];
+      addRowXuat(inStock.MaHH, 1);
+    } else {
+      addRowXuat('', 1);
+    }
+    validateAllRows();
   }
 
   async function submitPhieuXuat() {
+    if (isSubmittingOutbound) return;
+
     const nguoiNhan = document.getElementById('out-nguoinhan').value.trim();
     const lyDo = document.getElementById('out-lydo').value.trim();
     const tbody = document.getElementById('body-xuat');
@@ -460,49 +674,71 @@
     const items = [];
     let hasInvalidQty = false;
     Array.from(tbody.children).forEach(tr => {
-      const ma_hh = tr.querySelector('.sel-hh').value;
+      const sel = tr.querySelector('.sel-hh');
+      if (!sel) return;
+      const ma_hh = sel.value;
       const qty = parseInt(tr.querySelector('.inp-qty').value) || 0;
       if (qty <= 0) hasInvalidQty = true;
       items.push({ MaHH: ma_hh, SoLuongXuat: qty });
     });
+
+    if (items.length === 0) {
+      alert('Vui lòng chọn ít nhất 1 mặt hàng để xuất kho.');
+      return;
+    }
 
     if (hasInvalidQty) {
       alert('Số lượng xuất phải lớn hơn 0.');
       return;
     }
 
+    const totalOutQty = items.reduce((sum, it) => sum + it.SoLuongXuat, 0);
+    if (totalOutQty <= 0) {
+      alert('Tổng số lượng xuất kho phải lớn hơn 0.');
+      return;
+    }
+
+    isSubmittingOutbound = true;
     btn.disabled = true;
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Đang thực thi Database Transaction ACID...</span>';
 
     try {
+      const idemKey = getOutboundIdempotencyKey();
       const res = await fetch('/api/v1/kho/phieu-xuat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ NguoiNhan: nguoiNhan, LyDoXuat: lyDo, items: items })
+        headers: { 
+          'Content-Type': 'application/json',
+          'Idempotency-Key': idemKey
+        },
+        body: JSON.stringify({ 
+          NguoiNhan: nguoiNhan, 
+          LyDoXuat: lyDo, 
+          items: items,
+          idempotency_key: idemKey
+        })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || 'Lỗi xuất kho.');
 
-      alertBox.className = 'p-4 rounded-2xl text-xs font-semibold flex items-center gap-3 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300';
-      alertBox.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600 dark:text-emerald-400 text-base"></i> Xuất kho thành công! Mã chứng từ: <b>${data.MaPX}</b>. Tồn kho đã trừ và ghi sổ thẻ kho.`;
-      alertBox.classList.remove('hidden');
+      // Xóa bản nháp và sinh idempotency key mới để phiên sau không trùng
+      clearOutboundDraft();
+      renewOutboundIdempotencyKey();
 
-      // Reset form sạch sẽ sau khi xuất kho
-      document.getElementById('out-nguoinhan').value = '';
-      document.getElementById('out-lydo').value = '';
-      tbody.innerHTML = '';
-      if (availableItems.length > 0) {
-        addRowXuat(availableItems[0].MaHH, 1);
-      }
+      try {
+        sessionStorage.setItem('smartlogis_outbound_last_success', JSON.stringify({
+          maPX: data.MaPX,
+          nguoiNhan: nguoiNhan,
+          itemCount: items.length
+        }));
+      } catch (e) {}
 
-      btn.disabled = false;
-      btn.innerHTML = '<i class="fa-solid fa-check"></i> <span>Xác Nhận Xuất Kho (ACID Transaction)</span>';
-
-      setTimeout(() => {
-        switchOutboundTab('list');
-      }, 1500);
+      // PRG (Post/Redirect/Get) Pattern:
+      // Chuyển hướng bằng location.replace sang GET /outbound?created=...
+      // Ngăn chặn hoàn toàn việc F5 / reload gửi lại POST request và nhân đôi thẻ kho
+      window.location.replace('/outbound?created=' + encodeURIComponent(data.MaPX));
 
     } catch (err) {
+      isSubmittingOutbound = false;
       alertBox.className = 'p-4 rounded-2xl text-xs font-semibold flex items-center gap-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-300';
       alertBox.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-rose-600 dark:text-rose-400 text-base"></i> ${err.message}`;
       alertBox.classList.remove('hidden');

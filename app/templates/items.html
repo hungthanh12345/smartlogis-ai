@@ -145,9 +145,9 @@
 </div>
 
 <!-- MODAL TẠO MỚI HÀNG HÓA -->
-<div id="createModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-  <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200 dark:border-slate-800 transition">
-    <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-850">
+<div id="createModal" onclick="if(event.target === this) closeCreateModal()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+  <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] flex flex-col overflow-hidden border border-slate-200 dark:border-slate-800 transition animate-in fade-in zoom-in-95 duration-150">
+    <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-850 flex-shrink-0">
       <h3 class="font-bold text-slate-800 dark:text-white text-sm md:text-base flex items-center gap-2">
         <i class="fa-solid fa-circle-plus text-emerald-600 dark:text-emerald-400"></i>
         <span>Thêm Hàng Hóa Mới Vào Danh Mục</span>
@@ -156,61 +156,64 @@
         <i class="fa-solid fa-xmark text-sm"></i>
       </button>
     </div>
-    <form id="createItemForm" onsubmit="submitCreateItem(event)" class="p-6 space-y-4 text-xs">
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Mã SKU (*)</label>
-          <input type="text" id="create_MaHH" required placeholder="VD: HH-THEP-D10"
-            class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl uppercase focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none text-slate-900 dark:text-white">
+    <form id="createItemForm" onsubmit="submitCreateItem(event)" class="flex flex-col flex-1 overflow-hidden">
+      <div class="p-6 space-y-4 text-xs overflow-y-auto flex-1">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Mã SKU (*)</label>
+            <input type="text" id="create_MaHH" required placeholder="VD: HH-THEP-D10"
+              class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl uppercase font-mono font-bold focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none text-slate-900 dark:text-white">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Tồn Kho Ban Đầu</label>
+            <input type="number" id="create_SoLuongBanDau" value="0" min="0"
+              class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl font-mono font-bold focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none text-slate-900 dark:text-white">
+          </div>
         </div>
         <div>
-          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Tồn Kho Ban Đầu</label>
-          <input type="number" id="create_SoLuongBanDau" value="0" min="0"
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Tên Hàng Hóa (*)</label>
+          <input type="text" id="create_TenHH" required placeholder="VD: Thép thanh vằn D10 Hòa Phát"
             class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none text-slate-900 dark:text-white">
         </div>
-      </div>
-      <div>
-        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Tên Hàng Hóa (*)</label>
-        <input type="text" id="create_TenHH" required placeholder="VD: Thép thanh vằn D10 Hòa Phát"
-          class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none text-slate-900 dark:text-white">
-      </div>
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Nhóm Hàng (*)</label>
-          <select id="create_MaNhom" required
-            class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none text-slate-900 dark:text-white cursor-pointer">
-            {% for cat in categories %}
-            <option value="{{ cat.MaNhom }}">{{ cat.TenNhom }}</option>
-            {% endfor %}
-          </select>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Nhóm Hàng (*)</label>
+            <select id="create_MaNhom" required
+              class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none text-slate-900 dark:text-white cursor-pointer">
+              {% for cat in categories %}
+              <option value="{{ cat.MaNhom }}">{{ cat.TenNhom }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Đơn Vị Tính (*)</label>
+            <select id="create_MaDVT" required
+              class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none text-slate-900 dark:text-white cursor-pointer">
+              {% for u in units %}
+              <option value="{{ u.MaDVT }}">{{ u.TenDVT }} ({{ u.MaDVT }})</option>
+              {% endfor %}
+            </select>
+          </div>
         </div>
         <div>
-          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Đơn Vị Tính (*)</label>
-          <select id="create_MaDVT" required
-            class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none text-slate-900 dark:text-white cursor-pointer">
-            {% for u in units %}
-            <option value="{{ u.MaDVT }}">{{ u.TenDVT }} ({{ u.MaDVT }})</option>
-            {% endfor %}
-          </select>
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Định Mức Tồn Tối Thiểu (Cảnh báo Min)</label>
+          <input type="number" id="create_TonToiThieu" value="10" min="0" required
+            class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl font-mono font-bold focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none text-slate-900 dark:text-white">
+        </div>
+        <div>
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Mô Tả / Quy Cách Kỹ Thuật</label>
+          <textarea id="create_MoTa" rows="2" placeholder="Ghi chú chi tiết tiêu chuẩn, kích thước..."
+            class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none text-slate-900 dark:text-white"></textarea>
         </div>
       </div>
-      <div>
-        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Định Mức Tồn Tối Thiểu (Cảnh báo Min)</label>
-        <input type="number" id="create_TonToiThieu" value="10" min="0" required
-          class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none text-slate-900 dark:text-white">
-      </div>
-      <div>
-        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Mô Tả / Quy Cách Kỹ Thuật</label>
-        <textarea id="create_MoTa" rows="2" placeholder="Ghi chú chi tiết tiêu chuẩn, kích thước..."
-          class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none text-slate-900 dark:text-white"></textarea>
-      </div>
-      <div class="pt-2 flex justify-end gap-2.5">
+      <div class="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-850 flex justify-end gap-2.5 flex-shrink-0">
         <button type="button" onclick="closeCreateModal()"
-          class="px-4 py-2 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold cursor-pointer">
+          class="px-4 py-2 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold cursor-pointer transition">
           Hủy
         </button>
-        <button type="submit" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white rounded-xl font-bold shadow-xs cursor-pointer">
-          Lưu Mặt Hàng
+        <button type="submit" id="btnCreateItem" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white rounded-xl font-bold shadow-xs cursor-pointer transition flex items-center gap-2">
+          <i class="fa-solid fa-floppy-disk"></i>
+          <span>Lưu Mặt Hàng</span>
         </button>
       </div>
     </form>
@@ -218,9 +221,9 @@
 </div>
 
 <!-- MODAL CHỈNH SỬA HÀNG HÓA -->
-<div id="editModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-  <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200 dark:border-slate-800 transition">
-    <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-850">
+<div id="editModal" onclick="if(event.target === this) closeEditModal()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+  <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] flex flex-col overflow-hidden border border-slate-200 dark:border-slate-800 transition animate-in fade-in zoom-in-95 duration-150">
+    <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-850 flex-shrink-0">
       <h3 class="font-bold text-slate-800 dark:text-white text-sm md:text-base flex items-center gap-2">
         <i class="fa-solid fa-pen-to-square text-amber-500"></i>
         <span>Cập Nhật Thông Tin Mặt Hàng</span>
@@ -229,55 +232,58 @@
         <i class="fa-solid fa-xmark text-sm"></i>
       </button>
     </div>
-    <form id="editItemForm" onsubmit="submitEditItem(event)" class="p-6 space-y-4 text-xs">
+    <form id="editItemForm" onsubmit="submitEditItem(event)" class="flex flex-col flex-1 overflow-hidden">
       <input type="hidden" id="edit_MaHH">
-      <div>
-        <label class="block font-bold text-slate-500 dark:text-slate-400 mb-1.5">Mã SKU (Không thể thay đổi)</label>
-        <input type="text" id="edit_MaHH_Display" disabled
-          class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl font-mono font-bold text-slate-600 dark:text-slate-400">
-      </div>
-      <div>
-        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Tên Hàng Hóa (*)</label>
-        <input type="text" id="edit_TenHH" required
-          class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none text-slate-900 dark:text-white">
-      </div>
-      <div class="grid grid-cols-2 gap-4">
+      <div class="p-6 space-y-4 text-xs overflow-y-auto flex-1">
         <div>
-          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Nhóm Hàng (*)</label>
-          <select id="edit_MaNhom" required
-            class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none text-slate-900 dark:text-white cursor-pointer">
-            {% for cat in categories %}
-            <option value="{{ cat.MaNhom }}">{{ cat.TenNhom }}</option>
-            {% endfor %}
-          </select>
+          <label class="block font-bold text-slate-500 dark:text-slate-400 mb-1.5">Mã SKU (Không thể thay đổi)</label>
+          <input type="text" id="edit_MaHH_Display" disabled
+            class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl font-mono font-bold text-slate-600 dark:text-slate-400">
         </div>
         <div>
-          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Đơn Vị Tính (*)</label>
-          <select id="edit_MaDVT" required
-            class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none text-slate-900 dark:text-white cursor-pointer">
-            {% for u in units %}
-            <option value="{{ u.MaDVT }}">{{ u.TenDVT }} ({{ u.MaDVT }})</option>
-            {% endfor %}
-          </select>
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Tên Hàng Hóa (*)</label>
+          <input type="text" id="edit_TenHH" required
+            class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none text-slate-900 dark:text-white">
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Nhóm Hàng (*)</label>
+            <select id="edit_MaNhom" required
+              class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none text-slate-900 dark:text-white cursor-pointer">
+              {% for cat in categories %}
+              <option value="{{ cat.MaNhom }}">{{ cat.TenNhom }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Đơn Vị Tính (*)</label>
+            <select id="edit_MaDVT" required
+              class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none text-slate-900 dark:text-white cursor-pointer">
+              {% for u in units %}
+              <option value="{{ u.MaDVT }}">{{ u.TenDVT }} ({{ u.MaDVT }})</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Định Mức Tồn Tối Thiểu (Cảnh báo Min)</label>
+          <input type="number" id="edit_TonToiThieu" min="0" required
+            class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl font-mono font-bold focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none text-slate-900 dark:text-white">
+        </div>
+        <div>
+          <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Mô Tả / Quy Cách Kỹ Thuật</label>
+          <textarea id="edit_MoTa" rows="2"
+            class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none text-slate-900 dark:text-white"></textarea>
         </div>
       </div>
-      <div>
-        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Định Mức Tồn Tối Thiểu (Cảnh báo Min)</label>
-        <input type="number" id="edit_TonToiThieu" min="0" required
-          class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none text-slate-900 dark:text-white">
-      </div>
-      <div>
-        <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1.5">Mô Tả / Quy Cách Kỹ Thuật</label>
-        <textarea id="edit_MoTa" rows="2"
-          class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 outline-none text-slate-900 dark:text-white"></textarea>
-      </div>
-      <div class="pt-2 flex justify-end gap-2.5">
+      <div class="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-850 flex justify-end gap-2.5 flex-shrink-0">
         <button type="button" onclick="closeEditModal()"
-          class="px-4 py-2 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold cursor-pointer">
+          class="px-4 py-2 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold cursor-pointer transition">
           Hủy
         </button>
-        <button type="submit" class="px-5 py-2 bg-sky-600 hover:bg-sky-500 active:bg-sky-700 text-white rounded-xl font-bold shadow-xs cursor-pointer">
-          Cập Nhật Mặt Hàng
+        <button type="submit" id="btnEditItem" class="px-5 py-2 bg-sky-600 hover:bg-sky-500 active:bg-sky-700 text-white rounded-xl font-bold shadow-xs cursor-pointer transition flex items-center gap-2">
+          <i class="fa-solid fa-check"></i>
+          <span>Cập Nhật Mặt Hàng</span>
         </button>
       </div>
     </form>
@@ -288,6 +294,9 @@
 
 {% block extra_scripts %}
 <script>
+  // Biến lưu trữ dữ liệu danh mục hiện thời trên giao diện
+  let currentItemsData = [];
+
   function filterItemsTable() {
     const q = document.getElementById('searchInput').value.toLowerCase().trim();
     const grp = document.getElementById('groupFilter').value;
@@ -295,9 +304,9 @@
     let visibleCount = 0;
 
     rows.forEach(r => {
-      const sku = r.getAttribute('data-sku');
-      const name = r.getAttribute('data-name');
-      const rowGrp = r.getAttribute('data-group');
+      const sku = r.getAttribute('data-sku') || '';
+      const name = r.getAttribute('data-name') || '';
+      const rowGrp = r.getAttribute('data-group') || '';
 
       const matchesSearch = !q || sku.includes(q) || name.includes(q);
       const matchesGroup = (grp === 'ALL') || (rowGrp === grp);
@@ -315,6 +324,7 @@
   }
 
   function openCreateModal() {
+    document.getElementById('createItemForm').reset();
     document.getElementById('createModal').classList.remove('hidden');
     document.getElementById('create_MaHH').focus();
   }
@@ -333,6 +343,7 @@
     document.getElementById('edit_TonToiThieu').value = minTon;
     document.getElementById('edit_MoTa').value = mota;
     document.getElementById('editModal').classList.remove('hidden');
+    document.getElementById('edit_TenHH').focus();
   }
 
   function closeEditModal() {
@@ -340,8 +351,99 @@
     document.getElementById('editItemForm').reset();
   }
 
+  // --- LÀM MỚI BẢNG HÀNG HÓA REALTIME MƯỢT MÀ (KHÔNG RELOAD TRANG) ---
+  async function refreshItemsTable() {
+    try {
+      const res = await fetch('/api/v1/kho/items');
+      if (!res.ok) return;
+      const items = await res.json();
+      currentItemsData = items;
+
+      const tbody = document.getElementById('itemsTableBody');
+      if (!tbody) return;
+
+      tbody.innerHTML = items.map((item, idx) => {
+        const isLow = item.SoLuongTon <= item.TonToiThieu;
+        const tonColorClass = isLow ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400';
+        const statusBadge = isLow
+          ? `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-50 dark:bg-rose-950/70 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+               <i class="fa-solid fa-triangle-exclamation text-[10px]"></i> Cảnh báo Min
+             </span>`
+          : `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+               <i class="fa-solid fa-circle-check text-[10px]"></i> Đủ định mức
+             </span>`;
+
+        const descHtml = item.MoTa
+          ? `<div class="text-[11px] text-slate-400 font-normal truncate max-w-xs" title="${item.MoTa}">${item.MoTa}</div>`
+          : '';
+
+        return `
+          <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition item-row" 
+              data-sku="${(item.MaHH || '').toLowerCase()}" 
+              data-name="${(item.TenHH || '').toLowerCase()}" 
+              data-group="${item.MaNhom}">
+            <td class="py-3 px-4 text-center text-slate-400 dark:text-slate-500 font-mono">${idx + 1}</td>
+            <td class="py-3 px-4 font-mono font-bold text-sky-700 dark:text-sky-400">${item.MaHH}</td>
+            <td class="py-3 px-4 font-semibold text-slate-900 dark:text-white">
+              <div>${item.TenHH}</div>
+              ${descHtml}
+            </td>
+            <td class="py-3 px-4 text-slate-600 dark:text-slate-300">
+              <span class="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded text-[11px] font-medium border border-slate-200 dark:border-slate-700">
+                ${item.TenNhom || item.MaNhom}
+              </span>
+            </td>
+            <td class="py-3 px-3 text-center font-medium text-slate-600 dark:text-slate-400">${item.TenDVT || item.MaDVT}</td>
+            <td class="py-3 px-3 text-right font-black text-sm item-ton ${tonColorClass}">
+              ${(item.SoLuongTon || 0).toLocaleString('vi-VN')}
+            </td>
+            <td class="py-3 px-3 text-right font-mono font-bold text-slate-600 dark:text-slate-400">
+              ${(item.TonToiThieu || 0).toLocaleString('vi-VN')}
+            </td>
+            <td class="py-3 px-4 text-center">${statusBadge}</td>
+            <td class="py-3 px-4 text-right">
+              <div class="inline-flex items-center gap-1.5 justify-end">
+                <a href="/the-kho?ma_hh=${encodeURIComponent(item.MaHH)}" 
+                   class="w-7 h-7 rounded-lg bg-sky-50 dark:bg-sky-950/70 text-sky-600 dark:text-sky-400 hover:bg-sky-100 border border-sky-200 dark:border-sky-800 flex items-center justify-center transition"
+                   title="Xem sổ thẻ kho">
+                  <i class="fa-solid fa-file-invoice text-[11px]"></i>
+                </a>
+                <button type="button" 
+                  onclick="openEditModal('${item.MaHH}', '${item.TenHH.replace(/'/g, "\\'")}', '${item.MaNhom}', '${item.MaDVT}', ${item.TonToiThieu}, '${(item.MoTa || '').replace(/'/g, "\\'")}')"
+                  class="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-950/70 text-amber-600 dark:text-amber-400 hover:bg-amber-100 border border-amber-200 dark:border-amber-800 flex items-center justify-center transition cursor-pointer"
+                  title="Chỉnh sửa mặt hàng">
+                  <i class="fa-solid fa-pen text-[11px]"></i>
+                </button>
+                <button type="button" 
+                  onclick="deleteItem('${item.MaHH}', '${item.TenHH.replace(/'/g, "\\'")}')"
+                  class="w-7 h-7 rounded-lg bg-rose-50 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400 hover:bg-rose-100 border border-rose-200 dark:border-rose-800 flex items-center justify-center transition cursor-pointer"
+                  title="Xóa khỏi danh mục">
+                  <i class="fa-solid fa-trash text-[11px]"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      // Cập nhật số lượng hiển thị
+      const badge = document.getElementById('itemCountBadge');
+      if (badge) badge.innerText = `${items.length} mặt hàng`;
+
+      // Áp dụng bộ lọc tìm kiếm hiện tại nếu người dùng đang nhập
+      filterItemsTable();
+    } catch (e) {
+      console.error('[Items Realtime] Lỗi nạp lại danh mục:', e);
+    }
+  }
+
+  // --- SUBMIT TẠO MỚI HÀNG HÓA (CHỐNG DOUBLE-CLICK & TỰ RELOAD) ---
   async function submitCreateItem(e) {
     e.preventDefault();
+    const btn = document.getElementById('btnCreateItem');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Đang lưu...</span>';
+
     const payload = {
       MaHH: document.getElementById('create_MaHH').value.trim().toUpperCase(),
       TenHH: document.getElementById('create_TenHH').value.trim(),
@@ -360,15 +462,24 @@
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || 'Lỗi thêm hàng hóa');
+      
       closeCreateModal();
-      window.location.reload();
+      await refreshItemsTable();
     } catch (err) {
       alert('Lỗi: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> <span>Lưu Mặt Hàng</span>';
     }
   }
 
+  // --- SUBMIT CẬP NHẬT HÀNG HÓA ---
   async function submitEditItem(e) {
     e.preventDefault();
+    const btn = document.getElementById('btnEditItem');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Đang lưu...</span>';
+
     const ma = document.getElementById('edit_MaHH').value;
     const payload = {
       TenHH: document.getElementById('edit_TenHH').value.trim(),
@@ -386,13 +497,18 @@
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || 'Lỗi cập nhật hàng hóa');
+      
       closeEditModal();
-      window.location.reload();
+      await refreshItemsTable();
     } catch (err) {
       alert('Lỗi: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-check"></i> <span>Cập Nhật Mặt Hàng</span>';
     }
   }
 
+  // --- XÓA HÀNG HÓA ---
   async function deleteItem(ma, ten) {
     if (!confirm(`Bạn có chắc chắn muốn xóa mặt hàng [${ten}] (${ma}) khỏi danh mục?\nLưu ý: Chỉ xóa được khi chưa phát sinh phiếu nhập/xuất kho.`)) {
       return;
@@ -404,42 +520,24 @@
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || 'Lỗi xóa hàng hóa');
-      window.location.reload();
+      await refreshItemsTable();
     } catch (err) {
       alert('Không thể xóa: ' + err.message);
     }
   }
 
-  // Tự động cập nhật số lượng tồn tức thì khi nhận WebSocket Event
-  window.reloadSkuTable = async function() {
-    try {
-      const res = await fetch('/api/v1/kho/items');
-      if (!res.ok) return;
-      const items = await res.json();
-      items.forEach(it => {
-        const row = document.querySelector(`.item-row[data-sku="${it.MaHH.toLowerCase()}"]`);
-        if (row) {
-          const tonCell = row.querySelector('.item-ton');
-          if (tonCell) {
-            tonCell.innerText = it.SoLuongTon.toLocaleString('vi-VN');
-            if (it.SoLuongTon <= it.TonToiThieu) {
-              tonCell.className = 'py-3 px-3 text-right font-black text-sm item-ton text-rose-600 dark:text-rose-400';
-            } else {
-              tonCell.className = 'py-3 px-3 text-right font-black text-sm item-ton text-emerald-600 dark:text-emerald-400';
-            }
-          }
-        }
-      });
-    } catch (e) {
-      console.error('[Items Realtime] Lỗi nạp lại danh mục:', e);
-    }
-  };
+  // Tự động cập nhật số lượng tồn hoặc danh mục khi nhận WebSocket Event (TUYỆT ĐỐI KHÔNG RELOAD TRANG)
+  window.reloadSkuTable = refreshItemsTable;
 
   window.addEventListener('smartlogis:inventory_updated', (e) => {
-    if (e.detail && (e.detail.action === 'SKU_CREATED' || e.detail.action === 'SKU_DELETED')) {
-      window.location.reload();
-    } else {
-      window.reloadSkuTable();
+    refreshItemsTable();
+  });
+
+  // Đóng modal khi nhấn phím ESC
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      closeCreateModal();
+      closeEditModal();
     }
   });
 </script>

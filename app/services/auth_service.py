@@ -50,17 +50,23 @@ def authenticate_user(db: Session, credentials: UserLogin) -> dict:
             detail="Tài khoản này đã bị tạm khóa bởi Quản trị viên."
         )
 
+    # Đăng ký session ID mới cho người dùng (Chặn trùng lặp phiên - Single Session)
+    from app.core.session_manager import session_manager
+    sid = session_manager.register_session(user.TenDangNhap)
+
     # Tạo JWT token
     token_payload = {
         "sub": user.TenDangNhap,
         "mand": user.MaND,
         "vaitro": user.VaiTro,
-        "hoten": user.HoTen
+        "hoten": user.HoTen,
+        "sid": sid
     }
     access_token = create_access_token(token_payload)
 
     return {
         "access_token": access_token,
         "token_type": "bearer",
-        "user": user
+        "user": user,
+        "sid": sid
     }

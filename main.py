@@ -20,7 +20,27 @@ from scripts.seed import seed_database
 
 # Khởi tạo bảng CSDL và seed data nếu chưa có
 Base.metadata.create_all(bind=engine)
+try:
+    from sqlalchemy import text
+    with engine.connect() as _conn:
+        _cols = [c[1] for c in _conn.execute(text("PRAGMA table_info(nha_cung_cap)")).fetchall()]
+        if "TongTien" not in _cols:
+            _conn.execute(text("ALTER TABLE nha_cung_cap ADD COLUMN TongTien FLOAT DEFAULT 0.0"))
+            _conn.commit()
+except Exception as _e:
+    pass
+
 seed_database()
+
+# Chuẩn hóa và đồng bộ số dư Sổ Thẻ Kho & Tồn Kho khi khởi động máy chủ
+try:
+    from app.core.database import SessionLocal
+    from app.services.inventory_service import recalculate_and_sync_the_kho
+    _init_db = SessionLocal()
+    recalculate_and_sync_the_kho(_init_db)
+    _init_db.close()
+except Exception as _e:
+    print(f"[!] Warning on initial ledger sync: {_e}")
 
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import WebSocket, WebSocketDisconnect
@@ -46,6 +66,17 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.middleware("http")
+async def add_anti_cache_headers(request: Request, call_next):
+    """Bảo đảm trình duyệt luôn nhận số liệu tồn kho mới nhất, chống mất trạng thái hoặc hiển thị số dư cũ khi refresh."""
+    response = await call_next(request)
+    path = request.url.path
+    if path.startswith("/api/v1/") or path in ["/outbound", "/inbound", "/the-kho", "/hang-hoa", "/dashboard"]:
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
 
 # Gắn thư mục static và templates
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -86,42 +117,98 @@ async def websocket_inventory_endpoint(websocket: WebSocket):
         await ws_manager.disconnect(websocket)
 
 
+# Middleware kiểm soát truy cập và chống Cache cho SSR Web UI
+@app.middleware("http")
+async def auth_enforce_middleware(request: Request, call_next):
+    """
+    Bắt buộc người dùng vào web chưa đăng nhập phải chuyển hướng về /login (HTTP 302).
+    Đồng thời áp dụng Anti-Cache headers chống lưu bfcache trình duyệt.
+    """
+    path = request.url.path
+    public_paths = ["/", "/login", "/logout", "/register", "/docs", "/redoc", "/openapi.json", "/favicon.ico"]
+    is_public = (
+        path.startswith("/static")
+        or path.startswith("/api")
+        or path.startswith("/ws")
+        or path in public_paths
+    )
+
+    if not is_public:
+        token = request.cookies.get("access_token")
+        if token and token.startswith("Bearer "):
+            token = token[7:]
+
+        valid_user = False
+        if token:
+            from app.core.security import decode_access_token
+            from app.core.session_manager import session_manager
+            payload = decode_access_token(token)
+            if payload and payload.get("sub"):
+                username = payload.get("sub")
+                sid = payload.get("sid")
+                if session_manager.is_session_valid(username, sid):
+                    valid_user = True
+
+        if not valid_user:
+            redirect_res = RedirectResponse(url="/login", status_code=302)
+            redirect_res.delete_cookie(key="access_token", path="/", httponly=True, samesite="lax")
+            redirect_res.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+            redirect_res.headers["Pragma"] = "no-cache"
+            redirect_res.headers["Expires"] = "0"
+            return redirect_res
+
+    response = await call_next(request)
+
+    # Áp dụng anti-cache cho mọi trang HTML Web UI SSR
+    if not path.startswith("/static") and not path.startswith("/api"):
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+
+    return response
+
 # =============================================================================
 # WEB UI SSR ROUTES (GIAO DIỆN NGƯỜI DÙNG)
 # =============================================================================
 
 @app.get("/")
-def route_root(user = Depends(get_current_user_optional)):
-    """Chuyển hướng trang chủ: Nếu chưa đăng nhập thì đẩy ra giao diện đăng nhập /login ngay lập tức."""
-    if not user:
-        return RedirectResponse(url="/login", status_code=302)
-    return RedirectResponse(url="/dashboard", status_code=302)
+def route_root(request: Request, user = Depends(get_current_user_optional)):
+    """Trang chủ Landing Page toàn màn hình với nút Log In ở góc trên bên phải."""
+    return templates.TemplateResponse(
+        request=request,
+        name="landing.html",
+        context={"request": request, "user": user}
+    )
 
-@app.get("/logout")
 @app.post("/logout")
-def route_logout():
-    """Đăng xuất người dùng: Xóa cookie xác thực và chuyển hướng về trang Đăng nhập."""
+@app.get("/logout")
+def route_logout(user = Depends(get_current_user_optional)):
+    """Đăng xuất người dùng: Vô hiệu hóa session, xóa cookie và chuyển hướng về trang Đăng nhập."""
+    if user:
+        from app.core.session_manager import session_manager
+        session_manager.invalidate_session(user.TenDangNhap)
     response = RedirectResponse(url="/login", status_code=302)
     response.delete_cookie(key="access_token", path="/", httponly=True, samesite="lax")
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     return response
 
 @app.get("/login")
-def route_login(request: Request, user = Depends(get_current_user_optional)):
-    """Màn hình Đăng nhập."""
-    if user:
-        return RedirectResponse(url="/dashboard")
-    return templates.TemplateResponse(request=request, name="login.html")
+def route_login(request: Request):
+    """Màn hình Đăng nhập: Luôn hiển thị form đăng nhập, không tự động chuyển hướng để cho phép chọn/đổi tài khoản."""
+    response = templates.TemplateResponse(request=request, name="login.html")
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    return response
 
 @app.get("/register")
 def route_register():
     """Khóa đăng ký tự do — Hệ thống kho nội bộ chuyển hướng trực tiếp về trang đăng nhập."""
-    return RedirectResponse(url="/login")
+    return RedirectResponse(url="/login", status_code=302)
 
 @app.get("/dashboard")
 def route_dashboard(request: Request, db: Session = Depends(get_db), user = Depends(get_current_user_optional)):
     """Màn hình Dashboard Tổng quan v2.0 (Hình 4.6.1 Wireframe)."""
     if not user:
-        return RedirectResponse(url="/login")
+        return RedirectResponse(url="/login", status_code=302)
 
     kpis = get_dashboard_kpis(db)
     alerts = get_stock_alerts(db)
@@ -144,7 +231,7 @@ def route_dashboard(request: Request, db: Session = Depends(get_db), user = Depe
 def route_hang_hoa(request: Request, db: Session = Depends(get_db), user = Depends(get_current_user_optional)):
     """Màn hình Quản lý Danh mục Hàng hóa (CRUD SKU)."""
     if not user:
-        return RedirectResponse(url="/login")
+        return RedirectResponse(url="/login", status_code=302)
 
     items = get_all_hang_hoa(db)
     categories = db.query(NhomHang).all()
@@ -164,10 +251,11 @@ def route_hang_hoa(request: Request, db: Session = Depends(get_db), user = Depen
     )
 
 @app.get("/nha-cung-cap")
+@app.get("/suppliers")
 def route_nha_cung_cap(request: Request, db: Session = Depends(get_db), user = Depends(get_current_user_optional)):
-    """Màn hình Quản lý Nhà cung cấp (CRUD NCC & KPI)."""
+    """Màn hình Quản lý Nhà cung cấp (CRUD NCC & KPI, hỗ trợ cả /nha-cung-cap và /suppliers)."""
     if not user:
-        return RedirectResponse(url="/login")
+        return RedirectResponse(url="/login", status_code=302)
 
     suppliers = get_all_suppliers(db)
     kpis = get_supplier_kpis(db)
@@ -188,9 +276,9 @@ def route_nha_cung_cap(request: Request, db: Session = Depends(get_db), user = D
 def route_inbound(request: Request, db: Session = Depends(get_db), user = Depends(get_current_user_optional)):
     """Màn hình Lập Phiếu Nhập Kho (Hình 4.6.2 Wireframe)."""
     if not user:
-        return RedirectResponse(url="/login")
+        return RedirectResponse(url="/login", status_code=302)
     if user.VaiTro not in ["Admin", "Thukho"]:
-        return RedirectResponse(url="/dashboard?error=access_denied")
+        return RedirectResponse(url="/dashboard?error=access_denied", status_code=302)
 
     suppliers = get_all_suppliers(db)
 
@@ -209,9 +297,9 @@ def route_inbound(request: Request, db: Session = Depends(get_db), user = Depend
 def route_outbound(request: Request, db: Session = Depends(get_db), user = Depends(get_current_user_optional)):
     """Màn hình Lập Phiếu Xuất Kho & Chống Tồn Âm (Hình 4.6.3 Wireframe)."""
     if not user:
-        return RedirectResponse(url="/login")
+        return RedirectResponse(url="/login", status_code=302)
     if user.VaiTro not in ["Admin", "Thukho"]:
-        return RedirectResponse(url="/dashboard?error=access_denied")
+        return RedirectResponse(url="/dashboard?error=access_denied", status_code=302)
 
     return templates.TemplateResponse(
         request=request,
@@ -227,7 +315,7 @@ def route_outbound(request: Request, db: Session = Depends(get_db), user = Depen
 def route_the_kho(request: Request, db: Session = Depends(get_db), user = Depends(get_current_user_optional)):
     """Màn hình Tra Cứu Thẻ Kho Lũy Kế."""
     if not user:
-        return RedirectResponse(url="/login")
+        return RedirectResponse(url="/login", status_code=302)
 
     items = db.query(HangHoa).all()
     item_list = []

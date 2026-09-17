@@ -3,10 +3,11 @@ from fastapi import APIRouter, Depends, HTTPException, status, Response
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.core.security import get_current_active_user
+from app.core.security import get_current_active_user, get_current_user_optional
 from app.schemas.auth_schemas import UserRegister, UserLogin, UserOut, Token
 from app.services.auth_service import register_user, authenticate_user
 from app.models.inventory_models import NguoiDung
+from app.core.session_manager import session_manager
 
 router = APIRouter(prefix="/auth", tags=["Xác thực & Tài khoản (Auth)"])
 
@@ -19,11 +20,12 @@ def api_register(user_in: UserRegister, db: Session = Depends(get_db)):
 def api_login(user_in: UserLogin, response: Response, db: Session = Depends(get_db)):
     """Đăng nhập hệ thống bằng JSON body, cấp mã JWT Token và đặt Cookie xác thực."""
     auth_result = authenticate_user(db, user_in)
+
     # Ghi Cookie access_token để trình duyệt Web UI tự động nhận diện phiên đăng nhập
     response.set_cookie(
         key="access_token",
         value=f"Bearer {auth_result['access_token']}",
-        httponly=True,
+        httponly=False,
         max_age=60 * 60 * 24,
         samesite="lax"
     )
@@ -46,8 +48,10 @@ def api_get_me(current_user: NguoiDung = Depends(get_current_active_user)):
 
 @router.get("/logout")
 @router.post("/logout")
-def api_logout(response: Response):
-    """Đăng xuất và xóa Cookie xác thực."""
+def api_logout(response: Response, current_user = Depends(get_current_user_optional)):
+    """Đăng xuất và xóa Cookie xác thực, vô hiệu hóa session."""
+    if current_user:
+        session_manager.invalidate_session(current_user.TenDangNhap)
     response.delete_cookie(key="access_token", path="/", httponly=True, samesite="lax")
     return {"message": "Đăng xuất thành công."}
 

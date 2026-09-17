@@ -5,16 +5,16 @@ from sqlalchemy import update
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, status
-from app.models.inventory_models import PhieuXuat, ChiTietPhieuXuat, TonKho, TheKho, HangHoa
+from app.models.inventory_models import PhieuXuat, ChiTietPhieuXuat, TonKho, TheKho, HangHoa, NguoiDung
 from app.schemas.inventory_schemas import PhieuXuatCreate
 from app.core.datetime_utils import utc_now
 
 def execute_outbound_transaction(db: Session, phieu_in: PhieuXuatCreate, user_id: int) -> PhieuXuat:
     """
     Lập phiếu xuất kho Outbound có cơ chế khóa nguyên tử (Atomic SQL Decrement):
-    1. Tạo Master PhieuXuat (Mã tự sinh dạng PX-YYYYMMDD-UUID).
+    1. Kiểm tra tính hợp lệ của Người dùng và Người nhận.
     2. Với mỗi dòng hàng:
-       - Kiểm tra hàng hóa tồn tại trong danh mục.
+       - Kiểm tra hàng hóa tồn tại trong danh mục (Khóa ngoại).
        - Kiểm tra số dư tồn kho ban đầu.
        - Trừ tồn kho nguyên tử ở cấp CSDL (Atomic SQL Decrement với điều kiện SoLuongTon >= SoLuongXuat).
        - Nếu vi phạm (thiếu hàng / race condition), HỦY GIAO DỊCH (db.rollback) và trả về HTTP 400 Bad Request.
@@ -22,29 +22,78 @@ def execute_outbound_transaction(db: Session, phieu_in: PhieuXuatCreate, user_id
     3. Commit toàn vẹn (ACID All-or-Nothing).
     """
     try:
+        # 1. Kiểm tra khóa ngoại Người dùng (MaND)
+        user = db.query(NguoiDung).filter(NguoiDung.MaND == user_id).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Tài khoản người dùng (MaND={user_id}) không tồn tại trong hệ thống. Vui lòng đăng nhập lại."
+            )
+
+        # 2. Kiểm tra thông tin người nhận
+        if not phieu_in.NguoiNhan or not phieu_in.NguoiNhan.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Tên người hoặc đơn vị nhận hàng không được để trống."
+            )
+
+        # 3. Kiểm tra danh sách mặt hàng
+        if not phieu_in.items or len(phieu_in.items) == 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Phiếu xuất kho phải chứa ít nhất 1 mặt hàng."
+            )
+
         ma_px = f"PX-{datetime.now().strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}"
         phieu_xuat = PhieuXuat(
             MaPX=ma_px,
             NgayXuat=utc_now(),
             MaND=user_id,
-            NguoiNhan=phieu_in.NguoiNhan,
-            LyDoXuat=phieu_in.LyDoXuat
+            NguoiNhan=phieu_in.NguoiNhan.strip(),
+            LyDoXuat=phieu_in.LyDoXuat.strip() if phieu_in.LyDoXuat else None
         )
         db.add(phieu_xuat)
         db.flush()
 
+        # 4. Thẩm định và gom nhóm tổng số lượng xuất theo từng SKU
+        merged_items = {}
         for item in phieu_in.items:
-            # Kiểm tra hàng hóa trong danh mục
-            hh = db.query(HangHoa).filter(HangHoa.MaHH == item.MaHH).first()
+            if not item.MaHH or not item.MaHH.strip():
+                db.rollback()
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Mã hàng hóa trong chi tiết phiếu xuất không được để trống."
+                )
+
+            sku = item.MaHH.strip()
+            if item.SoLuongXuat is None or item.SoLuongXuat <= 0:
+                db.rollback()
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Số lượng xuất của mặt hàng [{sku}] phải lớn hơn 0 (hiện tại: {item.SoLuongXuat})."
+                )
+
+            hh = db.query(HangHoa).filter(HangHoa.MaHH == sku).first()
             if not hh:
                 db.rollback()
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"Mặt hàng [{item.MaHH}] không tồn tại trong danh mục."
+                    detail=f"Mặt hàng [{sku}] không tồn tại trong danh mục hàng hóa (vi phạm ràng buộc khóa ngoại)."
                 )
 
-            # Kiểm tra tồn kho có tồn tại không
-            ton_kho_record = db.query(TonKho).filter(TonKho.MaHH == item.MaHH).first()
+            merged_items[sku] = merged_items.get(sku, 0) + item.SoLuongXuat
+
+        if sum(merged_items.values()) <= 0:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Tổng số lượng hàng xuất kho phải lớn hơn 0."
+            )
+
+        # 2. Xử lý trừ kho nguyên tử và ghi sổ theo từng SKU duy nhất
+        for ma_hh, total_xuat in merged_items.items():
+            hh = db.query(HangHoa).filter(HangHoa.MaHH == ma_hh).first()
+            ton_kho_record = db.query(TonKho).filter(TonKho.MaHH == ma_hh).first()
             if not ton_kho_record:
                 db.rollback()
                 raise HTTPException(
@@ -52,55 +101,79 @@ def execute_outbound_transaction(db: Session, phieu_in: PhieuXuatCreate, user_id
                     detail=f"Mặt hàng [{hh.TenHH}] chưa từng có số dư trong kho."
                 )
 
+            # Lấy số dư lũy kế gần nhất từ Thẻ kho (hoặc Tồn kho hiện có)
+            latest_tk = (
+                db.query(TheKho)
+                .filter(TheKho.MaHH == ma_hh)
+                .order_by(TheKho.NgayGiaoDich.desc(), TheKho.MaTK.desc())
+                .first()
+            )
+            if latest_tk is not None:
+                current_balance = latest_tk.TonSauGiaoDich
+            else:
+                current_balance = ton_kho_record.SoLuongTon
+
+            if current_balance < total_xuat:
+                db.rollback()
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=(
+                        f"Mặt hàng [{hh.TenHH}] (Mã: {ma_hh}) không đủ tồn kho để xuất. "
+                        f"Tồn khả dụng trong kho: {current_balance}, "
+                        f"Yêu cầu xuất: {total_xuat}. "
+                        f"Giao dịch bị hủy hoàn toàn (Rollback) để bảo vệ tính toàn vẹn CSDL."
+                    )
+                )
+
+            new_ton = current_balance - total_xuat
+
             # THỰC HIỆN ATOMIC SQL DECREMENT CẤP CSDL CHỐNG RACE CONDITION
-            # Câu lệnh UPDATE chỉ thành công khi SoLuongTon >= SoLuongXuat
             stmt = (
                 update(TonKho)
-                .where(TonKho.MaHH == item.MaHH, TonKho.SoLuongTon >= item.SoLuongXuat)
+                .where(TonKho.MaHH == ma_hh, TonKho.SoLuongTon >= total_xuat)
                 .values(
-                    SoLuongTon=TonKho.SoLuongTon - item.SoLuongXuat,
+                    SoLuongTon=new_ton,
                     CapNhatCuoi=utc_now()
                 )
             )
             result = db.execute(stmt)
 
             if result.rowcount == 0:
-                db.rollback()
-                # Truy vấn lại số tồn hiện thực tại thời điểm lỗi
-                current_ton = db.query(TonKho.SoLuongTon).filter(TonKho.MaHH == item.MaHH).scalar()
-                current_ton_val = current_ton if current_ton is not None else 0
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=(
-                        f"Mặt hàng [{hh.TenHH}] (Mã: {item.MaHH}) không đủ tồn kho để xuất. "
-                        f"Tồn khả dụng trong kho: {current_ton_val}, "
-                        f"Yêu cầu xuất: {item.SoLuongXuat}. "
-                        f"Giao dịch bị hủy hoàn toàn (Rollback) để bảo vệ tính toàn vẹn CSDL."
+                if ton_kho_record.SoLuongTon < total_xuat:
+                    db.rollback()
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=(
+                            f"Mặt hàng [{hh.TenHH}] (Mã: {ma_hh}) không đủ tồn kho để xuất. "
+                            f"Tồn khả dụng trong kho: {ton_kho_record.SoLuongTon}, "
+                            f"Yêu cầu xuất: {total_xuat}. "
+                            f"Giao dịch bị hủy hoàn toàn (Rollback) để bảo vệ tính toàn vẹn CSDL."
+                        )
                     )
-                )
-
-            # Lấy số tồn mới sau khi trừ để ghi sổ Thẻ kho
-            new_ton = db.query(TonKho.SoLuongTon).filter(TonKho.MaHH == item.MaHH).scalar()
+                ton_kho_record.SoLuongTon = new_ton
+                ton_kho_record.CapNhatCuoi = utc_now()
+                db.flush()
 
             # Tạo chi tiết xuất kho
             ct = ChiTietPhieuXuat(
                 MaPX=ma_px,
-                MaHH=item.MaHH,
-                SoLuongXuat=item.SoLuongXuat
+                MaHH=ma_hh,
+                SoLuongXuat=total_xuat
             )
             db.add(ct)
             db.flush()
 
-            # Ghi Thẻ kho lưu vết biến động
+            # Ghi Thẻ kho lưu vết biến động với số dư lũy kế chính xác
             the_kho = TheKho(
                 NgayGiaoDich=utc_now(),
-                MaHH=item.MaHH,
+                MaHH=ma_hh,
                 MaChungTu=ma_px,
                 LoaiGiaoDich="XUAT",
-                SoLuongThayDoi=-item.SoLuongXuat,
+                SoLuongThayDoi=-total_xuat,
                 TonSauGiaoDich=new_ton
             )
             db.add(the_kho)
+            db.flush()
 
         # Commit toàn bộ giao dịch nguyên tử
         db.commit()
@@ -109,9 +182,17 @@ def execute_outbound_transaction(db: Session, phieu_in: PhieuXuatCreate, user_id
 
     except IntegrityError as ie:
         db.rollback()
+        err_orig = str(ie.orig) if hasattr(ie, "orig") else str(ie)
+        err_lower = err_orig.lower()
+        if "foreign key" in err_lower:
+            detail_msg = "Lỗi toàn vẹn CSDL: Vi phạm ràng buộc khóa ngoại (Foreign Key constraint). Vui lòng kiểm tra lại Hàng Hóa hoặc Tài Khoản lập phiếu."
+        elif "check" in err_lower or "soluongton" in err_lower:
+            detail_msg = "Lỗi toàn vẹn CSDL: Vi phạm ràng buộc số lượng tồn (Check constraint: Số lượng tồn không được âm)."
+        else:
+            detail_msg = f"Vi phạm ràng buộc cơ sở dữ liệu: {err_orig}"
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Vi phạm ràng buộc cơ sở dữ liệu (SoLuongTon >= 0): {str(ie.orig)}"
+            detail=detail_msg
         )
     except HTTPException:
         raise

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}SmartLogis AI - Quản Lý Kho Thông Minh{% endblock %}</title>
 
-  <!-- Script áp dụng Theme tức thời chống giật nhấp nháy FOUC -->
+  <!-- Script áp dụng Theme & Xác thực Session tức thời chống giật FOUC -->
   <script>
     (function() {
       try {
@@ -16,6 +16,39 @@
           document.documentElement.classList.remove('dark');
         }
       } catch (e) {}
+    })();
+
+    // Khai báo Context User do Máy chủ Render trực tiếp phục vụ Tab Session Guard
+    window.__CURRENT_USER__ = {
+      username: "{{ user.TenDangNhap if user else '' }}",
+      role: "{{ user.VaiTro if user else '' }}",
+      fullName: "{{ user.HoTen if user else '' }}"
+    };
+
+    // TAB SESSION INITIALIZER:
+    // 1. Nếu trang quản lý kho SSR không có user từ server -> Chuyển về /login
+    // 2. Nếu tab mới mở qua link -> Tự động khởi tạo phiên riêng cho tab từ thông tin xác thực hiện có
+    (function() {
+      try {
+        if (!window.__CURRENT_USER__.username) {
+          window.location.replace('/login');
+          return;
+        }
+        // Khởi tạo phiên của tab nếu mới mở từ link
+        if (!sessionStorage.getItem('smartlogis_tab_user')) {
+          sessionStorage.setItem('smartlogis_tab_user', window.__CURRENT_USER__.username);
+          sessionStorage.setItem('smartlogis_tab_role', window.__CURRENT_USER__.role);
+          sessionStorage.setItem('smartlogis_tab_fullname', window.__CURRENT_USER__.fullName);
+          var activeToken = localStorage.getItem('access_token');
+          if (activeToken) {
+            sessionStorage.setItem('access_token', activeToken);
+          }
+          var activeSid = localStorage.getItem('smartlogis_active_session_id');
+          if (activeSid) {
+            sessionStorage.setItem('smartlogis_tab_session_id', activeSid);
+          }
+        }
+      } catch(e) {}
     })();
   </script>
 
@@ -190,11 +223,6 @@
           <i class="fa-solid fa-right-from-bracket"></i>
           <span class="hidden md:inline">Đăng xuất</span>
         </a>
-        {% else %}
-        <a href="/login" class="text-xs bg-sky-600 hover:bg-sky-500 active:bg-sky-700 text-white font-bold px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-1.5 whitespace-nowrap">
-          <i class="fa-solid fa-right-to-bracket"></i>
-          <span>Đăng nhập</span>
-        </a>
         {% endif %}
       </div>
     </header>
@@ -211,5 +239,99 @@
   <script src="/static/js/app.js?v=20260909_6"></script>
   <script src="/static/js/websocket.js?v=20260909_6"></script>
   {% block extra_scripts %}{% endblock %}
+
+  <!-- CHẶN MỞ NHIỀU TAB CHO TÀI KHOẢN ADMIN (BROADCASTCHANNEL API) -->
+  {% if user and user.VaiTro == 'Admin' %}
+  <script>
+    (function() {
+      // Kiểm tra tính sẵn sàng của BroadcastChannel API trên trình duyệt
+      if (typeof window.BroadcastChannel === 'undefined') {
+        console.warn('[AdminTabLock] Trình duyệt không hỗ trợ BroadcastChannel API.');
+        return;
+      }
+
+      const CHANNEL_NAME = 'smartlogis_admin_tab_channel';
+      const adminChannel = new BroadcastChannel(CHANNEL_NAME);
+      const currentTabId = 'admin_tab_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+      let isTabBlocked = false;
+
+      // Hàm xử lý khóa thao tác và hiển thị thông báo chuyển hướng về /login
+      function blockOlderAdminTab() {
+        if (isTabBlocked) return;
+        isTabBlocked = true;
+
+        console.warn('[AdminTabLock] Phát hiện tab Admin mới mở. Đang khóa và chuyển hướng tab cũ...');
+
+        // Đóng kênh để không nhận tiếp các tín hiệu lặp
+        try { adminChannel.close(); } catch (e) {}
+
+        // Xóa thông tin phiên của tab cũ
+        try { sessionStorage.clear(); } catch (e) {}
+
+        // Hiển thị Modal Cảnh Báo Khóa Tab Admin
+        const modalHtml = `
+          <div id="adminDuplicateTabModal" class="fixed inset-0 z-[9999999] bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300">
+            <div class="bg-white dark:bg-slate-900 border-2 border-rose-500 rounded-2xl shadow-2xl max-w-md w-full p-6 text-center space-y-4">
+              <div class="w-16 h-16 rounded-full bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 mx-auto flex items-center justify-center text-3xl shadow-inner animate-bounce">
+                <i class="fa-solid fa-shield-halved"></i>
+              </div>
+              <h3 class="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">
+                Chặn Mở Đa Tab Admin
+              </h3>
+              <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+                Tài khoản <b class="text-rose-600 dark:text-rose-400">Quản trị viên (Admin)</b> vừa được mở ở một tab mới. Nhằm đảm bảo an toàn nghiệp vụ, hệ thống chỉ cho phép duy nhất <b>1 tab Admin</b> hoạt động tại một thời điểm.
+              </p>
+              <div class="bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 rounded-xl p-3 text-[11px] text-amber-800 dark:text-amber-300 text-left flex items-start gap-2">
+                <i class="fa-solid fa-triangle-exclamation text-amber-600 mt-0.5 flex-shrink-0"></i>
+                <span>Tab cũ này đã bị vô hiệu hóa và sẽ tự động chuyển hướng về trang Đăng nhập sau <b id="adminKickCountdown" class="font-bold text-rose-600">2</b> giây...</span>
+              </div>
+              <button onclick="window.location.replace('/login?reason=admin_duplicate_tab')"
+                class="w-full py-2.5 px-4 bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white font-bold rounded-xl text-xs transition shadow-md flex items-center justify-center gap-2 cursor-pointer">
+                <i class="fa-solid fa-right-from-bracket"></i>
+                <span>Chuyển Về Trang Đăng Nhập Ngay</span>
+              </button>
+            </div>
+          </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+        let countdown = 2;
+        const timer = setInterval(() => {
+          countdown--;
+          const el = document.getElementById('adminKickCountdown');
+          if (el) el.innerText = countdown;
+          if (countdown <= 0) {
+            clearInterval(timer);
+            window.location.replace('/login?reason=admin_duplicate_tab');
+          }
+        }, 1000);
+      }
+
+      // Lắng nghe tín hiệu phát từ các tab Admin khác
+      adminChannel.onmessage = function(event) {
+        const data = event.data;
+        if (!data || data.senderTabId === currentTabId) return;
+
+        if (data.type === 'NEW_ADMIN_TAB_ACTIVE') {
+          // Tab Admin mới mở -> Tab cũ này lập tức bị khóa và điều hướng về /login
+          blockOlderAdminTab();
+        }
+      };
+
+      // Ngay khi tab Admin này vừa nạp: Phát tín hiệu cho các tab cũ biết để nhường quyền
+      adminChannel.postMessage({
+        type: 'NEW_ADMIN_TAB_ACTIVE',
+        senderTabId: currentTabId,
+        username: "{{ user.TenDangNhap }}",
+        timestamp: Date.now()
+      });
+
+      // Đóng kết nối kênh khi đóng hoặc rời trang
+      window.addEventListener('beforeunload', () => {
+        try { adminChannel.close(); } catch (e) {}
+      });
+    })();
+  </script>
+  {% endif %}
 </body>
 </html>

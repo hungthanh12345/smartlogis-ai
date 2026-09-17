@@ -1,7 +1,8 @@
 # app/schemas/inventory_schemas.py
+import re
 from datetime import datetime
 from typing import List, Optional, Dict, Any
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, field_validator
 
 # --- Schema cho Danh mục & Nhóm Hàng & ĐVT ---
 class NhomHangOut(BaseModel):
@@ -53,12 +54,58 @@ class NhaCungCapCreate(BaseModel):
     DiaChi: Optional[str] = None
     SoDienThoai: Optional[str] = None
     Email: Optional[str] = None
+    TongTien: Optional[float] = Field(default=0.0, ge=0, description="Dòng tiền / Số tiền ban đầu")
+
+    @field_validator('SoDienThoai', mode='before')
+    @classmethod
+    def validate_phone(cls, v):
+        if v is None or (isinstance(v, str) and v.strip() == ''):
+            return v
+        v = str(v).strip()
+        if not re.match(r'^\d{8,15}$', v):
+            raise ValueError('Số điện thoại chỉ được chứa chữ số (8–15 ký tự số liên tiếp, không có dấu chấm, gạch ngang hay khoảng trắng).')
+        return v
+
+    @field_validator('Email', mode='before')
+    @classmethod
+    def validate_email(cls, v):
+        if v is None or (isinstance(v, str) and v.strip() == ''):
+            return v
+        v = str(v).strip()
+        if not re.match(r'^[a-zA-Z0-9_.+\-]+@[a-zA-Z0-9\-]+\.[a-zA-Z0-9\-.]+$', v):
+            raise ValueError('Email không đúng định dạng chuẩn (VD: ten@congty.com.vn).')
+        return v
 
 class NhaCungCapUpdate(BaseModel):
     TenNCC: str = Field(min_length=2, max_length=255)
     DiaChi: Optional[str] = None
     SoDienThoai: Optional[str] = None
     Email: Optional[str] = None
+    TongTien: Optional[float] = Field(default=None, ge=0, description="Dòng tiền / Số tiền cập nhật")
+
+    @field_validator('SoDienThoai', mode='before')
+    @classmethod
+    def validate_phone(cls, v):
+        if v is None or (isinstance(v, str) and v.strip() == ''):
+            return v
+        v = str(v).strip()
+        if not re.match(r'^\d{8,15}$', v):
+            raise ValueError('Số điện thoại chỉ được chứa chữ số (8–15 ký tự số liên tiếp, không có dấu chấm, gạch ngang hay khoảng trắng).')
+        return v
+
+    @field_validator('Email', mode='before')
+    @classmethod
+    def validate_email(cls, v):
+        if v is None or (isinstance(v, str) and v.strip() == ''):
+            return v
+        v = str(v).strip()
+        if not re.match(r'^[a-zA-Z0-9_.+\-]+@[a-zA-Z0-9\-]+\.[a-zA-Z0-9\-.]+$', v):
+            raise ValueError('Email không đúng định dạng chuẩn (VD: ten@congty.com.vn).')
+        return v
+
+class SupplierCashflowUpdate(BaseModel):
+    TongTien: float = Field(ge=0, description="Số tiền dòng tiền cần điều chỉnh (>= 0)")
+    GhiChu: Optional[str] = None
 
 class NhaCungCapOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -70,6 +117,7 @@ class NhaCungCapOut(BaseModel):
     Email: Optional[str] = None
     SoPhieuNhap: int = 0
     TongGiaTriNhap: float = 0.0
+    TongTien: Optional[float] = 0.0
     NgayNhapGanNhat: Optional[str] = None
 
 class LichSuPhieuNhapItem(BaseModel):
@@ -98,6 +146,7 @@ class NhaCungCapDetailOut(BaseModel):
     Email: Optional[str] = None
     SoPhieuNhap: int = 0
     TongGiaTriNhap: float = 0.0
+    TongTien: Optional[float] = 0.0
     NgayNhapGanNhat: Optional[str] = None
     LichSuNhap: List[LichSuPhieuNhap] = []
 
@@ -111,14 +160,15 @@ class SupplierKPIs(BaseModel):
 
 # --- Schema cho Phiếu Nhập ---
 class ChiTietNhapCreate(BaseModel):
-    MaHH: str
+    MaHH: str = Field(min_length=1, description="Mã hàng hóa không được để trống")
     SoLuongNhap: int = Field(gt=0, description="Số lượng nhập phải > 0")
-    DonGiaNhap: float = Field(ge=0, description="Đơn giá nhập không được âm")
+    DonGiaNhap: float = Field(gt=0, description="Đơn giá nhập phải > 0")
 
 class PhieuNhapCreate(BaseModel):
-    MaNCC: str
+    MaNCC: str = Field(min_length=1, description="Mã nhà cung cấp không được để trống")
     GhiChu: Optional[str] = None
     items: List[ChiTietNhapCreate] = Field(min_length=1, description="Phiếu phải có ít nhất 1 dòng hàng")
+    idempotency_key: Optional[str] = None
 
 class ChiTietNhapOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -150,6 +200,7 @@ class PhieuXuatCreate(BaseModel):
     NguoiNhan: str = Field(min_length=2, description="Tên người hoặc đơn vị nhận hàng")
     LyDoXuat: Optional[str] = None
     items: List[ChiTietXuatCreate] = Field(min_length=1, description="Phiếu phải có ít nhất 1 dòng hàng")
+    idempotency_key: Optional[str] = None
 
 class ChiTietXuatOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
