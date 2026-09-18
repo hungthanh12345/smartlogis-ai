@@ -1,6 +1,6 @@
 # app/api/v1/reports_router.py
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
@@ -18,11 +18,13 @@ router = APIRouter(prefix="/reports", tags=["Báo Cáo & Thẻ Kho (Reports)"])
 def api_get_the_kho(
     ma_hh: str, 
     limit: int = 100, 
+    from_date: Optional[str] = None,
+    to_date: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: NguoiDung = Depends(get_current_active_user)
 ):
     """Tra cứu lịch sử biến động Thẻ kho và tồn lũy kế của một mặt hàng (Yêu cầu đăng nhập)."""
-    return get_the_kho_by_item(db, ma_hh, limit=limit)
+    return get_the_kho_by_item(db, ma_hh, limit=limit, from_date=from_date, to_date=to_date)
 
 @router.get("/export/excel")
 def api_export_excel(

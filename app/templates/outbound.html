@@ -62,7 +62,7 @@
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div>
           <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Mã Phiếu Xuất</label>
-          <input type="text" readonly value="PX-TỰ-ĐỘNG-TẠO"
+          <input type="text" id="out-ma-px" readonly value="PX-TỰ-ĐỘNG-TẠO"
             class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono font-bold text-slate-600 dark:text-slate-300">
         </div>
 
@@ -452,9 +452,8 @@
 
   function addRowXuat(selectedHH = '', defaultQty = 1) {
     const tbody = document.getElementById('body-xuat');
-    const rowIdx = tbody.children.length + 1;
-    const tr = document.createElement('tr');
-    tr.className = 'hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition border-b border-slate-100 dark:border-slate-800';
+    const emptyRow = document.getElementById('empty-row-xuat');
+    if (emptyRow) emptyRow.remove();
 
     const existingSkus = Array.from(tbody.querySelectorAll('.sel-hh')).map(s => s.value);
     if (!selectedHH && availableItems.length > 0) {
@@ -462,12 +461,21 @@
       const inStockUnselected = availableItems.find(i => !existingSkus.includes(i.MaHH) && i.SoLuongTon > 0);
       const anyUnselected = availableItems.find(i => !existingSkus.includes(i.MaHH));
       if (!anyUnselected && !inStockUnselected) {
-        alert('Tất cả các mặt hàng trong kho đã có trong danh sách xuất. Bạn có thể tăng số lượng tại dòng tương ứng.');
+        window.showAppAlert({
+          title: 'Thông Báo',
+          message: 'Tất cả các mặt hàng trong kho đã có trong danh sách xuất. Bạn có thể tăng số lượng tại dòng tương ứng.',
+          icon: 'info',
+          confirmText: 'OK'
+        });
         return;
       }
       const chosen = inStockUnselected || anyUnselected || availableItems[0];
       selectedHH = chosen.MaHH;
     }
+
+    const rowIdx = tbody.querySelectorAll('tr:not(#empty-row-xuat)').length + 1;
+    const tr = document.createElement('tr');
+    tr.className = 'hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition border-b border-slate-100 dark:border-slate-800';
 
     let options = availableItems.map(item => 
       `<option value="${item.MaHH}" ${item.MaHH === selectedHH ? 'selected' : ''}>${item.MaHH} - ${item.TenHH} (Tồn: ${item.SoLuongTon})</option>`
@@ -483,13 +491,13 @@
       <td class="py-3 px-3 text-center text-slate-500 dark:text-slate-400 lbl-dvt w-16">-</td>
       <td class="py-3 px-3 text-center font-mono font-bold text-slate-800 dark:text-slate-200 lbl-ton w-28">-</td>
       <td class="py-3 px-3 w-32 min-w-[100px]">
-        <input type="number" min="1" value="${defaultQty}" class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-mono font-bold inp-qty text-slate-800 dark:text-slate-100" oninput="validateAllRows()">
+        <input type="number" min="1" value="${defaultQty}" class="w-full px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-mono font-bold inp-qty text-slate-800 dark:text-slate-100" oninput="validateAllRows()" onchange="checkStockAlert(this)">
       </td>
       <td class="py-3 px-3 text-center font-mono font-bold lbl-du-kien w-28">-</td>
       <td class="py-3 px-3 text-center lbl-status min-w-[180px]">-</td>
       <td class="py-3 px-3 text-center w-12">
         <button type="button" onclick="removeRow(this)" class="w-7 h-7 rounded-lg bg-rose-50 dark:bg-rose-950/80 hover:bg-rose-100 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 flex items-center justify-center transition cursor-pointer" title="Xóa dòng này">
-          <i class="fa-solid fa-trash text-[11px]"></i>
+          <i class="fa-solid fa-trash text-[11px] pointer-events-none"></i>
         </button>
       </td>
     `;
@@ -548,19 +556,67 @@
     validateAllRows();
   }
 
+  function getOrGenerateOutboundCode() {
+    const el = document.getElementById('out-ma-px');
+    if (el && el.value && el.value.startsWith('PX-') && el.value !== 'PX-TỰ-ĐỘNG-TẠO') {
+      return el.value;
+    }
+    const today = new Date();
+    const yyyymmdd = today.toISOString().slice(0, 10).replace(/-/g, '');
+    const rand = Math.random().toString(16).substring(2, 8).toUpperCase();
+    const code = `PX-${yyyymmdd}-${rand}`;
+    if (el) el.value = code;
+    return code;
+  }
+
+  async function checkStockAlert(inputEl) {
+    const tr = inputEl.closest('tr');
+    if (!tr) return;
+    const sel = tr.querySelector('.sel-hh');
+    if (!sel) return;
+    const sku = sel.value;
+    const item = availableItems.find(i => i.MaHH === sku);
+    if (!item) return;
+
+    const tbody = document.getElementById('body-xuat');
+    let totalReq = 0;
+    Array.from(tbody.children).forEach(r => {
+      const s = r.querySelector('.sel-hh');
+      if (s && s.value === sku) {
+        totalReq += (parseInt(r.querySelector('.inp-qty')?.value) || 0);
+      }
+    });
+
+    const tonKhaDung = item.SoLuongTon || 0;
+    if (totalReq > tonKhaDung) {
+      await window.showAppAlert({
+        title: 'Cảnh Báo Vi Phạm Ràng Buộc',
+        message: `Mặt hàng [${item.TenHH}] không đủ số lượng xuất. Tồn khả dụng: [${tonKhaDung}], Số lượng yêu cầu xuất: [${totalReq}]. Vui lòng điều chỉnh lại.`,
+        icon: 'warning',
+        confirmText: 'OK'
+      });
+    }
+  }
+
   function removeRow(btn) {
     const tbody = document.getElementById('body-xuat');
-    if (tbody.children.length <= 1) {
-      alert('Phiếu xuất kho phải có tối thiểu 1 mặt hàng.');
-      return;
+    if (!tbody) return;
+    const row = btn ? btn.closest('tr') : null;
+    if (row) {
+      row.remove();
     }
-    btn.closest('tr').remove();
-    Array.from(tbody.children).forEach((tr, i) => {
-      const sttEl = tr.querySelector('.row-stt') || tr.children[0];
-      if (sttEl) sttEl.innerText = i + 1;
-    });
+    const remainingRows = Array.from(tbody.querySelectorAll('tr:not(#empty-row-xuat)'));
+    if (remainingRows.length === 0) {
+      tbody.innerHTML = '<tr id="empty-row-xuat"><td colspan="8" class="py-8 text-center text-slate-400 dark:text-slate-500 italic"><i class="fa-solid fa-cart-arrow-down text-xl mb-1 block"></i>Chưa có mặt hàng nào. Bấm <b>"+ Thêm Mặt Hàng Xuất"</b> ở trên để chọn hàng xuất kho.</td></tr>';
+    } else {
+      remainingRows.forEach((tr, i) => {
+        const sttEl = tr.querySelector('.row-stt') || tr.children[0];
+        if (sttEl) sttEl.innerText = i + 1;
+      });
+    }
     validateAllRows();
   }
+  window.removeRow = removeRow;
 
   function validateAllRows() {
     const tbody = document.getElementById('body-xuat');
@@ -568,12 +624,23 @@
     const warningDetail = document.getElementById('negative-warning-detail');
     const submitBtn = document.getElementById('btn-submit-xuat');
 
+    const validRows = Array.from(tbody.querySelectorAll('tr:not(#empty-row-xuat)'));
+    if (validRows.length === 0) {
+      if (warningBanner) warningBanner.classList.add('hidden');
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.className = 'px-6 py-2.5 bg-slate-400 dark:bg-slate-700 text-white font-bold rounded-xl text-xs cursor-not-allowed opacity-70 flex items-center gap-2 whitespace-nowrap';
+        submitBtn.innerHTML = '<i class="fa-solid fa-lock"></i> <span>Chưa Có Mặt Hàng Xuất</span>';
+      }
+      return;
+    }
+
     let hasError = false;
     let errorDetails = [];
 
     // Tổng hợp số lượng yêu cầu xuất cho từng mã hàng (Multi-row aggregate validation)
     const totalRequestedPerSKU = {};
-    Array.from(tbody.children).forEach(tr => {
+    validRows.forEach(tr => {
       const sel = tr.querySelector('.sel-hh');
       if (!sel) return;
       const sku = sel.value;
@@ -582,7 +649,7 @@
       totalRequestedPerSKU[sku] = (totalRequestedPerSKU[sku] || 0) + qty;
     });
 
-    Array.from(tbody.children).forEach(tr => {
+    validRows.forEach(tr => {
       const sel = tr.querySelector('.sel-hh');
       if (!sel) return;
       const item = availableItems.find(i => i.MaHH === sel.value);
@@ -638,6 +705,7 @@
   function resetOutboundForm() {
     clearOutboundDraft();
     renewOutboundIdempotencyKey();
+    getOrGenerateOutboundCode();
     try { sessionStorage.removeItem('smartlogis_outbound_last_success'); } catch(e){}
     document.getElementById('out-nguoinhan').value = '';
     document.getElementById('out-lydo').value = '';
@@ -667,34 +735,87 @@
     const alertBox = document.getElementById('alert-banner');
 
     if (!nguoiNhan) {
-      alert('Vui lòng nhập tên người hoặc đơn vị nhận hàng.');
+      await window.showAppAlert({
+        title: 'Cảnh Báo',
+        message: 'Vui lòng nhập tên người hoặc đơn vị nhận hàng.',
+        icon: 'warning',
+        confirmText: 'OK'
+      });
       return;
     }
 
     const items = [];
     let hasInvalidQty = false;
+    const totalRequestedPerSKU = {};
+
     Array.from(tbody.children).forEach(tr => {
       const sel = tr.querySelector('.sel-hh');
       if (!sel) return;
       const ma_hh = sel.value;
       const qty = parseInt(tr.querySelector('.inp-qty').value) || 0;
       if (qty <= 0) hasInvalidQty = true;
+      totalRequestedPerSKU[ma_hh] = (totalRequestedPerSKU[ma_hh] || 0) + qty;
       items.push({ MaHH: ma_hh, SoLuongXuat: qty });
     });
 
     if (items.length === 0) {
-      alert('Vui lòng chọn ít nhất 1 mặt hàng để xuất kho.');
+      await window.showAppAlert({
+        title: 'Cảnh Báo',
+        message: 'Vui lòng chọn ít nhất 1 mặt hàng để xuất kho.',
+        icon: 'warning',
+        confirmText: 'OK'
+      });
       return;
     }
 
     if (hasInvalidQty) {
-      alert('Số lượng xuất phải lớn hơn 0.');
+      await window.showAppAlert({
+        title: 'Cảnh Báo',
+        message: 'Số lượng xuất phải lớn hơn 0.',
+        icon: 'warning',
+        confirmText: 'OK'
+      });
       return;
     }
 
     const totalOutQty = items.reduce((sum, it) => sum + it.SoLuongXuat, 0);
     if (totalOutQty <= 0) {
-      alert('Tổng số lượng xuất kho phải lớn hơn 0.');
+      await window.showAppAlert({
+        title: 'Cảnh Báo',
+        message: 'Tổng số lượng xuất kho phải lớn hơn 0.',
+        icon: 'warning',
+        confirmText: 'OK'
+      });
+      return;
+    }
+
+    // Kiểm tra ràng buộc chống tồn âm trước khi xác nhận
+    for (let sku of Object.keys(totalRequestedPerSKU)) {
+      const item = availableItems.find(i => i.MaHH === sku);
+      const tonKhaDung = item ? (item.SoLuongTon || 0) : 0;
+      const totalReq = totalRequestedPerSKU[sku] || 0;
+      if (totalReq > tonKhaDung) {
+        await window.showAppAlert({
+          title: 'Cảnh Báo Vi Phạm Ràng Buộc',
+          message: `Mặt hàng [${item ? item.TenHH : sku}] không đủ số lượng xuất. Tồn khả dụng: [${tonKhaDung}], Số lượng yêu cầu xuất: [${totalReq}]. Vui lòng điều chỉnh lại.`,
+          icon: 'warning',
+          confirmText: 'OK'
+        });
+        return;
+      }
+    }
+
+    // Popup xác nhận thực hiện xuất kho ACID
+    const maPX = getOrGenerateOutboundCode();
+    const confirmed = await window.showAppConfirm({
+      title: 'Xác Nhận Xuất Kho',
+      message: `Bạn có chắc chắn muốn xác nhận xuất kho cho phiếu [${maPX}]? Số lượng tồn thực tế sẽ được trừ ngay lập tức.`,
+      confirmText: 'Xác nhận xuất',
+      cancelText: 'Quay lại',
+      icon: 'warning',
+      isDestructive: false
+    });
+    if (!confirmed) {
       return;
     }
 
@@ -711,6 +832,7 @@
           'Idempotency-Key': idemKey
         },
         body: JSON.stringify({ 
+          MaPX: maPX,
           NguoiNhan: nguoiNhan, 
           LyDoXuat: lyDo, 
           items: items,
@@ -718,7 +840,23 @@
         })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || 'Lỗi xuất kho.');
+      if (!res.ok) {
+        const detailMsg = (typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail)) || 'Lỗi xuất kho.';
+        // Nếu backend phát hiện không đủ tồn kho
+        for (let sku of Object.keys(totalRequestedPerSKU)) {
+          const it = availableItems.find(i => i.MaHH === sku);
+          if (it && (detailMsg.includes(sku) || detailMsg.includes(it.TenHH))) {
+            await window.showAppAlert({
+              title: 'Cảnh Báo Vi Phạm Ràng Buộc',
+              message: `Mặt hàng [${it.TenHH}] không đủ số lượng xuất. Tồn khả dụng: [${it.SoLuongTon}], Số lượng yêu cầu xuất: [${totalRequestedPerSKU[sku]}]. Vui lòng điều chỉnh lại.`,
+              icon: 'warning',
+              confirmText: 'OK'
+            });
+            return;
+          }
+        }
+        throw new Error(detailMsg);
+      }
 
       // Xóa bản nháp và sinh idempotency key mới để phiên sau không trùng
       clearOutboundDraft();
@@ -732,16 +870,26 @@
         }));
       } catch (e) {}
 
+      // Popup thông báo thành công chuẩn hóa
+      await window.showAppAlert({
+        title: 'Thành Công',
+        message: `Xác nhận xuất kho thành công cho phiếu [${data.MaPX}].`,
+        icon: 'success',
+        confirmText: 'OK'
+      });
+
       // PRG (Post/Redirect/Get) Pattern:
-      // Chuyển hướng bằng location.replace sang GET /outbound?created=...
-      // Ngăn chặn hoàn toàn việc F5 / reload gửi lại POST request và nhân đôi thẻ kho
       window.location.replace('/outbound?created=' + encodeURIComponent(data.MaPX));
 
     } catch (err) {
+      await window.showAppAlert({
+        title: 'Thông Báo Lỗi',
+        message: err.message,
+        icon: 'error',
+        confirmText: 'OK'
+      });
+    } finally {
       isSubmittingOutbound = false;
-      alertBox.className = 'p-4 rounded-2xl text-xs font-semibold flex items-center gap-3 bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-300';
-      alertBox.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-rose-600 dark:text-rose-400 text-base"></i> ${err.message}`;
-      alertBox.classList.remove('hidden');
       btn.disabled = false;
       btn.innerHTML = '<i class="fa-solid fa-check"></i> <span>Xác Nhận Xuất Kho (ACID Transaction)</span>';
     }
@@ -835,7 +983,12 @@
 
       document.getElementById('modalDetailOutbound').classList.remove('hidden');
     } catch (e) {
-      alert('Lỗi: ' + e.message);
+      window.showAppAlert({
+        title: 'Thông Báo Lỗi',
+        message: 'Lỗi: ' + e.message,
+        icon: 'error',
+        confirmText: 'OK'
+      });
     }
   }
 

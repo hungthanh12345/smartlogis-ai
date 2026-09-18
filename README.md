@@ -129,13 +129,14 @@ run_app.bat
 
 =====================================================================
   MAY CHU DANG CHAY TAI:
-  - Giao dien Dang nhap:  http://127.0.0.1:8000
-  - Trang Gioi thieu:     http://127.0.0.1:8000/landing
-  - Tai lieu API:         http://127.0.0.1:8000/docs
+  - Trang Gioi thieu (Landing): http://127.0.0.1:8000/
+  - Giao dien Dang nhap:        http://127.0.0.1:8000/login
+  - Tai lieu API:               http://127.0.0.1:8000/docs
 
   TAI KHOAN DEMO:
-  - Admin:                 admin   / admin123
-  - Thu kho kiem Ke toan:  thukho  / thukho123
+  - Admin (Quan tri vien):        admin    / admin123
+  - Thu kho kiem Ke toan:         thukho   / thukho123
+  - Nhan vien kho (Staff):        nhanvien / nhanvien123
 =====================================================================
 ```
 
@@ -148,7 +149,7 @@ run_app.bat
 3. **Bước 3 - Mở trình duyệt:** 
    - Trên điện thoại, mở trình duyệt (Safari trên iPhone/iPad hoặc Chrome trên Android).
    - Nhập thẳng địa chỉ IP: `http://192.168.11.174` (không cần gõ cổng `:8000` vì Nginx đã lắng nghe tại Port 80 tiêu chuẩn).
-4. **Bước 4 - Đăng nhập:** Chọn tài khoản Quản trị viên (`admin` / `admin123`) hoặc Thủ kho kiêm Kế toán (`thukho` / `thukho123`).
+4. **Bước 4 - Đăng nhập:** Chọn tài khoản Quản trị viên (`admin` / `admin123`), Thủ kho kiêm Kế toán (`thukho` / `thukho123`) hoặc Nhân viên kho (`nhanvien` / `nhanvien123`).
 
 ---
 

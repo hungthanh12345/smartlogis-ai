@@ -568,6 +568,9 @@
 
   function addRowNhap(selectedHH = '', defaultQty = 1, defaultPrice = 0) {
     const tbody = document.getElementById('body-nhap');
+    const emptyRow = document.getElementById('empty-row-nhap');
+    if (emptyRow) emptyRow.remove();
+
     const rowIdx = tbody.children.length + 1;
     const tr = document.createElement('tr');
     tr.className = 'hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition';
@@ -579,7 +582,12 @@
     if (!selectedHH && availableItems.length > 0) {
       const firstAvailable = availableItems.find(i => !existingSkus.includes(i.MaHH));
       if (!firstAvailable) {
-        alert('Tất cả các mặt hàng trong danh mục đã có trong danh sách nhập. Bạn có thể tăng số lượng tại dòng tương ứng.');
+        window.showAppAlert({
+          title: 'Thông Báo',
+          message: 'Tất cả các mặt hàng trong danh mục đã có trong danh sách nhập. Bạn có thể tăng số lượng tại dòng tương ứng.',
+          icon: 'info',
+          confirmText: 'OK'
+        });
         return;
       }
       selectedHH = firstAvailable.MaHH;
@@ -606,7 +614,7 @@
       <td class="py-3 px-3 text-right font-mono font-bold text-sky-600 dark:text-sky-400 cell-total w-44 min-w-[150px]">0 VNĐ</td>
       <td class="py-3 px-3 text-center w-14">
         <button type="button" onclick="removeRow(this)" class="w-7 h-7 rounded-lg bg-rose-50 dark:bg-rose-950/80 hover:bg-rose-100 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 flex items-center justify-center transition cursor-pointer" title="Xóa dòng này">
-          <i class="fa-solid fa-trash text-[11px]"></i>
+          <i class="fa-solid fa-trash text-[11px] pointer-events-none"></i>
         </button>
       </td>
     `;
@@ -620,17 +628,22 @@
 
   function removeRow(btn) {
     const tbody = document.getElementById('body-nhap');
-    if (tbody.children.length <= 1) {
-      alert('Phiếu nhập kho phải có tối thiểu 1 mặt hàng.');
-      return;
+    const row = btn ? btn.closest('tr') : null;
+    if (row) {
+      row.remove();
     }
-    const row = btn.closest('tr');
-    row.remove();
-    Array.from(tbody.children).forEach((tr, idx) => {
-      tr.querySelector('.row-stt').innerText = idx + 1;
-    });
+    const remainingRows = Array.from(tbody.querySelectorAll('tr:not(#empty-row-nhap)'));
+    if (remainingRows.length === 0) {
+      tbody.innerHTML = '<tr id="empty-row-nhap"><td colspan="7" class="py-8 text-center text-slate-400 dark:text-slate-500 italic"><i class="fa-solid fa-cart-arrow-down text-xl mb-1 block"></i>Chưa có mặt hàng nào. Bấm <b>"+ Thêm Mặt Hàng"</b> ở trên để bắt đầu lập phiếu.</td></tr>';
+    } else {
+      remainingRows.forEach((tr, idx) => {
+        const stt = tr.querySelector('.row-stt');
+        if (stt) stt.innerText = idx + 1;
+      });
+    }
     calculateTotal();
   }
+  window.removeRow = removeRow;
 
   function handleHHChange(selectEl, checkDuplicate = true) {
     const val = selectEl.value;
@@ -730,11 +743,16 @@
 
     const btnSubmit = document.getElementById('btn-submit-nhap');
     if (btnSubmit) {
-      btnSubmit.disabled = (totalSKUs === 0 || totalQty === 0 || grandTotal <= 0 || hasInvalidLine);
-      if (hasInvalidLine || grandTotal <= 0) {
+      if (totalSKUs === 0) {
+        btnSubmit.disabled = true;
+        btnSubmit.className = 'px-6 py-2.5 bg-slate-400 dark:bg-slate-700 text-white font-bold rounded-xl text-xs cursor-not-allowed opacity-70 flex items-center gap-2 whitespace-nowrap';
+        btnSubmit.innerHTML = '<i class="fa-solid fa-lock"></i> <span>Chưa Có Mặt Hàng Nhập</span>';
+      } else if (hasInvalidLine || grandTotal <= 0) {
+        btnSubmit.disabled = true;
         btnSubmit.className = 'px-6 py-2.5 bg-slate-400 dark:bg-slate-700 text-white font-bold rounded-xl text-xs cursor-not-allowed opacity-70 flex items-center gap-2 whitespace-nowrap';
         btnSubmit.innerHTML = '<i class="fa-solid fa-lock"></i> <span>Khóa Lưu Phiếu (SL hoặc Đơn Giá ≤ 0)</span>';
       } else {
+        btnSubmit.disabled = false;
         btnSubmit.className = 'px-6 py-2.5 bg-sky-600 hover:bg-sky-500 active:bg-sky-700 text-white font-bold rounded-xl text-xs transition shadow-md flex items-center gap-2 cursor-pointer whitespace-nowrap';
         btnSubmit.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> <span>Xác Nhận Lưu Phiếu (ACID)</span>';
       }
@@ -767,18 +785,27 @@
     const alertBox = document.getElementById('alert-banner');
 
     if (!ncc) {
-      alert('Vui lòng chọn hoặc thêm nhà cung cấp.');
+      await window.showAppAlert({
+        title: 'Cảnh Báo',
+        message: 'Vui lòng chọn hoặc thêm nhà cung cấp.',
+        icon: 'warning',
+        confirmText: 'OK'
+      });
       return;
     }
 
     if (tbody.children.length === 0) {
-      alert('Vui lòng thêm ít nhất 1 mặt hàng vào phiếu nhập.');
+      await window.showAppAlert({
+        title: 'Cảnh Báo',
+        message: 'Vui lòng thêm ít nhất 1 mặt hàng vào phiếu nhập.',
+        icon: 'warning',
+        confirmText: 'OK'
+      });
       return;
     }
 
     const items = [];
-    let hasInvalidQty = false;
-    let hasInvalidPrice = false;
+    let invalidItemName = null;
 
     Array.from(tbody.children).forEach(tr => {
       const sel = tr.querySelector('.sel-hh');
@@ -790,24 +817,34 @@
       const qty = parseInt(inpQ.value) || 0;
       const price = parseFloat(inpP.value);
 
-      if (qty <= 0) hasInvalidQty = true;
-      if (isNaN(price) || price <= 0) hasInvalidPrice = true;
+      const opt = sel.options[sel.selectedIndex];
+      const ten_hh = opt ? (opt.getAttribute('data-name') || (opt.text ? opt.text.split('-')[1] : null) || ma_hh).trim() : ma_hh;
+
+      if ((qty <= 0 || isNaN(price) || price <= 0) && !invalidItemName) {
+        invalidItemName = ten_hh;
+      }
 
       items.push({ MaHH: ma_hh, SoLuongNhap: qty, DonGiaNhap: isNaN(price) ? 0 : price });
     });
 
-    if (hasInvalidQty) {
-      alert('Số lượng nhập của mọi mặt hàng phải là số nguyên dương lớn hơn 0.');
-      return;
-    }
-    if (hasInvalidPrice) {
-      alert('Đơn giá nhập của mọi mặt hàng phải lớn hơn 0 VNĐ.');
+    if (invalidItemName) {
+      await window.showAppAlert({
+        title: 'Cảnh Báo Nhập Liệu',
+        message: `Số lượng nhập và đơn giá nhập của mặt hàng [${invalidItemName}] phải lớn hơn 0.`,
+        icon: 'warning',
+        confirmText: 'OK'
+      });
       return;
     }
 
     const totalImportVal = items.reduce((sum, it) => sum + (it.SoLuongNhap * it.DonGiaNhap), 0);
     if (totalImportVal <= 0) {
-      alert('Tổng giá trị phiếu nhập kho phải lớn hơn 0 VNĐ.');
+      await window.showAppAlert({
+        title: 'Cảnh Báo',
+        message: 'Tổng giá trị phiếu nhập kho phải lớn hơn 0 VNĐ.',
+        icon: 'warning',
+        confirmText: 'OK'
+      });
       return;
     }
 
@@ -844,6 +881,14 @@
           itemCount: items.length
         }));
       } catch (e) {}
+
+      // Hiển thị popup thành công theo chuẩn yêu cầu
+      await window.showAppAlert({
+        title: 'Lưu Phiếu Thành Công',
+        message: `Tạo mới phiếu nhập kho [${data.MaPN}] thành công và đã cập nhật số lượng tồn thực tế.`,
+        icon: 'success',
+        confirmText: 'OK'
+      });
 
       // PRG (Post/Redirect/Get) Pattern:
       // Chuyển hướng sang GET /inbound?created=...
@@ -901,15 +946,51 @@
           <td class="py-3 px-3 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">${(pn.TongTien || 0).toLocaleString('vi-VN')} đ</td>
           <td class="py-3 px-3 text-slate-500 dark:text-slate-400 truncate max-w-[180px]" title="${pn.GhiChu || ''}">${pn.GhiChu || '--'}</td>
           <td class="py-3 px-3 text-center">
-            <button type="button" onclick="viewInboundDetail('${pn.MaPN}')" 
-              class="w-7 h-7 rounded-lg bg-sky-50 dark:bg-sky-950/80 text-sky-600 dark:text-sky-400 hover:bg-sky-100 flex items-center justify-center transition cursor-pointer mx-auto" title="Xem chi tiết phiếu">
-              <i class="fa-solid fa-eye text-xs"></i>
-            </button>
+            <div class="flex items-center justify-center gap-1.5">
+              <button type="button" onclick="viewInboundDetail('${pn.MaPN}')" 
+                class="w-7 h-7 rounded-lg bg-sky-50 dark:bg-sky-950/80 text-sky-600 dark:text-sky-400 hover:bg-sky-100 flex items-center justify-center transition cursor-pointer" title="Xem chi tiết phiếu">
+                <i class="fa-solid fa-eye text-xs"></i>
+              </button>
+              <button type="button" onclick="cancelPhieuNhap('${pn.MaPN}')" 
+                class="w-7 h-7 rounded-lg bg-rose-50 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 hover:bg-rose-100 flex items-center justify-center transition cursor-pointer" title="Hủy phiếu nhập kho">
+                <i class="fa-solid fa-trash-can text-xs pointer-events-none"></i>
+              </button>
+            </div>
           </td>
         </tr>
       `;
     }).join('');
   }
+
+  async function cancelPhieuNhap(ma_pn) {
+    if (!ma_pn) return;
+    let confirmed = false;
+    if (typeof window.showAppConfirm === 'function') {
+      confirmed = await window.showAppConfirm({
+        title: 'Xác Nhận Hủy Phiếu Nhập Kho',
+        message: `Bạn có chắc chắn muốn hủy phiếu nhập kho [${ma_pn}] này không? Hành động này không thể hoàn tác.`,
+        confirmText: 'Đồng ý',
+        cancelText: 'Huỷ',
+        icon: 'warning',
+        isDestructive: true
+      });
+    } else {
+      confirmed = confirm(`Bạn có chắc chắn muốn hủy phiếu nhập kho [${ma_pn}] này không? Hành động này không thể hoàn tác.`);
+    }
+    if (!confirmed) return;
+
+    if (typeof window.showAppAlert === 'function') {
+      await window.showAppAlert({
+        title: 'Thông Báo',
+        message: `Phiếu nhập kho [${ma_pn}] đã được ghi sổ kế toán và cập nhật số dư thẻ kho trong CSDL. Không thể hủy phiếu trực tiếp để đảm bảo tính toàn vẹn kiểm toán.`,
+        icon: 'info',
+        confirmText: 'OK'
+      });
+    } else {
+      alert(`Phiếu nhập kho [${ma_pn}] đã được ghi sổ kế toán và cập nhật số dư thẻ kho trong CSDL. Không thể hủy phiếu trực tiếp để đảm bảo tính toàn vẹn kiểm toán.`);
+    }
+  }
+  window.cancelPhieuNhap = cancelPhieuNhap;
 
   function filterInboundTable() {
     const q = (document.getElementById('searchInboundInput').value || '').toLowerCase().trim();
@@ -938,20 +1019,22 @@
         return `
           <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
             <td class="py-2 px-3 text-center text-slate-400 font-mono">${i + 1}</td>
-            <td class="py-2 px-3">
-              <span class="font-mono font-bold text-sky-700 dark:text-sky-400 mr-1.5">[${it.MaHH}]</span>
-              <span class="font-semibold text-slate-800 dark:text-slate-200">${ten_hh}</span>
-            </td>
-            <td class="py-2 px-3 text-center font-bold text-slate-800 dark:text-slate-100 font-mono">${it.SoLuongNhap}</td>
-            <td class="py-2 px-3 text-right font-mono text-slate-600 dark:text-slate-400">${(it.DonGiaNhap || 0).toLocaleString('vi-VN')} đ</td>
-            <td class="py-2 px-3 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">${(it.ThanhTien || 0).toLocaleString('vi-VN')} đ</td>
+            <td class="py-2 px-3 font-semibold text-slate-800 dark:text-slate-200">${ten_hh} <span class="font-mono text-slate-400 font-normal">(${it.MaHH})</span></td>
+            <td class="py-2 px-3 text-center font-bold text-slate-900 dark:text-white font-mono">${it.SoLuongNhap}</td>
+            <td class="py-2 px-3 text-right font-mono">${it.DonGiaNhap.toLocaleString('vi-VN')} đ</td>
+            <td class="py-2 px-3 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">${(it.SoLuongNhap * it.DonGiaNhap).toLocaleString('vi-VN')} đ</td>
           </tr>
         `;
       }).join('');
 
       document.getElementById('modalDetailInbound').classList.remove('hidden');
     } catch (e) {
-      alert('Lỗi: ' + e.message);
+      await window.showAppAlert({
+        title: 'Thông Báo Lỗi',
+        message: 'Lỗi: ' + e.message,
+        icon: 'error',
+        confirmText: 'OK'
+      });
     }
   }
 
@@ -1008,6 +1091,16 @@
             return msg.startsWith('Value error, ') ? msg.substring('Value error, '.length) : msg;
           }).join('\n');
         }
+
+        if (res.status === 400 && (errStr.includes('đã tồn tại') || errStr.includes('tồn tại') || errStr.includes('MaNCC') || errStr.includes('Mã NCC'))) {
+          await window.showAppAlert({
+            title: 'Cảnh Báo Trùng Thông Tin',
+            message: `Mã nhà cung cấp [${payload.MaNCC}] hoặc Mã số thuế đã tồn tại trên hệ thống.`,
+            icon: 'warning',
+            confirmText: 'OK'
+          });
+          return;
+        }
         throw new Error(errStr);
       }
 
@@ -1025,9 +1118,19 @@
 
       handleSupplierSelectChange();
       closeQuickAddSupplierModal();
-      alert(`Đã thêm nhà cung cấp [${data.TenNCC}] thành công và chọn vào phiếu!`);
+      await window.showAppAlert({
+        title: 'Thành Công',
+        message: `Đã thêm nhà cung cấp [${data.TenNCC}] thành công và chọn vào phiếu!`,
+        icon: 'success',
+        confirmText: 'OK'
+      });
     } catch (err) {
-      alert('Lỗi: ' + err.message);
+      await window.showAppAlert({
+        title: 'Thông Báo Lỗi',
+        message: 'Lỗi: ' + err.message,
+        icon: 'error',
+        confirmText: 'OK'
+      });
     } finally {
       btn.disabled = false;
       btn.innerHTML = '<i class="fa-solid fa-check"></i> <span>Lưu & Chọn Ngay</span>';

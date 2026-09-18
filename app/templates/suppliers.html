@@ -319,10 +319,12 @@
                 <i class="fa-solid fa-pen-to-square text-xs"></i>
               </button>
               <!-- Xóa -->
-              <button onclick="confirmDeleteSupplier('{{ s.MaNCC }}', '{{ s.TenNCC|e }}')"
+              <button type="button" onclick="confirmDeleteSupplier(this)"
+                      data-mancc="{{ s.MaNCC }}"
+                      data-tenncc="{{ s.TenNCC|e }}"
                       title="Xóa đối tác"
                       class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-rose-50 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 hover:bg-rose-600 hover:text-white dark:hover:bg-rose-600 transition cursor-pointer">
-                <i class="fa-solid fa-trash-can text-xs"></i>
+                <i class="fa-solid fa-trash-can text-xs pointer-events-none"></i>
               </button>
               {% else %}
               <span class="text-[11px] text-slate-400 italic">Chỉ đọc</span>
@@ -1043,6 +1045,19 @@
       TongTien: parseFloat(document.getElementById('create_TongTien').value) || 0.0
     };
 
+    const existingRow = document.getElementById(`supplier-row-${payload.MaNCC}`);
+    if (existingRow) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Lưu Đối Tác';
+      await window.showAppAlert({
+        title: 'Cảnh Báo Trùng Thông Tin',
+        message: `Mã nhà cung cấp [${payload.MaNCC}] hoặc Mã số thuế đã tồn tại trên hệ thống.`,
+        icon: 'warning',
+        confirmText: 'OK'
+      });
+      return;
+    }
+
     try {
       const res = await fetch('/api/v1/kho/suppliers', {
         method: 'POST',
@@ -1051,7 +1066,17 @@
       });
       const data = await res.json();
       if (!res.ok) {
-        showToast(formatErrorMessage(data.detail, 'Không thể tạo nhà cung cấp'), 'error');
+        const detailStr = (typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail)) || '';
+        if (res.status === 400 && (detailStr.toLowerCase().includes('đã tồn tại') || detailStr.toLowerCase().includes('tồn tại') || detailStr.includes('MaNCC') || detailStr.includes('Mã NCC') || detailStr.includes('Mã'))) {
+          await window.showAppAlert({
+            title: 'Cảnh Báo Trùng Thông Tin',
+            message: `Mã nhà cung cấp [${payload.MaNCC}] hoặc Mã số thuế đã tồn tại trên hệ thống.`,
+            icon: 'warning',
+            confirmText: 'OK'
+          });
+        } else {
+          showToast(formatErrorMessage(data.detail, 'Không thể tạo nhà cung cấp'), 'error');
+        }
         btn.disabled = false;
         btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Lưu Đối Tác';
         return;
@@ -1120,7 +1145,17 @@
       });
       const data = await res.json();
       if (!res.ok) {
-        showToast(formatErrorMessage(data.detail, 'Không thể cập nhật đối tác'), 'error');
+        const detailStr = (typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail)) || '';
+        if (res.status === 400 && (detailStr.toLowerCase().includes('đã tồn tại') || detailStr.toLowerCase().includes('tồn tại') || detailStr.includes('MaNCC') || detailStr.includes('Mã NCC'))) {
+          await window.showAppAlert({
+            title: 'Cảnh Báo Trùng Thông Tin',
+            message: `Mã nhà cung cấp [${ma_ncc}] hoặc Mã số thuế đã tồn tại trên hệ thống.`,
+            icon: 'warning',
+            confirmText: 'OK'
+          });
+        } else {
+          showToast(formatErrorMessage(data.detail, 'Không thể cập nhật đối tác'), 'error');
+        }
         btn.disabled = false;
         btn.innerHTML = '<i class="fa-solid fa-check"></i> Lưu Cập Nhật';
         return;
@@ -1192,8 +1227,34 @@
   }
 
   // --- XÓA NCC VÀ KIỂM TRA RÀNG BUỘC ---
-  async function confirmDeleteSupplier(ma_ncc, ten_ncc) {
-    if (!confirm(`Bạn có chắc chắn muốn xóa đối tác:\n[${ten_ncc}] (${ma_ncc})?\n\nLƯU Ý: Không thể xóa đối tác nếu đã có phiếu nhập kho liên kết trong CSDL.`)) {
+  async function confirmDeleteSupplier(btnOrMa, maybeTen) {
+    let ma_ncc = '';
+    let ten_ncc = '';
+    const btn = (btnOrMa && typeof btnOrMa === 'object' && btnOrMa.closest) ? btnOrMa.closest('button') : btnOrMa;
+    if (btn && typeof btn === 'object') {
+      ma_ncc = (btn.getAttribute && btn.getAttribute('data-mancc')) || (btn.dataset && btn.dataset.mancc) || '';
+      ten_ncc = (btn.getAttribute && btn.getAttribute('data-tenncc')) || (btn.dataset && btn.dataset.tenncc) || '';
+    } else {
+      ma_ncc = btnOrMa || '';
+      ten_ncc = maybeTen || '';
+    }
+
+    if (!ma_ncc) return;
+
+    let confirmed = false;
+    if (typeof window.showAppConfirm === 'function') {
+      confirmed = await window.showAppConfirm({
+        title: 'Xác Nhận Xóa Đối Tác',
+        message: `Bạn có chắc chắn muốn xóa đối tác [${ten_ncc || ma_ncc}] (${ma_ncc}) khỏi danh mục?\nLƯU Ý: Không thể xóa đối tác nếu đã có phiếu nhập kho liên kết trong CSDL.`,
+        confirmText: 'Xác nhận xóa',
+        cancelText: 'Hủy',
+        icon: 'warning',
+        isDestructive: true
+      });
+    } else {
+      confirmed = confirm(`Bạn có chắc chắn muốn xóa đối tác [${ten_ncc || ma_ncc}] (${ma_ncc}) khỏi danh mục?`);
+    }
+    if (!confirmed) {
       return;
     }
 
@@ -1203,10 +1264,21 @@
       });
       const data = await res.json();
       if (!res.ok) {
-        showToast(data.detail || 'Không thể xóa nhà cung cấp', 'error');
+        if (typeof window.showAppAlert === 'function') {
+          await window.showAppAlert({
+            title: 'Thông Báo Lỗi',
+            message: data.detail || `Không thể xóa nhà cung cấp [${ten_ncc || ma_ncc}] (${ma_ncc}) do đã phát sinh phiếu nhập kho liên kết trong CSDL.`,
+            icon: 'error',
+            confirmText: 'OK'
+          });
+        } else {
+          alert(data.detail || `Không thể xóa nhà cung cấp [${ten_ncc || ma_ncc}] (${ma_ncc}) do đã phát sinh phiếu nhập kho liên kết trong CSDL.`);
+        }
         return;
       }
-      showToast(data.message || `Đã xóa nhà cung cấp [${ma_ncc}] thành công!`, 'success');
+      if (typeof showToast === 'function') {
+        showToast(data.message || `Đã xóa nhà cung cấp [${ma_ncc}] thành công!`, 'success');
+      }
       const row = document.getElementById(`supplier-row-${ma_ncc}`);
       if (row) {
         row.remove();
@@ -1214,9 +1286,19 @@
       }
       await refreshKPIs();
     } catch (err) {
-      showToast('Lỗi kết nối: ' + err.message, 'error');
+      if (typeof window.showAppAlert === 'function') {
+        await window.showAppAlert({
+          title: 'Thông Báo Lỗi',
+          message: 'Lỗi kết nối: ' + err.message,
+          icon: 'error',
+          confirmText: 'OK'
+        });
+      } else {
+        alert('Lỗi kết nối: ' + err.message);
+      }
     }
   }
+  window.confirmDeleteSupplier = confirmDeleteSupplier;
 
   // Đóng modal khi nhấn phím ESC
   document.addEventListener('keydown', function(e) {

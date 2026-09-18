@@ -52,11 +52,29 @@ def reset_and_seed_database(force_reset: bool = False):
 
     Base.metadata.create_all(bind=engine)
     db: Session = SessionLocal()
-
     try:
-        # Kiểm tra nếu đã có dữ liệu và không yêu cầu reset thì bỏ qua
-        existing_admin = db.query(NguoiDung).filter_by(TenDangNhap="admin").first()
-        if existing_admin and not force_reset:
+        # Kiểm tra nếu đã có dữ liệu và không yêu cầu reset thì bổ sung user thiếu rồi return
+        existing_nhom = db.query(NhomHang).first()
+        if existing_nhom and not force_reset:
+            default_accounts = [
+                ("admin", "admin123", "Nguyễn Thành Hưng (Quản Trị Viên)", "Admin"),
+                ("thukho", "thukho123", "Hoàng Tiến Đạt (Thủ Kho Kiêm Kế Toán)", "Thukho"),
+                ("nhanvien", "nhanvien123", "Nhân Viên Kho", "Nhanvien"),
+            ]
+            missing_user_added = False
+            for u_name, u_pass, u_full, u_role in default_accounts:
+                if not db.query(NguoiDung).filter_by(TenDangNhap=u_name).first():
+                    db.add(NguoiDung(
+                        TenDangNhap=u_name,
+                        MatKhau=get_password_hash(u_pass),
+                        HoTen=u_full,
+                        VaiTro=u_role,
+                        KichHoat=True
+                    ))
+                    missing_user_added = True
+            if missing_user_added:
+                db.commit()
+                print("[+] Da bo sung tai khoan demo con thieu (admin / thukho / nhanvien) vao CSDL.")
             print("[INFO] He thong da co du lieu. Su dung co '--reset' neu muon nap lai tu dau.")
             return
 

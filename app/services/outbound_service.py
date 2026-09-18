@@ -44,7 +44,7 @@ def execute_outbound_transaction(db: Session, phieu_in: PhieuXuatCreate, user_id
                 detail="Phiếu xuất kho phải chứa ít nhất 1 mặt hàng."
             )
 
-        ma_px = f"PX-{datetime.now().strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}"
+        ma_px = phieu_in.MaPX.strip().upper() if getattr(phieu_in, 'MaPX', None) and phieu_in.MaPX.strip() and phieu_in.MaPX.strip().upper() != "PX-TỰ-ĐỘNG-TẠO" else f"PX-{datetime.now().strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}"
         phieu_xuat = PhieuXuat(
             MaPX=ma_px,
             NgayXuat=utc_now(),

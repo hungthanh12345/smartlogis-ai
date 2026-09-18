@@ -197,6 +197,7 @@ class ChiTietXuatCreate(BaseModel):
     SoLuongXuat: int = Field(gt=0, description="Số lượng xuất phải > 0")
 
 class PhieuXuatCreate(BaseModel):
+    MaPX: Optional[str] = None
     NguoiNhan: str = Field(min_length=2, description="Tên người hoặc đơn vị nhận hàng")
     LyDoXuat: Optional[str] = None
     items: List[ChiTietXuatCreate] = Field(min_length=1, description="Phiếu phải có ít nhất 1 dòng hàng")

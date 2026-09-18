@@ -86,9 +86,17 @@
           </div>
         </div>
 
-        <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800/80 backdrop-blur-md border border-slate-700/80 text-xs font-semibold text-emerald-400">
-          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span>Hệ thống trực tuyến 24/7</span>
+        <div class="flex items-center gap-3">
+          <a href="/" id="bannerBackToLanding"
+            class="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-800/80 hover:bg-slate-700/80 backdrop-blur-md border border-slate-700/80 text-xs font-semibold text-slate-200 hover:text-white transition shadow-sm cursor-pointer"
+            title="Quay về Trang Giới Thiệu (Landing Page)">
+            <i class="fa-solid fa-arrow-left text-sky-400 text-xs"></i>
+            <span>Về Landing Page</span>
+          </a>
+          <div class="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-800/80 backdrop-blur-md border border-slate-700/80 text-xs font-semibold text-emerald-400">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span>Hệ thống trực tuyến 24/7</span>
+          </div>
         </div>
       </div>
 
@@ -149,28 +157,29 @@
     <!-- ========================================================================= -->
     <div class="w-full lg:w-5/12 xl:w-2/5 flex flex-col justify-between p-6 sm:p-10 lg:p-12 xl:p-14 bg-white dark:bg-slate-850 border-l border-slate-200/80 dark:border-slate-800 transition-colors">
       
-      <!-- Topbar cột phải: Logo thu nhỏ (mobile) & Nút Theme Switcher -->
-      <div class="flex items-center justify-between pb-6">
+      <!-- Topbar cột phải: Logo thu nhỏ (mobile), Nút Về Landing Page & Nút Theme Switcher -->
+      <div class="flex items-center justify-between pb-6 gap-2">
+        <!-- Nút Về Trang Giới Thiệu (Landing Page) -->
+        <a href="/" id="btnBackToLanding"
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-bold transition shadow-xs group cursor-pointer"
+          title="Quay về Trang Giới Thiệu (Landing Page)">
+          <i class="fa-solid fa-arrow-left text-sky-600 dark:text-sky-400 group-hover:-translate-x-0.5 transition-transform text-xs"></i>
+          <span>Về Trang Giới Thiệu</span>
+        </a>
+
         <!-- Logo hiển thị trên màn hình nhỏ hoặc mobile -->
-        <div class="flex items-center gap-2.5 lg:hidden">
-          <div class="w-9 h-9 rounded-xl bg-sky-600 text-white flex items-center justify-center text-lg shadow-sm">
+        <div class="flex items-center gap-2 sm:hidden">
+          <div class="w-8 h-8 rounded-xl bg-sky-600 text-white flex items-center justify-center text-sm shadow-xs">
             <i class="fa-solid fa-boxes-stacked"></i>
           </div>
-          <div>
-            <span class="font-extrabold text-sm text-slate-900 dark:text-white">SmartLogis AI</span>
-            <span class="text-[10px] block text-sky-600 dark:text-sky-400 font-bold">v2.0</span>
-          </div>
-        </div>
-        <div class="hidden lg:block text-xs font-semibold text-slate-400 dark:text-slate-400">
-          Cổng Xác Thực An Toàn
         </div>
 
         <!-- Nút chuyển đổi Dark / Light Mode hoàn thiện 100% -->
         <button type="button" id="themeToggleBtn" onclick="toggleDarkMode()"
-          class="theme-toggle-btn flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-amber-300 border border-slate-200 dark:border-slate-700 transition shadow-xs cursor-pointer"
+          class="theme-toggle-btn flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-amber-300 border border-slate-200 dark:border-slate-700 transition shadow-xs cursor-pointer"
           title="Chuyển đổi Giao diện Sáng / Tối">
           <i class="fa-solid fa-moon text-sky-600 text-sm"></i>
-          <span class="text-xs font-bold text-slate-700 dark:text-amber-300">Giao diện Tối</span>
+          <span class="text-xs font-bold text-slate-700 dark:text-amber-300 hidden sm:inline">Giao diện Tối</span>
         </button>
       </div>
 
@@ -234,6 +243,7 @@
               class="p-2.5 bg-slate-50 hover:bg-sky-50/70 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 rounded-xl text-xs text-center border border-slate-200 dark:border-slate-700 hover:border-sky-400 dark:hover:border-sky-500 transition cursor-pointer group shadow-2xs">
               <div class="font-bold text-sky-700 dark:text-sky-400 group-hover:text-sky-800 dark:group-hover:text-sky-300 truncate">Nguyễn Thành Hưng</div>
               <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium">Quản Trị Viên</div>
+              <div class="text-[9px] text-slate-400 dark:text-slate-500 font-mono mt-0.5 bg-slate-200/50 dark:bg-slate-900/50 rounded py-0.5">admin</div>
             </button>
 
             <!-- Tài khoản Thủ kho kiêm Kế toán: Hoàng Tiến Đạt -->
@@ -241,6 +251,7 @@
               class="p-2.5 bg-slate-50 hover:bg-emerald-50/70 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 rounded-xl text-xs text-center border border-slate-200 dark:border-slate-700 hover:border-emerald-400 dark:hover:border-emerald-500 transition cursor-pointer group shadow-2xs">
               <div class="font-bold text-emerald-700 dark:text-emerald-400 group-hover:text-emerald-800 dark:group-hover:text-emerald-300 truncate">Hoàng Tiến Đạt</div>
               <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium">Thủ Kho Kiêm KT</div>
+              <div class="text-[9px] text-slate-400 dark:text-slate-500 font-mono mt-0.5 bg-slate-200/50 dark:bg-slate-900/50 rounded py-0.5">thukho</div>
             </button>
 
             <!-- Tài khoản Nhân viên: Nhân Viên Kho (Staff) -->
@@ -248,11 +259,21 @@
               class="p-2.5 bg-slate-50 hover:bg-purple-50/70 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 rounded-xl text-xs text-center border border-slate-200 dark:border-slate-700 hover:border-purple-400 dark:hover:border-purple-500 transition cursor-pointer group shadow-2xs">
               <div class="font-bold text-purple-700 dark:text-purple-400 group-hover:text-purple-800 dark:group-hover:text-purple-300 truncate">Nhân Viên Kho</div>
               <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium">Nhân Sự Phụ Kho</div>
+              <div class="text-[9px] text-slate-400 dark:text-slate-500 font-mono mt-0.5 bg-slate-200/50 dark:bg-slate-900/50 rounded py-0.5">nhanvien</div>
             </button>
           </div>
         </div>
 
-        <div class="mt-6 text-center text-xs text-slate-500 dark:text-slate-400 flex items-center justify-center gap-1.5">
+        <!-- Nút quay lại Landing Page dưới khối đăng nhập -->
+        <div class="mt-5 text-center">
+          <a href="/" id="btnReturnToLandingBottom"
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 hover:bg-sky-50 dark:bg-slate-800 dark:hover:bg-slate-750 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 hover:text-sky-600 dark:text-slate-300 dark:hover:text-sky-400 transition cursor-pointer">
+            <i class="fa-solid fa-house text-sky-500 text-xs"></i>
+            <span>Quay lại Trang Giới Thiệu (Landing Page)</span>
+          </a>
+        </div>
+
+        <div class="mt-4 text-center text-xs text-slate-500 dark:text-slate-400 flex items-center justify-center gap-1.5">
           <i class="fa-solid fa-shield-halved text-sky-500"></i>
           <span>Cổng kho nội bộ — Tài khoản do Quản Trị Viên cấp phát</span>
         </div>
@@ -271,7 +292,7 @@
 
   </div>
 
-  <script src="/static/js/app.js?v=20260909_6"></script>
+  <script src="/static/js/app.js?v=20260918_v9"></script>
   <script>
     // Điền nhanh thông tin tài khoản demo
     function fillDemo(u, p) {

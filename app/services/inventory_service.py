@@ -184,10 +184,11 @@ def recalculate_and_sync_the_kho(db: Session, ma_hh: Optional[str] = None) -> di
         "synced_stock_count": synced_stock_count
     }
 
-def get_the_kho_by_item(db: Session, ma_hh: str, limit: int = 100) -> list:
+def get_the_kho_by_item(db: Session, ma_hh: str, limit: int = 100, from_date: Optional[str] = None, to_date: Optional[str] = None) -> list:
     """
     Tra cứu lịch sử thẻ kho của một mặt hàng cụ thể, đảm bảo số dư lũy kế (Running balance)
     tuân thủ nghiêm ngặt công thức: Tồn(N) = Tồn(N-1) +/- Số lượng biến động.
+    Hỗ trợ lọc theo khoảng ngày (from_date, to_date).
     """
     records = db.query(TheKho)\
         .filter(TheKho.MaHH == ma_hh)\
@@ -225,9 +226,24 @@ def get_the_kho_by_item(db: Session, ma_hh: str, limit: int = 100) -> list:
         except Exception:
             db.rollback()
 
-    if limit and len(records) > limit:
-        return records[-limit:]
-    return records
+    filtered_records = records
+    if from_date:
+        try:
+            from_dt = datetime.strptime(from_date.strip()[:10], "%Y-%m-%d").date()
+            filtered_records = [r for r in filtered_records if r.NgayGiaoDich.date() >= from_dt]
+        except Exception:
+            pass
+
+    if to_date:
+        try:
+            to_dt = datetime.strptime(to_date.strip()[:10], "%Y-%m-%d").date()
+            filtered_records = [r for r in filtered_records if r.NgayGiaoDich.date() <= to_dt]
+        except Exception:
+            pass
+
+    if limit and len(filtered_records) > limit:
+        return filtered_records[-limit:]
+    return filtered_records
 
 def get_all_phieu_nhap(db: Session, limit: int = 100, skip: int = 0) -> list:
     """Lấy danh sách phiếu nhập kho sắp xếp theo ngày nhập mới nhất."""

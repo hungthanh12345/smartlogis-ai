@@ -6,24 +6,63 @@
 {% block content %}
 <div class="max-w-5xl mx-auto space-y-6">
 
-  <!-- HỘP LỌC MẶT HÀNG TRA CỨU -->
-  <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 md:p-5 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4 transition">
-    <div class="flex items-center gap-3 w-full md:w-auto">
-      <label class="text-xs font-bold text-slate-700 dark:text-slate-300 flex-shrink-0 flex items-center gap-1.5">
-        <i class="fa-solid fa-boxes-stacked text-sky-600 dark:text-sky-400"></i>
-        <span>Chọn Mặt Hàng:</span>
-      </label>
-      <select id="sel-ma-hh" onchange="loadTheKho()"
-        class="px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-100 font-semibold focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 min-w-[280px] cursor-pointer">
-        {% for item in items %}
-        <option value="{{ item.MaHH }}" data-dvt="{{ item.MaDVT }}">{{ item.MaHH }} - {{ item.TenHH }} (Tồn: {{ item.SoLuongTon }} {{ item.MaDVT }})</option>
-        {% endfor %}
-      </select>
+  <!-- HỘP LỌC MẶT HÀNG & KHOẢNG NGÀY TRA CỨU -->
+  <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 md:p-5 shadow-xs space-y-4 transition">
+    <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+      <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+        <label class="text-xs font-bold text-slate-700 dark:text-slate-300 flex-shrink-0 flex items-center gap-1.5">
+          <i class="fa-solid fa-boxes-stacked text-sky-600 dark:text-sky-400"></i>
+          <span>Chọn Mặt Hàng:</span>
+        </label>
+        <select id="sel-ma-hh" onchange="loadTheKho(false)"
+          class="px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-100 font-semibold focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 min-w-[280px] cursor-pointer">
+          {% for item in items %}
+          <option value="{{ item.MaHH }}" data-dvt="{{ item.MaDVT }}">{{ item.MaHH }} - {{ item.TenHH }} (Tồn: {{ item.SoLuongTon }} {{ item.MaDVT }})</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+        <i class="fa-solid fa-clock-rotate-left text-sky-600 dark:text-sky-400"></i>
+        <span>Sổ thẻ kho cập nhật thời gian thực & bảo toàn số dư lũy kế</span>
+      </div>
     </div>
 
-    <div class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-      <i class="fa-solid fa-clock-rotate-left text-sky-600 dark:text-sky-400"></i>
-      <span>Hiển thị tối đa 50 giao dịch phát sinh gần nhất</span>
+    <!-- BỘ LỌC KHOẢNG THỜI GIAN -->
+    <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+        <span class="text-xs font-bold text-slate-600 dark:text-slate-400 flex items-center gap-1">
+          <i class="fa-regular fa-calendar-days text-sky-600 dark:text-sky-400"></i>
+          <span>Lọc khoảng ngày:</span>
+        </span>
+
+        <div class="flex items-center gap-1.5">
+          <span class="text-[11px] text-slate-500">Từ ngày</span>
+          <input type="date" id="filter-from-date"
+            class="px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-800 dark:text-slate-100 font-medium focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500">
+        </div>
+
+        <div class="flex items-center gap-1.5">
+          <span class="text-[11px] text-slate-500">Đến ngày</span>
+          <input type="date" id="filter-to-date"
+            class="px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-800 dark:text-slate-100 font-medium focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500">
+        </div>
+
+        <button type="button" onclick="loadTheKho(true)" id="btn-filter-the-kho"
+          class="px-3.5 py-1.5 bg-sky-600 hover:bg-sky-500 active:bg-sky-700 text-white font-bold rounded-lg text-xs transition shadow-xs flex items-center gap-1.5 cursor-pointer">
+          <i class="fa-solid fa-filter"></i>
+          <span>Lọc Sổ Thẻ Kho</span>
+        </button>
+
+        <button type="button" onclick="resetDateFilter()"
+          class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300 font-semibold rounded-lg text-xs transition border border-slate-200 dark:border-slate-700 flex items-center gap-1 cursor-pointer">
+          <i class="fa-solid fa-rotate-left"></i>
+          <span>Đặt lại</span>
+        </button>
+      </div>
+
+      <div id="filter-status-tag" class="hidden text-[11px] font-bold text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/60 border border-sky-200 dark:border-sky-800 px-2.5 py-1 rounded-lg">
+      </div>
     </div>
   </div>
 
@@ -88,18 +127,81 @@
     }
   }
 
-  async function loadTheKho() {
+  function formatDisplayDate(dateStr) {
+    if (!dateStr) return '';
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return dateStr;
+  }
+
+  function resetDateFilter() {
+    const fromInput = document.getElementById('filter-from-date');
+    const toInput = document.getElementById('filter-to-date');
+    if (fromInput) fromInput.value = '';
+    if (toInput) toInput.value = '';
+    const statusTag = document.getElementById('filter-status-tag');
+    if (statusTag) statusTag.classList.add('hidden');
+    loadTheKho(false);
+  }
+
+  async function loadTheKho(isManualFilter = false) {
     const sel = document.getElementById('sel-ma-hh');
     const ma_hh = sel.value;
     const tbody = document.getElementById('body-the-kho');
     const lblStock = document.getElementById('item-current-stock');
+    const fromInput = document.getElementById('filter-from-date');
+    const toInput = document.getElementById('filter-to-date');
+    const statusTag = document.getElementById('filter-status-tag');
+
+    const fromDate = fromInput ? fromInput.value.trim() : '';
+    const toDate = toInput ? toInput.value.trim() : '';
+
+    if (isManualFilter && fromDate && toDate && fromDate > toDate) {
+      await window.showAppAlert({
+        title: 'Cảnh Báo Nhập Liệu',
+        message: 'Ngày bắt đầu không được lớn hơn ngày kết thúc. Vui lòng kiểm tra lại.',
+        icon: 'warning',
+        confirmText: 'OK'
+      });
+      return;
+    }
+
+    if (statusTag) {
+      if (fromDate || toDate) {
+        statusTag.classList.remove('hidden');
+        statusTag.innerText = `Lọc: ${fromDate ? formatDisplayDate(fromDate) : 'Ban đầu'} ➔ ${toDate ? formatDisplayDate(toDate) : 'Hiện tại'}`;
+      } else {
+        statusTag.classList.add('hidden');
+      }
+    }
 
     try {
-      const res = await fetch(`/api/v1/reports/the-kho/${ma_hh}`);
+      let url = `/api/v1/reports/the-kho/${encodeURIComponent(ma_hh)}?limit=100`;
+      if (fromDate) url += `&from_date=${encodeURIComponent(fromDate)}`;
+      if (toDate) url += `&to_date=${encodeURIComponent(toDate)}`;
+
+      const res = await fetch(url);
       const data = await res.json();
 
       if (data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="py-10 text-center text-slate-400 dark:text-slate-500 italic">Chưa có giao dịch phát sinh cho mặt hàng này.</td></tr>';
+        if (isManualFilter || fromDate || toDate) {
+          const displayStart = fromDate ? formatDisplayDate(fromDate) : 'đầu kỳ';
+          const displayEnd = toDate ? formatDisplayDate(toDate) : formatDisplayDate(new Date().toISOString().slice(0, 10));
+
+          await window.showAppAlert({
+            title: 'Thông Báo Tìm Kiếm',
+            message: `Không tìm thấy dữ liệu thẻ kho phù hợp với điều kiện lọc từ ngày [${displayStart}] đến ngày [${displayEnd}].`,
+            icon: 'warning',
+            confirmText: 'OK'
+          });
+
+          tbody.innerHTML = `<tr><td colspan="6" class="py-10 text-center text-slate-400 dark:text-slate-500 italic">Không tìm thấy dữ liệu thẻ kho phù hợp với điều kiện lọc từ ngày [${displayStart}] đến ngày [${displayEnd}].</td></tr>`;
+        } else {
+          tbody.innerHTML = '<tr><td colspan="6" class="py-10 text-center text-slate-400 dark:text-slate-500 italic">Chưa có giao dịch phát sinh cho mặt hàng này.</td></tr>';
+        }
+
         lblStock.innerText = 'Tồn hiện thời: 0';
         const opt = sel.options[sel.selectedIndex];
         if (opt) {

@@ -183,21 +183,17 @@ async def auth_enforce_middleware(request: Request, call_next):
 # =============================================================================
 
 @app.get("/")
-def route_root(request: Request):
-    """Trang chủ root URL (/) trực tiếp trả về giao diện Đăng nhập (login.html) theo yêu cầu."""
-    response = templates.TemplateResponse(request=request, name="login.html")
-    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
-    return response
-
 @app.get("/landing")
 @app.get("/about")
-def route_landing(request: Request, user = Depends(get_current_user_optional)):
-    """Trang giới thiệu Landing Page toàn màn hình (chuyển từ root về /landing và /about)."""
-    return templates.TemplateResponse(
+def route_root_landing(request: Request, user = Depends(get_current_user_optional)):
+    """Trang chủ root URL (/) cùng /landing, /about hiển thị giao diện Giới thiệu (landing.html)."""
+    response = templates.TemplateResponse(
         request=request,
         name="landing.html",
         context={"request": request, "user": user}
     )
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    return response
 
 @app.post("/logout")
 @app.get("/logout")

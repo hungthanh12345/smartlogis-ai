@@ -376,8 +376,10 @@ def api_get_phieu_xuat_detail(
 def api_get_the_kho(
     ma_hh: str,
     limit: int = Query(100, ge=1, le=500),
+    from_date: Optional[str] = None,
+    to_date: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: NguoiDung = Depends(get_current_active_user)
 ):
     """Tra cứu lịch sử sổ thẻ kho của một mặt hàng (Admin, Thủ kho, Nhân viên)."""
-    return get_the_kho_by_item(db, ma_hh, limit=limit)
+    return get_the_kho_by_item(db, ma_hh, limit=limit, from_date=from_date, to_date=to_date)

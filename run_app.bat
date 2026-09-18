@@ -31,7 +31,7 @@ if not defined PYTHON_CMD (
 echo [+] Su dung Python: %PYTHON_CMD%
 echo.
 echo [2] Kiem tra du lieu CSDL kho...
-%PYTHON_CMD% -c "from app.core.database import SessionLocal; from app.models.inventory_models import NguoiDung; db=SessionLocal(); has_admin = db.query(NguoiDung).filter_by(TenDangNhap='admin').first() is not None; db.close(); exit(0 if has_admin else 1)" >nul 2>&1
+%PYTHON_CMD% -c "from app.core.database import SessionLocal; from app.models.inventory_models import NguoiDung; db=SessionLocal(); has_all = all(db.query(NguoiDung).filter_by(TenDangNhap=u).first() is not None for u in ['admin', 'thukho', 'nhanvien']); db.close(); exit(0 if has_all else 1)" >nul 2>&1
 if errorlevel 1 (
     echo [*] Dang tu dong nap du lieu mau [Demo Seeder]...
     %PYTHON_CMD% scripts\seed_data.py
@@ -43,13 +43,14 @@ if errorlevel 1 (
 echo.
 echo =====================================================================
 echo   MAY CHU DANG CHAY TAI:
-echo   - Giao dien Dang nhap:  http://127.0.0.1:8000
-echo   - Trang Gioi thieu:     http://127.0.0.1:8000/landing
-echo   - Tai lieu API:         http://127.0.0.1:8000/docs
+echo   - Trang Gioi thieu (Landing): http://127.0.0.1:8000/
+echo   - Giao dien Dang nhap:        http://127.0.0.1:8000/login
+echo   - Tai lieu API:               http://127.0.0.1:8000/docs
 echo.
 echo   TAI KHOAN DEMO:
-echo   - Admin:                 admin   / admin123
-echo   - Thu kho kiem Ke toan:  thukho  / thukho123
+echo   - Admin (Quan tri vien):        admin    / admin123
+echo   - Thu kho kiem Ke toan:         thukho   / thukho123
+echo   - Nhan vien kho (Staff):        nhanvien / nhanvien123
 echo =====================================================================
 echo.
 

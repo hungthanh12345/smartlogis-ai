@@ -125,10 +125,12 @@
                   title="Chỉnh sửa mặt hàng">
                   <i class="fa-solid fa-pen-to-square text-[11px]"></i>
                 </button>
-                <button type="button" onclick="deleteItem('{{ item.MaHH }}', '{{ item.TenHH }}')"
+                <button type="button" onclick="deleteItem(this)"
+                  data-ma="{{ item.MaHH }}"
+                  data-ten="{{ item.TenHH|e }}"
                   class="w-7 h-7 rounded-lg bg-rose-50 dark:bg-rose-950/80 hover:bg-rose-100 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 flex items-center justify-center transition cursor-pointer"
                   title="Xóa khỏi danh mục">
-                  <i class="fa-solid fa-trash text-[11px]"></i>
+                  <i class="fa-solid fa-trash text-[11px] pointer-events-none"></i>
                 </button>
               </div>
               {% else %}
@@ -295,6 +297,7 @@
 {% block extra_scripts %}
 <script>
   // Biến lưu trữ dữ liệu danh mục hiện thời trên giao diện
+  let allItemsData = [];
   let currentItemsData = [];
 
   function filterItemsTable() {
@@ -357,6 +360,7 @@
       const res = await fetch('/api/v1/kho/items');
       if (!res.ok) return;
       const items = await res.json();
+      allItemsData = items;
       currentItemsData = items;
 
       const tbody = document.getElementById('itemsTableBody');
@@ -415,10 +419,12 @@
                   <i class="fa-solid fa-pen text-[11px]"></i>
                 </button>
                 <button type="button" 
-                  onclick="deleteItem('${item.MaHH}', '${item.TenHH.replace(/'/g, "\\'")}')"
+                  onclick="deleteItem(this)"
+                  data-ma="${item.MaHH}"
+                  data-ten="${(item.TenHH || '').replace(/"/g, '&quot;')}"
                   class="w-7 h-7 rounded-lg bg-rose-50 dark:bg-rose-950/70 text-rose-600 dark:text-rose-400 hover:bg-rose-100 border border-rose-200 dark:border-rose-800 flex items-center justify-center transition cursor-pointer"
                   title="Xóa khỏi danh mục">
-                  <i class="fa-solid fa-trash text-[11px]"></i>
+                  <i class="fa-solid fa-trash text-[11px] pointer-events-none"></i>
                 </button>
               </div>
             </td>
@@ -454,6 +460,20 @@
       MoTa: document.getElementById('create_MoTa').value.trim()
     };
 
+    // Kiểm tra trùng mã SKU trước khi gửi hoặc khi nhận phản hồi từ server
+    const isDuplicate = allItemsData && allItemsData.some(it => (it.MaHH || '').toUpperCase() === payload.MaHH);
+    if (isDuplicate) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> <span>Lưu Mặt Hàng</span>';
+      await window.showAppAlert({
+        title: 'Cảnh Báo Trùng Mã',
+        message: `Mã SKU [${payload.MaHH}] đã tồn tại trong hệ thống. Vui lòng kiểm tra lại.`,
+        icon: 'warning',
+        confirmText: 'OK'
+      });
+      return;
+    }
+
     try {
       const res = await fetch('/api/v1/kho/items', {
         method: 'POST',
@@ -461,12 +481,29 @@
         body: JSON.stringify(payload)
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || 'Lỗi thêm hàng hóa');
+      if (!res.ok) {
+        const detailMsg = (typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail)) || '';
+        if (res.status === 400 && (detailMsg.toLowerCase().includes('đã tồn tại') || detailMsg.toLowerCase().includes('tồn tại'))) {
+          await window.showAppAlert({
+            title: 'Cảnh Báo Trùng Mã',
+            message: `Mã SKU [${payload.MaHH}] đã tồn tại trong hệ thống. Vui lòng kiểm tra lại.`,
+            icon: 'warning',
+            confirmText: 'OK'
+          });
+          return;
+        }
+        throw new Error(detailMsg || 'Lỗi thêm hàng hóa');
+      }
       
       closeCreateModal();
       await refreshItemsTable();
     } catch (err) {
-      alert('Lỗi: ' + err.message);
+      await window.showAppAlert({
+        title: 'Thông Báo Lỗi',
+        message: err.message,
+        icon: 'error',
+        confirmText: 'OK'
+      });
     } finally {
       btn.disabled = false;
       btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> <span>Lưu Mặt Hàng</span>';
@@ -496,12 +533,29 @@
         body: JSON.stringify(payload)
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || 'Lỗi cập nhật hàng hóa');
+      if (!res.ok) {
+        const detailMsg = (typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail)) || '';
+        if (res.status === 400 && (detailMsg.toLowerCase().includes('đã tồn tại') || detailMsg.toLowerCase().includes('tồn tại'))) {
+          await window.showAppAlert({
+            title: 'Cảnh Báo Trùng Mã',
+            message: `Mã SKU [${ma}] đã tồn tại trong hệ thống. Vui lòng kiểm tra lại.`,
+            icon: 'warning',
+            confirmText: 'OK'
+          });
+          return;
+        }
+        throw new Error(detailMsg || 'Lỗi cập nhật hàng hóa');
+      }
       
       closeEditModal();
       await refreshItemsTable();
     } catch (err) {
-      alert('Lỗi: ' + err.message);
+      await window.showAppAlert({
+        title: 'Thông Báo Lỗi',
+        message: err.message,
+        icon: 'error',
+        confirmText: 'OK'
+      });
     } finally {
       btn.disabled = false;
       btn.innerHTML = '<i class="fa-solid fa-check"></i> <span>Cập Nhật Mặt Hàng</span>';
@@ -509,8 +563,34 @@
   }
 
   // --- XÓA HÀNG HÓA ---
-  async function deleteItem(ma, ten) {
-    if (!confirm(`Bạn có chắc chắn muốn xóa mặt hàng [${ten}] (${ma}) khỏi danh mục?\nLưu ý: Chỉ xóa được khi chưa phát sinh phiếu nhập/xuất kho.`)) {
+  async function deleteItem(btnOrMa, maybeTen) {
+    let ma = '';
+    let ten = '';
+    const btn = (btnOrMa && typeof btnOrMa === 'object' && btnOrMa.closest) ? btnOrMa.closest('button') : btnOrMa;
+    if (btn && typeof btn === 'object') {
+      ma = (btn.getAttribute && btn.getAttribute('data-ma')) || (btn.dataset && btn.dataset.ma) || '';
+      ten = (btn.getAttribute && btn.getAttribute('data-ten')) || (btn.dataset && btn.dataset.ten) || '';
+    } else {
+      ma = btnOrMa || '';
+      ten = maybeTen || '';
+    }
+
+    if (!ma) return;
+
+    let confirmed = false;
+    if (typeof window.showAppConfirm === 'function') {
+      confirmed = await window.showAppConfirm({
+        title: 'Xác Nhận Xóa Mặt Hàng',
+        message: `Bạn có chắc chắn muốn xóa mặt hàng [${ten || ma}] (${ma}) khỏi danh mục?\nLưu ý: Chỉ xóa được khi chưa phát sinh phiếu nhập/xuất kho.`,
+        confirmText: 'Xác nhận xóa',
+        cancelText: 'Hủy',
+        icon: 'warning',
+        isDestructive: true
+      });
+    } else {
+      confirmed = confirm(`Bạn có chắc chắn muốn xóa mặt hàng [${ten || ma}] (${ma}) khỏi danh mục?`);
+    }
+    if (!confirmed) {
       return;
     }
 
@@ -519,17 +599,48 @@
         method: 'DELETE'
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || 'Lỗi xóa hàng hóa');
+      if (!res.ok) {
+        const detailMsg = (typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail)) || '';
+        if (typeof window.showAppAlert === 'function') {
+          await window.showAppAlert({
+            title: 'Thông Báo Lỗi',
+            message: `Không thể xóa mặt hàng [${ten || ma}] (${ma}) do đã phát sinh giao dịch nhập/xuất kho trong hệ thống.`,
+            icon: 'error',
+            confirmText: 'OK'
+          });
+        } else {
+          alert(`Không thể xóa mặt hàng [${ten || ma}] (${ma}) do đã phát sinh giao dịch nhập/xuất kho trong hệ thống.`);
+        }
+        return;
+      }
+      if (typeof showToast === 'function') {
+        showToast(data.message || `Đã xóa mặt hàng [${ma}] thành công!`, 'success');
+      }
       await refreshItemsTable();
     } catch (err) {
-      alert('Không thể xóa: ' + err.message);
+      if (typeof window.showAppAlert === 'function') {
+        await window.showAppAlert({
+          title: 'Thông Báo Lỗi',
+          message: `Không thể xóa mặt hàng [${ten || ma}] (${ma}) do đã phát sinh giao dịch nhập/xuất kho trong hệ thống.`,
+          icon: 'error',
+          confirmText: 'OK'
+        });
+      } else {
+        alert(`Không thể xóa mặt hàng [${ten || ma}] (${ma}) do đã phát sinh giao dịch nhập/xuất kho trong hệ thống.`);
+      }
     }
   }
+  window.deleteItem = deleteItem;
 
   // Tự động cập nhật số lượng tồn hoặc danh mục khi nhận WebSocket Event (TUYỆT ĐỐI KHÔNG RELOAD TRANG)
   window.reloadSkuTable = refreshItemsTable;
 
   window.addEventListener('smartlogis:inventory_updated', (e) => {
+    refreshItemsTable();
+  });
+
+  // Đảm bảo dữ liệu allItemsData luôn sẵn sàng khi DOM nạp xong
+  document.addEventListener('DOMContentLoaded', () => {
     refreshItemsTable();
   });
 
