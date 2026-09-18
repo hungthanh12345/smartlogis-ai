@@ -45,5 +45,5 @@ echo Nhấn phím bất kỳ để TỰ ĐỘNG KHỞI ĐỘNG SERVER và mở t
 pause >nul
 
 cd /d "%~dp0"
-start "SmartLogis AI Server" cmd /c "%~dp0start_server.bat"
+start "SmartLogis AI Server" cmd /c "%~dp0run_app.bat"
 exit

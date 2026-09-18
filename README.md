@@ -97,8 +97,7 @@ smartlogis-ai/
 │   └── test_phase2_inventory.py# Kiểm thử ACID, Concurrency Race Condition, RBAC
 ├── Dockerfile                  # Docker container build (Python 3.12-slim)
 ├── docker-compose.yml          # Triển khai đồng thời Backend & PostgreSQL
-├── run_app.bat                 # Script khởi chạy nhanh 1-click cho Windows
-├── start.sh                    # Script khởi chạy nhanh cho Linux/macOS
+├── run_app.bat                 # Script khởi chạy nhanh 1-click chính thức (Windows)
 ├── requirements.txt            # Danh sách thư viện Python
 └── README.md                   # Tài liệu hướng dẫn sử dụng
 ```
@@ -113,47 +112,31 @@ Hệ thống **SmartLogis AI** được thiết kế chuẩn hạ tầng Web Ser
 
 ---
 
-### 3.1. Khởi Chạy 1-Click Tự Động (1-Click Run Server)
+### 3.1. Khởi Chạy 1-Click Tự Động (1-Click Quickstart)
 
-#### A. Trên Windows:
 Nhấp đúp chuột vào file:
 ```cmd
-run_server.bat
+run_app.bat
 ```
-*Script tự động dò địa chỉ IP LAN thật của máy tính, khởi chạy toàn bộ 4 Containers qua Docker Compose và in bảng điều hướng truy cập trực quan:*
+*Script tự động kiểm tra môi trường Python/venv, nạp dữ liệu mẫu Seeder ban đầu nếu cần, khởi chạy máy chủ Uvicorn và tự động mở trình duyệt:*
 
 ```text
-===============================================================================
-           SMARTLOGIS AI - HE THONG QUAN LY KHO THONG MINH
-         PRODUCTION WEB SERVER & MULTI-DEVICE GATEWAY RUNNER
-===============================================================================
-[OK] Dia chi IP LAN may chu: 192.168.11.174
+=====================================================================
+          SMARTLOGIS AI - HE THONG QUAN LY KHO TICH HOP AI
+=====================================================================
+[+] Su dung Python: python
+[+] Co so du lieu da san sang!
 
-===============================================================================
-                     BANG HUONG DAN TRUY CAP HE THONG
-===============================================================================
- 1. TRUY CAP TU MAY CHU (Localhost):
-    * Web App (HTTP):       http://localhost
-    * Web App (HTTPS SSL):  https://localhost
+=====================================================================
+  MAY CHU DANG CHAY TAI:
+  - Giao dien Dang nhap:  http://127.0.0.1:8000
+  - Trang Gioi thieu:     http://127.0.0.1:8000/landing
+  - Tai lieu API:         http://127.0.0.1:8000/docs
 
- 2. TRUY CAP TU DIEN THOAI / TABLET (CUNG WI-FI / LAN):
-    * Dia chi Web:          http://192.168.11.174
-    * WebSocket Stream:     ws://192.168.11.174/ws/inventory
-
- 3. TRUY CAP QUA TEN MIEN SAN XUAT:
-    * HTTP:                 http://smartlogis-ai.com
-    * HTTPS (Bao mat SSL):  https://smartlogis-ai.com
-
- 4. CONG CU QUAN TRI & TAI LIEU KY THUAT:
-    * Quan tri CSDL:       http://localhost:5050 (pgAdmin 4)
-    * Tai lieu API Docs:   http://localhost/docs  hoac  http://192.168.11.174/docs
-===============================================================================
-```
-
-#### B. Trên Linux / macOS:
-```bash
-chmod +x run_server.sh
-./run_server.sh
+  TAI KHOAN DEMO:
+  - Admin:                 admin   / admin123
+  - Thu kho kiem Ke toan:  thukho  / thukho123
+=====================================================================
 ```
 
 ---

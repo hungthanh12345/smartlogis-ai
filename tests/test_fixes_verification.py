@@ -154,9 +154,6 @@ def test_7_scripts_reload_dir_applied():
     """9. Web tự reset nhưng data tự tăng -> Đã cấu hình --reload-dir app ở tất cả script"""
     files_to_check = [
         root_dir / "run_app.bat",
-        root_dir / "start.sh",
-        root_dir / "start_server.sh",
-        root_dir / "scripts" / "run.py",
         root_dir / "main.py"
     ]
     for f in files_to_check:
