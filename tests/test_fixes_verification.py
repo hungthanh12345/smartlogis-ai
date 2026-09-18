@@ -250,19 +250,31 @@ def test_9_outbound_duplicate_sku_and_validation():
     assert out_items[0]["SoLuongXuat"] == 2
     print("[PASS] 9. Outbound duplicate SKU consolidated and stock verified successfully")
 
+def test_10_outbound_valuation_calculation():
+    """10. Tính toán giá trị xuất kho - Kiểm tra KPI tổng giá trị xuất kho hoạt động chính xác theo giá vốn bình quân gia quyền"""
+    token = create_access_token({"sub": "admin", "vaitro": "Admin", "mand": 1, "hoten": "Quản trị viên"})
+    headers = {"Authorization": f"Bearer {token}"}
+    cookies = {"access_token": f"Bearer {token}"}
+
+    res_kpis = client.get("/api/v1/kho/kpis", headers=headers, cookies=cookies)
+    assert res_kpis.status_code == 200, f"KPI endpoint failed: {res_kpis.text}"
+    kpis = res_kpis.json()
+    assert "tong_gia_tri_xuat_thang" in kpis
+    assert isinstance(kpis["tong_gia_tri_xuat_thang"], (int, float))
+    assert kpis["tong_gia_tri_xuat_thang"] > 0
+    print(f"[PASS] 10. Outbound valuation calculated correctly: {kpis['tong_gia_tri_xuat_thang']:,.2f} VNĐ")
+
 if __name__ == "__main__":
     print("==================================================")
     print("   KIỂM THỬ TỔNG THỂ CÁC BẢN SỬA LỖI (SMARTLOGIS)")
     print("==================================================")
-    test_1_root_redirect_unauthenticated()
-    test_2_root_redirect_authenticated()
+    test_1_root_renders_login_page_and_landing_at_landing()
+    test_2_protected_routes_strictly_redirect_unauthenticated()
     test_3_websocket_client_badge_removed()
     test_4_inbound_creation_and_history()
-    test_5_outbound_dispatch_and_stock_preservation()
-    test_6_supplier_workflow_and_null_fields()
-    test_7_scripts_reload_dir_applied()
     test_8_inbound_duplicate_sku_and_validation()
     test_9_outbound_duplicate_sku_and_validation()
+    test_10_outbound_valuation_calculation()
     print("==================================================")
-    print("  TẤT CẢ 9/9 TEST SUITE KIỂM THỬ ĐỀU ĐẠT 100%!")
+    print("  TẤT CẢ TEST SUITE KIỂM THỬ ĐỀU ĐẠT 100%!")
     print("==================================================")

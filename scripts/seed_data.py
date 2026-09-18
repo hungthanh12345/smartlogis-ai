@@ -190,11 +190,26 @@ def reset_and_seed_database(force_reset: bool = False):
             )
             db.add(tk)
 
+        # Phiếu nhập khởi tạo danh mục ban đầu
+        pn_init = PhieuNhap(
+            MaPN="PN-KHOITAO-01",
+            NgayNhap=now - timedelta(days=45),
+            MaNCC="NCC-01",
+            MaND=admin_id,
+            TongTien=0.0,
+            GhiChu="Khởi tạo số dư kho ban đầu cho toàn bộ danh mục vật tư"
+        )
+        db.add(pn_init)
+        db.flush()
+
         # Theo dõi số dư lũy kế thực tế của từng SKU
         running_balances = {}
+        tong_tien_khoitao = 0.0
         for ma_hh, ten_hh, ma_nhom, ma_dvt, ton_min, ton_hientai, gia_nhap in skus_definition:
             init_stock = ton_hientai + 40
             running_balances[ma_hh] = init_stock
+            tt_item = init_stock * gia_nhap
+            tong_tien_khoitao += tt_item
 
             # Khởi tạo bản ghi Thẻ kho ban đầu (Cách đây 45 ngày)
             the_kho_init = TheKho(
@@ -207,6 +222,17 @@ def reset_and_seed_database(force_reset: bool = False):
             )
             db.add(the_kho_init)
 
+            # Chi tiết phiếu nhập khởi tạo lưu vết đơn giá nhập gốc phục vụ định giá xuất kho
+            ct_init = ChiTietPhieuNhap(
+                MaPN="PN-KHOITAO-01",
+                MaHH=ma_hh,
+                SoLuongNhap=init_stock,
+                DonGiaNhap=gia_nhap,
+                ThanhTien=tt_item
+            )
+            db.add(ct_init)
+
+        pn_init.TongTien = tong_tien_khoitao
         db.flush()
 
         print("[*] Dang tao cac giao dich Nhap/Xuat 30 ngay gan nhat phuc vu AI Burn-Rate...")

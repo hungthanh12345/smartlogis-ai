@@ -31,9 +31,39 @@ def get_dashboard_kpis(db: Session) -> dict:
     tong_px = db.query(func.count(PhieuXuat.MaPX)).scalar() or 0
     tong_giao_dich = tong_pn + tong_px
 
-    # 4. Giá trị xuất kho ước tính / thực tế
-    tong_gia_tri_nhap = db.query(func.sum(PhieuNhap.TongTien)).scalar() or 0.0
-    tong_gia_tri_xuat = 485600000.0 if tong_px > 0 else 0.0
+    # 4. Giá trị xuất kho ước tính / thực tế (Tính động theo giá vốn bình quân gia quyền từ ChiTietPhieuNhap)
+    # 4.1: Giá bình quân gia quyền từng mặt hàng từ ChiTietPhieuNhap
+    subq_item_price = db.query(
+        ChiTietPhieuNhap.MaHH,
+        (func.sum(ChiTietPhieuNhap.ThanhTien) / func.nullif(func.sum(ChiTietPhieuNhap.SoLuongNhap), 0)).label("item_avg_price")
+    ).group_by(ChiTietPhieuNhap.MaHH).subquery()
+
+    # 4.2: Giá bình quân gia quyền theo nhóm hàng (fallback nếu SKU chưa phát sinh phiếu nhập)
+    subq_cat_price = db.query(
+        HangHoa.MaNhom,
+        (func.sum(ChiTietPhieuNhap.ThanhTien) / func.nullif(func.sum(ChiTietPhieuNhap.SoLuongNhap), 0)).label("cat_avg_price")
+    ).join(HangHoa, ChiTietPhieuNhap.MaHH == HangHoa.MaHH).group_by(HangHoa.MaNhom).subquery()
+
+    # 4.3: Giá bình quân toàn hệ thống (fallback cấp 3)
+    system_avg_price = db.query(
+        func.sum(ChiTietPhieuNhap.ThanhTien) / func.nullif(func.sum(ChiTietPhieuNhap.SoLuongNhap), 0)
+    ).scalar() or 0.0
+
+    # 4.4: Phân cấp xác định đơn giá xuất: Giá SKU -> Giá Nhóm hàng -> Giá bình quân hệ thống -> 0.0
+    effective_price = func.coalesce(
+        subq_item_price.c.item_avg_price,
+        subq_cat_price.c.cat_avg_price,
+        float(system_avg_price),
+        0.0
+    )
+
+    val_xuat = db.query(
+        func.sum(ChiTietPhieuXuat.SoLuongXuat * effective_price)
+    ).join(HangHoa, ChiTietPhieuXuat.MaHH == HangHoa.MaHH)\
+     .outerjoin(subq_item_price, ChiTietPhieuXuat.MaHH == subq_item_price.c.MaHH)\
+     .outerjoin(subq_cat_price, HangHoa.MaNhom == subq_cat_price.c.MaNhom).scalar()
+
+    tong_gia_tri_xuat = round(float(val_xuat or 0.0), 2)
 
     return {
         "tong_sku": tong_sku,

@@ -43,15 +43,15 @@
     <!-- KPI 3: Tổng Giá Trị Xuất Tháng -->
     <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5 shadow-xs hover:shadow-md transition">
       <div class="flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-        <span>Tổng Giá Trị Xuất (Tháng 09)</span>
+        <span>Tổng Giá Trị Xuất Kho</span>
         <span class="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-sm">
           <i class="fa-solid fa-coins"></i>
         </span>
       </div>
-      <div class="text-3xl font-black text-slate-900 dark:text-white mt-2">{{ "{:,.1f}".format(kpis.tong_gia_tri_xuat_thang / 1000000) }} Tr</div>
+      <div class="text-3xl font-black text-slate-900 dark:text-white mt-2" id="kpi_tong_gia_tri_xuat">{{ "{:,.1f}".format(kpis.tong_gia_tri_xuat_thang / 1000000) }} Tr</div>
       <div class="text-xs text-emerald-600 dark:text-emerald-400 mt-2 flex items-center gap-1.5 font-semibold">
         <i class="fa-solid fa-arrow-trend-up text-[11px]"></i>
-        <span>Tăng 8.5% so với tháng trước</span>
+        <span>Giá vốn hàng xuất lũy kế</span>
       </div>
     </div>
 
@@ -65,9 +65,9 @@
       </div>
       <div class="text-3xl font-black text-slate-900 dark:text-white mt-2" id="kpi_giao_dich">{{ kpis.tong_giao_dich_thang }}</div>
       <div class="text-xs text-slate-500 dark:text-slate-400 mt-2 flex items-center gap-1 font-medium">
-        <span class="text-sky-600 dark:text-sky-400 font-bold">{{ kpis.tong_phieu_nhap }} Nhập</span>
+        <span class="text-sky-600 dark:text-sky-400 font-bold" id="kpi_phieu_nhap">{{ kpis.tong_phieu_nhap }} Nhập</span>
         <span>/</span>
-        <span class="text-emerald-600 dark:text-emerald-400 font-bold">{{ kpis.tong_phieu_xuat }} Xuất</span>
+        <span class="text-emerald-600 dark:text-emerald-400 font-bold" id="kpi_phieu_xuat">{{ kpis.tong_phieu_xuat }} Xuất</span>
       </div>
     </div>
 
@@ -604,10 +604,45 @@
     }
   };
 
+  // Tự động làm mới 4 chỉ số KPI Dashboard theo thời gian thực
+  window.refreshDashboardKPIs = async function() {
+    try {
+      const res = await fetch('/api/v1/kho/kpis');
+      if (!res.ok) return;
+      const data = await res.json();
+      
+      const elVal = document.getElementById('kpi_tong_gia_tri_xuat');
+      if (elVal && data.tong_gia_tri_xuat_thang !== undefined) {
+        const valTr = (data.tong_gia_tri_xuat_thang / 1000000).toLocaleString('vi-VN', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+        elVal.innerText = `${valTr} Tr`;
+      }
+
+      const elGd = document.getElementById('kpi_giao_dich');
+      if (elGd && data.tong_giao_dich_thang !== undefined) elGd.innerText = data.tong_giao_dich_thang;
+
+      const elPn = document.getElementById('kpi_phieu_nhap');
+      if (elPn && data.tong_phieu_nhap !== undefined) elPn.innerText = `${data.tong_phieu_nhap} Nhập`;
+
+      const elPx = document.getElementById('kpi_phieu_xuat');
+      if (elPx && data.tong_phieu_xuat !== undefined) elPx.innerText = `${data.tong_phieu_xuat} Xuất`;
+
+      const elAlert = document.getElementById('kpi_canh_bao');
+      if (elAlert && data.canh_bao_ton_min !== undefined) elAlert.innerText = data.canh_bao_ton_min;
+
+      const elSku = document.getElementById('kpi_tong_sku');
+      if (elSku && data.tong_sku !== undefined) elSku.innerText = data.tong_sku;
+    } catch (e) {
+      console.error('[Dashboard] Lỗi cập nhật KPIs realtime:', e);
+    }
+  };
+
   // Đăng ký nhận sự kiện realtime từ WebSocket
   window.addEventListener('smartlogis:inventory_updated', () => {
     if (typeof window.refreshStockAlertsTable === 'function') {
       window.refreshStockAlertsTable();
+    }
+    if (typeof window.refreshDashboardKPIs === 'function') {
+      window.refreshDashboardKPIs();
     }
   });
 </script>
