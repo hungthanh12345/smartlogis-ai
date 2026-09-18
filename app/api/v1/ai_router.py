@@ -11,14 +11,18 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.security import get_current_active_user
-from app.schemas.inventory_schemas import AIAdvisoryResponse, AIReportResponse
+from app.schemas.inventory_schemas import (
+    AIAdvisoryResponse, AIReportResponse,
+    AIChatRequest, AIChatResponse
+)
 from app.services.ai_service import (
     generate_ai_inventory_advisory,
     generate_full_ai_report,
     aggregate_warehouse_data_30d
 )
+from app.services.ai_chat_service import process_ai_chat_message
 
-router = APIRouter(prefix="/ai", tags=["Trợ Lý AI Gemini (Advisory & Reports)"])
+router = APIRouter(prefix="/ai", tags=["Trợ Lý AI Gemini (Advisory & Chat)"])
 
 
 @router.get("/advisory", response_model=AIAdvisoryResponse)
@@ -83,3 +87,29 @@ def api_generate_monthly_report_legacy(
 ):
     """Endpoint tương thích ngược chuyển hướng sang generate-report."""
     return generate_full_ai_report(db)
+
+
+@router.post("/chat", response_model=AIChatResponse)
+def api_ai_chat(
+    req: AIChatRequest,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_active_user)
+):
+    """
+    [TRỢ LÝ AI CHAT BOX]
+    Tương tác đàm thoại trực tiếp với Trợ lý AI:
+    - Tự động nạp và đối chiếu CSDL kho 30 ngày thời gian thực.
+    - Am hiểu quy trình vận hành: Chống tồn âm 2 tầng (Zero Negative Stock), ACID, RBAC 3 vai trò.
+    - Sinh báo cáo 3 phần hoặc trả lời tra cứu SKU, hàng thiếu hụt, hàng ứ đọng.
+    - Bảo mật tuyệt đối: 100% giá vốn nhạy cảm đã qua module Data Sanitizer.
+    - Hỗ trợ cơ chế Fallback nội bộ bảo đảm luôn phản hồi chính xác kể cả khi không có kết nối Gemini API.
+    """
+    try:
+        res = process_ai_chat_message(db, req.message, req.history)
+        return res
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Lỗi khi xử lý hội thoại AI: {str(e)}"
+        )
+

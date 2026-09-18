@@ -353,6 +353,27 @@ def route_the_kho(request: Request, db: Session = Depends(get_db), user = Depend
         }
     )
 
+@app.get("/ai-chat")
+def route_ai_chat(request: Request, db: Session = Depends(get_db), user = Depends(get_current_user_optional)):
+    """Màn hình Trợ Lý AI Chat Box chuyên dụng (Giao tiếp đàm thoại đồng bộ CSDL)."""
+    if not user:
+        return RedirectResponse(url="/login", status_code=302)
+
+    kpis = get_dashboard_kpis(db)
+    items_count = db.query(HangHoa).count()
+
+    return templates.TemplateResponse(
+        request=request,
+        name="ai_chat.html",
+        context={
+            "request": request,
+            "active_page": "ai-chat",
+            "user": user,
+            "kpis": kpis,
+            "items_count": items_count
+        }
+    )
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True, reload_dirs=["app"])

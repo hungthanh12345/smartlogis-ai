@@ -155,6 +155,23 @@
         <i class="fa-solid fa-file-invoice w-4 text-center text-sm"></i>
         <span>Tra Cứu Thẻ Kho</span>
       </a>
+
+      <!-- Phân hệ Trợ Lý AI Chat Box (Mới) -->
+      <div class="pt-3 pb-1 px-1">
+        <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-2.5 mb-1.5 flex items-center justify-between">
+          <span>Trí Tuệ Nhân Tạo</span>
+          <span class="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse"></span>
+        </div>
+        <a href="/ai-chat" class="flex items-center justify-between px-3.5 py-2.5 text-xs font-semibold rounded-xl text-slate-200 hover:bg-slate-800 hover:text-white transition group {% if active_page == 'ai-chat' %}nav-item-active{% endif %}" id="nav-item-ai-chat">
+          <div class="flex items-center gap-3">
+            <span class="w-6 h-6 rounded-lg bg-gradient-to-tr from-sky-500 via-indigo-500 to-purple-500 flex items-center justify-center text-white text-xs shadow-xs group-hover:scale-110 transition-transform">
+              <i class="fa-solid fa-robot"></i>
+            </span>
+            <span class="font-bold text-sky-400 group-hover:text-sky-300">Trợ Lý AI Chat</span>
+          </div>
+          <span class="text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md bg-sky-500/20 text-sky-300 border border-sky-500/30">Gemini</span>
+        </a>
+      </div>
     </nav>
 
     <!-- Sidebar Footer -->
@@ -486,6 +503,267 @@
         try { adminChannel.close(); } catch (e) {}
       });
     })();
+  </script>
+  {% endif %}
+
+  {% if user and active_page != 'ai-chat' %}
+  <!-- FLOATING AI CHAT WIDGET (Trợ lý AI nhanh trên mọi màn hình) -->
+  <div id="floatingAIChatContainer" class="fixed bottom-6 right-6 z-40 flex flex-col items-end">
+    <!-- Chat Drawer Popover -->
+    <div id="floatingChatDrawer" class="hidden mb-3 w-[380px] sm:w-[420px] max-w-[calc(100vw-32px)] h-[540px] max-h-[calc(100vh-120px)] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-200">
+      <!-- Header -->
+      <div class="px-4 py-3 bg-gradient-to-r from-sky-600 via-indigo-600 to-sky-700 text-white flex items-center justify-between shadow-xs">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-white/15 backdrop-blur-xs flex items-center justify-center text-white text-sm shadow-xs">
+            <i class="fa-solid fa-robot"></i>
+          </div>
+          <div class="leading-tight">
+            <div class="text-xs font-bold flex items-center gap-1.5">
+              <span>Trợ Lý SmartLogis AI</span>
+              <span class="text-[9px] bg-sky-300/30 text-sky-100 px-1 py-0.2 rounded font-mono font-normal">CSDL Live</span>
+            </div>
+            <div class="text-[10px] text-sky-100 flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span>Đồng bộ thời gian thực</span>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center gap-1">
+          <a href="/ai-chat" title="Mở trang đầy đủ" class="w-7 h-7 rounded-lg hover:bg-white/20 text-white/80 hover:text-white flex items-center justify-center text-xs transition">
+            <i class="fa-solid fa-up-right-from-square"></i>
+          </a>
+          <button type="button" onclick="toggleFloatingChat()" class="w-7 h-7 rounded-lg hover:bg-white/20 text-white/80 hover:text-white flex items-center justify-center text-xs transition cursor-pointer">
+            <i class="fa-solid fa-xmark text-sm"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick prompts chips -->
+      <div class="px-3 py-2 bg-slate-50 dark:bg-slate-850 border-b border-slate-200 dark:border-slate-800 flex items-center gap-1.5 overflow-x-auto text-[11px]">
+        <button type="button" onclick="sendQuickChatMessage('Báo cáo 3 phần')" class="whitespace-nowrap px-2.5 py-1 rounded-lg bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 font-medium hover:bg-sky-100 transition cursor-pointer">
+          📊 Báo cáo 3 phần
+        </button>
+        <button type="button" onclick="sendQuickChatMessage('Mặt hàng nào đang thiếu hụt?')" class="whitespace-nowrap px-2.5 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 font-medium hover:bg-rose-100 transition cursor-pointer">
+          ⚠️ Hàng thiếu hụt
+        </button>
+        <button type="button" onclick="sendQuickChatMessage('Hàng tồn kho lâu > 60 ngày')" class="whitespace-nowrap px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 font-medium hover:bg-amber-100 transition cursor-pointer">
+          📦 Hàng tồn lâu
+        </button>
+      </div>
+
+      <!-- Chat Feed -->
+      <div id="floatingChatMessages" class="flex-1 p-3.5 overflow-y-auto space-y-3 text-xs">
+        <!-- Tin nhắn chào đầu tiên -->
+        <div class="flex items-start gap-2.5">
+          <div class="w-7 h-7 rounded-lg bg-sky-100 dark:bg-sky-950/80 text-sky-600 dark:text-sky-400 flex items-center justify-center flex-shrink-0 text-xs mt-0.5 shadow-2xs">
+            <i class="fa-solid fa-robot"></i>
+          </div>
+          <div class="p-3 bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-2xl rounded-tl-xs leading-relaxed max-w-[88%] shadow-2xs">
+            Xin chào <b>{{ user.HoTen }}</b>! Tôi là Trợ lý SmartLogis AI. Dữ liệu kho hiện thời đã được đồng bộ hóa. Bạn cần tra cứu mặt hàng nào hoặc yêu cầu tạo báo cáo điều hành 3 phần?
+          </div>
+        </div>
+      </div>
+
+      <!-- Input Bar -->
+      <div class="p-2.5 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center gap-2">
+        <input type="text" id="floatingChatInput" placeholder="Nhập câu hỏi kho..." onkeydown="if(event.key==='Enter') sendFloatingChatMessage()"
+          class="flex-1 px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20">
+        <button type="button" onclick="sendFloatingChatMessage()" id="floatingChatSendBtn"
+          class="w-8 h-8 rounded-xl bg-sky-600 hover:bg-sky-500 text-white flex items-center justify-center text-xs shadow-xs transition cursor-pointer flex-shrink-0">
+          <i class="fa-solid fa-paper-plane"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Floating Circular Trigger Button -->
+    <button type="button" onclick="toggleFloatingChat()" id="floatingChatTriggerBtn"
+      class="group flex items-center gap-2 px-3.5 py-2.5 bg-gradient-to-r from-sky-600 via-indigo-600 to-purple-600 hover:from-sky-500 hover:to-purple-500 text-white rounded-full shadow-lg hover:shadow-xl transition-all transform hover:scale-105 cursor-pointer">
+      <div class="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs">
+        <i class="fa-solid fa-robot"></i>
+      </div>
+      <span class="text-xs font-bold tracking-wide pr-1">Hỏi Trợ Lý AI</span>
+      <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+    </button>
+  </div>
+
+  <script>
+    let floatingChatHistory = [];
+    let isFloatingChatOpen = false;
+
+    function toggleFloatingChat() {
+      const drawer = document.getElementById('floatingChatDrawer');
+      const input = document.getElementById('floatingChatInput');
+      if (!drawer) return;
+      isFloatingChatOpen = !isFloatingChatOpen;
+      if (isFloatingChatOpen) {
+        drawer.classList.remove('hidden');
+        if (input) setTimeout(() => input.focus(), 150);
+      } else {
+        drawer.classList.add('hidden');
+      }
+    }
+
+    function sendQuickChatMessage(txt) {
+      const input = document.getElementById('floatingChatInput');
+      if (input) {
+        input.value = txt;
+        sendFloatingChatMessage();
+      }
+    }
+
+    async function sendFloatingChatMessage() {
+      const input = document.getElementById('floatingChatInput');
+      const container = document.getElementById('floatingChatMessages');
+      const sendBtn = document.getElementById('floatingChatSendBtn');
+      if (!input || !container) return;
+
+      const userMsg = input.value.trim();
+      if (!userMsg) return;
+
+      input.value = '';
+
+      // Render User Bubble
+      const userHtml = `
+        <div class="flex items-start justify-end gap-2.5">
+          <div class="p-3 bg-sky-600 text-white rounded-2xl rounded-tr-xs leading-relaxed max-w-[88%] shadow-2xs font-medium">
+            ${escapeHtmlBasic(userMsg)}
+          </div>
+          <div class="w-7 h-7 rounded-lg bg-sky-600 text-white flex items-center justify-center flex-shrink-0 text-xs mt-0.5 shadow-2xs font-bold">
+            <i class="fa-solid fa-user"></i>
+          </div>
+        </div>
+      `;
+      container.insertAdjacentHTML('beforeend', userHtml);
+      container.scrollTop = container.scrollHeight;
+
+      // Render Thinking Indicator
+      const thinkingId = 'thinking_' + Date.now();
+      const thinkingHtml = `
+        <div class="flex items-start gap-2.5" id="${thinkingId}">
+          <div class="w-7 h-7 rounded-lg bg-sky-100 dark:bg-sky-950/80 text-sky-600 dark:text-sky-400 flex items-center justify-center flex-shrink-0 text-xs mt-0.5 shadow-2xs">
+            <i class="fa-solid fa-robot animate-bounce"></i>
+          </div>
+          <div class="p-3 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-2xl rounded-tl-xs italic text-[11px] flex items-center gap-1.5 shadow-2xs">
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            <span>Đang đối chiếu CSDL kho & phân tích...</span>
+          </div>
+        </div>
+      `;
+      container.insertAdjacentHTML('beforeend', thinkingHtml);
+      container.scrollTop = container.scrollHeight;
+
+      if (sendBtn) sendBtn.disabled = true;
+
+      try {
+        const token = sessionStorage.getItem('access_token') || localStorage.getItem('access_token') || '';
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = 'Bearer ' + token;
+
+        const res = await fetch('/api/v1/ai/chat', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({
+            message: userMsg,
+            history: floatingChatHistory
+          })
+        });
+
+        const thinkingEl = document.getElementById(thinkingId);
+        if (thinkingEl) thinkingEl.remove();
+
+        if (!res.ok) {
+          throw new Error('Máy chủ phản hồi mã lỗi: ' + res.status);
+        }
+
+        const data = await res.json();
+        const replyText = data.reply || 'Xin lỗi, không có phản hồi.';
+        
+        floatingChatHistory.push({ role: 'user', content: userMsg });
+        floatingChatHistory.push({ role: 'assistant', content: replyText });
+
+        const formattedReply = parseChatMarkdown(replyText);
+
+        const aiHtml = `
+          <div class="flex items-start gap-2.5">
+            <div class="w-7 h-7 rounded-lg bg-sky-100 dark:bg-sky-950/80 text-sky-600 dark:text-sky-400 flex items-center justify-center flex-shrink-0 text-xs mt-0.5 shadow-2xs">
+              <i class="fa-solid fa-robot"></i>
+            </div>
+            <div class="p-3 bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-2xl rounded-tl-xs leading-relaxed max-w-[88%] shadow-2xs space-y-1.5 overflow-x-auto">
+              ${formattedReply}
+              <div class="text-[9px] text-slate-400 pt-1 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                <span>${data.model_used || 'SmartLogis Engine'}</span>
+                ${data.is_fallback ? '<span class="text-amber-500 font-semibold">Local Grounded DB</span>' : '<span class="text-emerald-500 font-semibold">Gemini LLM</span>'}
+              </div>
+            </div>
+          </div>
+        `;
+        container.insertAdjacentHTML('beforeend', aiHtml);
+        container.scrollTop = container.scrollHeight;
+
+      } catch (err) {
+        const thinkingEl = document.getElementById(thinkingId);
+        if (thinkingEl) thinkingEl.remove();
+
+        const errHtml = `
+          <div class="flex items-start gap-2.5">
+            <div class="w-7 h-7 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center flex-shrink-0 text-xs mt-0.5">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div class="p-3 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 rounded-2xl rounded-tl-xs text-[11px] leading-relaxed max-w-[88%]">
+              Lỗi kết nối AI: ${err.message}. Vui lòng thử lại.
+            </div>
+          </div>
+        `;
+        container.insertAdjacentHTML('beforeend', errHtml);
+      } finally {
+        if (sendBtn) sendBtn.disabled = false;
+      }
+    }
+
+    function escapeHtmlBasic(text) {
+      return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    function parseChatMarkdown(md) {
+      if (!md) return '';
+      let html = escapeHtmlBasic(md);
+
+      // Markdown Tables
+      const tableRegex = /(\|.+?\|\n\|(?:\s*:?-+:?\s*\|)+\n(?:\|.+?\|\n?)+)/g;
+      html = html.replace(tableRegex, (match) => {
+        const rows = match.trim().split('\n');
+        if (rows.length < 3) return match;
+        const headers = rows[0].split('|').filter((c, i, a) => i > 0 && i < a.length - 1).map(c => c.trim());
+        const dataRows = rows.slice(2);
+        let tableHtml = '<div class="overflow-x-auto my-1.5"><table class="w-full text-[10.5px] border border-slate-200 dark:border-slate-700 border-collapse rounded-lg overflow-hidden">';
+        tableHtml += '<thead><tr class="bg-slate-200/70 dark:bg-slate-700/80 text-slate-700 dark:text-slate-200 font-bold">';
+        headers.forEach(h => tableHtml += `<th class="p-1.5 border border-slate-200 dark:border-slate-700">${h}</th>`);
+        tableHtml += '</tr></thead><tbody>';
+        dataRows.forEach(r => {
+          const cells = r.split('|').filter((c, i, a) => i > 0 && i < a.length - 1).map(c => c.trim());
+          tableHtml += '<tr class="border-b border-slate-200/50 dark:border-slate-700/50">';
+          cells.forEach(c => tableHtml += `<td class="p-1.5 border border-slate-200 dark:border-slate-700">${c}</td>`);
+          tableHtml += '</tr>';
+        });
+        tableHtml += '</tbody></table></div>';
+        return tableHtml;
+      });
+
+      // Bold & Italic
+      html = html.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+      html = html.replace(/\*(.+?)\*/g, '<i>$1</i>');
+      
+      // Inline code
+      html = html.replace(/`([^`]+)`/g, '<code class="px-1 py-0.2 bg-slate-200 dark:bg-slate-700 text-sky-700 dark:text-sky-300 rounded font-mono text-[10px]">$1</code>');
+
+      // Headings
+      html = html.replace(/### (.+?)(?:\n|$)/g, '<div class="font-bold text-xs text-sky-700 dark:text-sky-400 mt-2 mb-1">$1</div>');
+      html = html.replace(/#### (.+?)(?:\n|$)/g, '<div class="font-bold text-[11px] text-slate-800 dark:text-slate-200 mt-1.5 mb-0.5">$1</div>');
+
+      // Line breaks
+      html = html.replace(/\n/g, '<br>');
+      return html;
+    }
   </script>
   {% endif %}
 </body>

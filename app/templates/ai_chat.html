@@ -1,0 +1,352 @@
+{% extends "base.html" %}
+
+{% block title %}SmartLogis AI - Trợ Lý Kho AI Thông Minh{% endblock %}
+{% block header_title %}TRỢ LÝ KHO AI THỜI GIAN THỰC (GROUNDED GEMINI ASSISTANT){% endblock %}
+
+{% block content %}
+<div class="h-[calc(100vh-6.5rem)] flex flex-col max-w-6xl mx-auto space-y-4">
+
+  <!-- TOP STATUS & SYNC BAR -->
+  <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 shadow-xs flex flex-wrap items-center justify-between gap-4 flex-shrink-0 transition">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 via-indigo-500 to-purple-600 flex items-center justify-center text-white text-lg shadow-sm">
+        <i class="fa-solid fa-robot"></i>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h2 class="text-sm font-extrabold text-slate-800 dark:text-white">SmartLogis AI Conversational Engine</h2>
+          <span class="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>CSDL Live</span>
+          </span>
+        </div>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+          Đồng bộ thời gian thực từ <b class="text-sky-600 dark:text-sky-400">{{ items_count }} SKU</b> • <b class="text-rose-600 dark:text-rose-400">{{ kpis.canh_bao_ton_min }} cảnh báo</b> • Khử nhạy cảm giá vốn 100%
+        </p>
+      </div>
+    </div>
+
+    <!-- Right Controls -->
+    <div class="flex items-center gap-2">
+      <button type="button" onclick="clearFullChatSession()"
+        class="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer border border-slate-200 dark:border-slate-700 shadow-2xs">
+        <i class="fa-solid fa-trash-can text-slate-400"></i>
+        <span>Xóa Hội Thoại</span>
+      </button>
+      <a href="/dashboard"
+        class="px-3 py-1.5 rounded-xl bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 dark:hover:bg-sky-900/40 text-sky-700 dark:text-sky-300 text-xs font-semibold flex items-center gap-1.5 transition border border-sky-200 dark:border-sky-800 shadow-2xs">
+        <i class="fa-solid fa-chart-pie"></i>
+        <span>Về Dashboard</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- CHAT WINDOW CONTAINER -->
+  <div class="flex-1 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-xs flex flex-col min-h-0 overflow-hidden transition">
+
+    <!-- MESSAGES FEED -->
+    <div id="fullChatFeed" class="flex-1 p-5 md:p-6 overflow-y-auto space-y-4 text-xs min-h-0">
+      
+      <!-- Lời chào & Giới thiệu Năng lực -->
+      <div class="flex items-start gap-3">
+        <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 text-white flex items-center justify-center flex-shrink-0 text-sm mt-0.5 shadow-2xs">
+          <i class="fa-solid fa-robot"></i>
+        </div>
+        <div class="max-w-3xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/60 p-4 rounded-2xl rounded-tl-xs shadow-2xs text-slate-800 dark:text-slate-100 space-y-2">
+          <div class="font-bold text-sky-700 dark:text-sky-400 flex items-center gap-2">
+            <span>Xin chào {{ user.HoTen }}!</span>
+            <span class="text-[10px] font-normal text-slate-400">(@{{ user.TenDangNhap }} - {{ user.VaiTro }})</span>
+          </div>
+          <p class="leading-relaxed">
+            Tôi là <b>Trợ Lý Kho Thông Minh SmartLogis AI</b>. Toàn bộ số liệu vận hành kho của bạn đã được kết nối và đồng bộ trực tiếp với CSDL thời gian thực:
+          </p>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+            <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-700/60 p-2.5 rounded-xl">
+              <div class="text-[10px] font-bold text-slate-400 uppercase">Danh Mục Quản Lý</div>
+              <div class="text-sm font-extrabold text-sky-600 dark:text-sky-400 mt-0.5">{{ items_count }} SKU vật tư</div>
+            </div>
+            <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-700/60 p-2.5 rounded-xl">
+              <div class="text-[10px] font-bold text-slate-400 uppercase">Cảnh Báo Tồn Min</div>
+              <div class="text-sm font-extrabold text-rose-600 dark:text-rose-400 mt-0.5">{{ kpis.canh_bao_ton_min }} mặt hàng</div>
+            </div>
+            <div class="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-700/60 p-2.5 rounded-xl">
+              <div class="text-[10px] font-bold text-slate-400 uppercase">Bảo Mật Giá Vốn</div>
+              <div class="text-sm font-extrabold text-emerald-600 dark:text-emerald-400 mt-0.5">100% Sanitized</div>
+            </div>
+          </div>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400 pt-1">
+            Bạn có thể chọn nhanh các câu hỏi gợi ý bên dưới hoặc tự do nhập bất kỳ câu hỏi nào về tình trạng hàng hóa, số dư thẻ kho, hoặc kiến trúc an toàn của hệ thống.
+          </p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- QUICK PROMPTS BAR -->
+    <div class="px-5 py-2.5 bg-slate-50/80 dark:bg-slate-850/80 border-t border-slate-200/80 dark:border-slate-800 flex items-center gap-2 overflow-x-auto text-xs no-scrollbar flex-shrink-0">
+      <span class="text-[10px] font-bold text-slate-400 uppercase whitespace-nowrap flex items-center gap-1">
+        <i class="fa-solid fa-bolt text-amber-500"></i> Gợi ý:
+      </span>
+      <button type="button" onclick="sendPrompt('📊 Sinh báo cáo điều hành kho 3 phần')"
+        class="whitespace-nowrap px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800/80 font-medium hover:bg-sky-50 dark:hover:bg-sky-950/50 transition cursor-pointer shadow-2xs">
+        📊 Báo cáo 3 phần
+      </button>
+      <button type="button" onclick="sendPrompt('⚠️ Mặt hàng nào đang thiếu hụt nguy cấp?')"
+        class="whitespace-nowrap px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/80 font-medium hover:bg-rose-50 dark:hover:bg-rose-950/50 transition cursor-pointer shadow-2xs">
+        ⚠️ SKU thiếu hụt nguy cấp
+      </button>
+      <button type="button" onclick="sendPrompt('📦 Danh sách hàng tồn lâu > 60 ngày')"
+        class="whitespace-nowrap px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/80 font-medium hover:bg-amber-50 dark:hover:bg-amber-950/50 transition cursor-pointer shadow-2xs">
+        📦 Hàng tồn lâu > 60 ngày
+      </button>
+      <button type="button" onclick="sendPrompt('🚀 Top mặt hàng xuất kho nhiều nhất (Burn-rate)')"
+        class="whitespace-nowrap px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/80 font-medium hover:bg-purple-50 dark:hover:bg-purple-950/50 transition cursor-pointer shadow-2xs">
+        🚀 Xuất kho chạy nhất
+      </button>
+      <button type="button" onclick="sendPrompt('🛡️ Giải thích cơ chế chống tồn âm Zero Negative Stock')"
+        class="whitespace-nowrap px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/80 font-medium hover:bg-emerald-50 dark:hover:bg-emerald-950/50 transition cursor-pointer shadow-2xs">
+        🛡️ Cơ chế Zero Negative Stock
+      </button>
+      <button type="button" onclick="sendPrompt('Tra cứu mặt hàng HH-THEP-D08')"
+        class="whitespace-nowrap px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 font-medium hover:bg-slate-100 dark:hover:bg-slate-750 transition cursor-pointer shadow-2xs">
+        🔍 Tra cứu thép phi 8
+      </button>
+    </div>
+
+    <!-- INPUT BAR -->
+    <div class="p-4 bg-white dark:bg-slate-900 border-t border-slate-200/80 dark:border-slate-800 flex-shrink-0">
+      <form id="fullChatForm" onsubmit="event.preventDefault(); submitFullChatMessage();" class="flex items-end gap-2.5">
+        <div class="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-2 focus-within:ring-2 focus-within:ring-sky-500/20 focus-within:border-sky-500 transition shadow-2xs">
+          <textarea id="chatInputMessage" rows="1" placeholder="Nhập câu hỏi về tồn kho, xuất nhập, đề xuất nhập hàng..."
+            onkeydown="handleChatInputKey(event)"
+            class="w-full px-2 py-1 text-xs bg-transparent border-0 focus:outline-none text-slate-800 dark:text-slate-100 placeholder-slate-400 resize-none max-h-32 min-h-[28px]"></textarea>
+          <div class="flex items-center justify-between pt-1 px-2 border-t border-slate-200/50 dark:border-slate-700/50 text-[10px] text-slate-400">
+            <span>Nhấn <b>Enter</b> để gửi, <b>Shift + Enter</b> để xuống dòng</span>
+            <span class="font-mono text-sky-600 dark:text-sky-400 font-semibold">Grounded AI Engine</span>
+          </div>
+        </div>
+
+        <button type="submit" id="btnSubmitChat"
+          class="px-5 py-3.5 bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 active:scale-95 text-white font-bold rounded-2xl text-xs transition shadow-md flex items-center justify-center gap-2 cursor-pointer flex-shrink-0 h-[48px]">
+          <i class="fa-solid fa-paper-plane"></i>
+          <span class="hidden sm:inline">Gửi Tin Nhắn</span>
+        </button>
+      </form>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  let fullChatHistory = [];
+  let isAiResponding = false;
+
+  function handleChatInputKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      submitFullChatMessage();
+    }
+  }
+
+  function sendPrompt(text) {
+    const input = document.getElementById('chatInputMessage');
+    if (input) {
+      input.value = text;
+      submitFullChatMessage();
+    }
+  }
+
+  function clearFullChatSession() {
+    if (!confirm('Bạn có chắc chắn muốn làm mới cuộc hội thoại hiện tại?')) return;
+    fullChatHistory = [];
+    const feed = document.getElementById('fullChatFeed');
+    if (feed) {
+      // Giữ lại tin nhắn chào đầu tiên
+      const firstChild = feed.firstElementChild;
+      feed.innerHTML = '';
+      if (firstChild) feed.appendChild(firstChild);
+    }
+  }
+
+  async function submitFullChatMessage() {
+    if (isAiResponding) return;
+
+    const input = document.getElementById('chatInputMessage');
+    const feed = document.getElementById('fullChatFeed');
+    const btn = document.getElementById('btnSubmitChat');
+    if (!input || !feed) return;
+
+    const query = input.value.trim();
+    if (!query) return;
+
+    input.value = '';
+    isAiResponding = true;
+    if (btn) btn.disabled = true;
+
+    // Render User Bubble
+    const userBubbleHtml = `
+      <div class="flex items-start justify-end gap-3">
+        <div class="max-w-2xl bg-gradient-to-r from-sky-600 to-indigo-600 text-white p-3.5 rounded-2xl rounded-tr-xs shadow-2xs font-medium leading-relaxed">
+          ${escapeHtmlText(query)}
+        </div>
+        <div class="w-8 h-8 rounded-xl bg-sky-600 text-white flex items-center justify-center flex-shrink-0 text-xs mt-0.5 shadow-2xs font-bold">
+          <i class="fa-solid fa-user"></i>
+        </div>
+      </div>
+    `;
+    feed.insertAdjacentHTML('beforeend', userBubbleHtml);
+    feed.scrollTop = feed.scrollHeight;
+
+    // Render Thinking Bubble
+    const thinkingId = 'full_thinking_' + Date.now();
+    const thinkingBubbleHtml = `
+      <div class="flex items-start gap-3" id="${thinkingId}">
+        <div class="w-8 h-8 rounded-xl bg-sky-100 dark:bg-sky-950/80 text-sky-600 dark:text-sky-400 flex items-center justify-center flex-shrink-0 text-sm mt-0.5 shadow-2xs">
+          <i class="fa-solid fa-robot animate-bounce"></i>
+        </div>
+        <div class="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 p-3.5 rounded-2xl rounded-tl-xs italic flex items-center gap-2 shadow-2xs">
+          <i class="fa-solid fa-circle-notch fa-spin text-sky-600"></i>
+          <span>Đang truy vấn CSDL kho & đối chiếu số liệu...</span>
+        </div>
+      </div>
+    `;
+    feed.insertAdjacentHTML('beforeend', thinkingBubbleHtml);
+    feed.scrollTop = feed.scrollHeight;
+
+    try {
+      const token = sessionStorage.getItem('access_token') || localStorage.getItem('access_token') || '';
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = 'Bearer ' + token;
+
+      const res = await fetch('/api/v1/ai/chat', {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify({
+          message: query,
+          history: fullChatHistory
+        })
+      });
+
+      const thinkEl = document.getElementById(thinkingId);
+      if (thinkEl) thinkEl.remove();
+
+      if (!res.ok) {
+        throw new Error('Lỗi máy chủ: ' + res.status);
+      }
+
+      const data = await res.json();
+      const reply = data.reply || 'Không nhận được phản hồi hợp lệ.';
+
+      fullChatHistory.push({ role: 'user', content: query });
+      fullChatHistory.push({ role: 'assistant', content: reply });
+
+      const formattedHtml = parseFullMarkdown(reply);
+      const copyId = 'copy_' + Date.now();
+
+      const aiBubbleHtml = `
+        <div class="flex items-start gap-3">
+          <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 text-white flex items-center justify-center flex-shrink-0 text-sm mt-0.5 shadow-2xs">
+            <i class="fa-solid fa-robot"></i>
+          </div>
+          <div class="max-w-3xl bg-slate-50 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/60 p-4 rounded-2xl rounded-tl-xs shadow-2xs text-slate-800 dark:text-slate-100 space-y-2 leading-relaxed overflow-x-auto">
+            <div class="prose dark:prose-invert text-xs space-y-2" id="${copyId}">
+              ${formattedHtml}
+            </div>
+
+            <!-- Footer info & copy action -->
+            <div class="pt-2 mt-2 border-t border-slate-200 dark:border-slate-700/60 flex items-center justify-between text-[10px] text-slate-400">
+              <div class="flex items-center gap-2 font-mono">
+                <span>${data.model_used || 'SmartLogis AI Engine'}</span>
+                ${data.is_fallback ? '<span class="text-amber-500 font-bold bg-amber-50 dark:bg-amber-950/60 px-1.5 py-0.2 rounded border border-amber-200 dark:border-amber-800">Local Grounded Engine</span>' : '<span class="text-emerald-500 font-bold bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.2 rounded border border-emerald-200 dark:border-emerald-800">Google Gemini LLM</span>'}
+              </div>
+              <button type="button" onclick="copyReplyText('${copyId}')" class="hover:text-slate-700 dark:hover:text-slate-200 flex items-center gap-1 cursor-pointer">
+                <i class="fa-solid fa-copy"></i>
+                <span>Sao chép</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      feed.insertAdjacentHTML('beforeend', aiBubbleHtml);
+      feed.scrollTop = feed.scrollHeight;
+
+    } catch (err) {
+      const thinkEl = document.getElementById(thinkingId);
+      if (thinkEl) thinkEl.remove();
+
+      const errBubbleHtml = `
+        <div class="flex items-start gap-3">
+          <div class="w-8 h-8 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center flex-shrink-0 text-sm mt-0.5">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+          </div>
+          <div class="max-w-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 p-3.5 rounded-2xl rounded-tl-xs text-xs">
+            Lỗi kết nối Trợ lý AI: ${err.message}. Vui lòng thử lại câu hỏi khác.
+          </div>
+        </div>
+      `;
+      feed.insertAdjacentHTML('beforeend', errBubbleHtml);
+    } finally {
+      isAiResponding = false;
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  function copyReplyText(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    navigator.clipboard.writeText(el.innerText).then(() => {
+      alert('Đã sao chép phản hồi vào clipboard!');
+    }).catch(() => {});
+  }
+
+  function escapeHtmlText(text) {
+    return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+  }
+
+  function parseFullMarkdown(md) {
+    if (!md) return '';
+    let html = escapeHtmlText(md);
+
+    // Tables
+    const tableRegex = /(\|.+?\|\n\|(?:\s*:?-+:?\s*\|)+\n(?:\|.+?\|\n?)+)/g;
+    html = html.replace(tableRegex, (match) => {
+      const rows = match.trim().split('\n');
+      if (rows.length < 3) return match;
+      const headers = rows[0].split('|').filter((c, i, a) => i > 0 && i < a.length - 1).map(c => c.trim());
+      const dataRows = rows.slice(2);
+      let tableHtml = '<div class="overflow-x-auto my-2"><table class="w-full text-xs border border-slate-200 dark:border-slate-700 border-collapse rounded-xl overflow-hidden">';
+      tableHtml += '<thead><tr class="bg-slate-200/80 dark:bg-slate-700/80 text-slate-800 dark:text-slate-100 font-bold">';
+      headers.forEach(h => tableHtml += `<th class="py-2 px-3 border border-slate-200 dark:border-slate-700">${h}</th>`);
+      tableHtml += '</tr></thead><tbody>';
+      dataRows.forEach((r, idx) => {
+        const cells = r.split('|').filter((c, i, a) => i > 0 && i < a.length - 1).map(c => c.trim());
+        const rowBg = idx % 2 === 0 ? 'bg-white dark:bg-slate-850' : 'bg-slate-50/70 dark:bg-slate-800/50';
+        tableHtml += `<tr class="${rowBg} border-b border-slate-200/50 dark:border-slate-700/50">`;
+        cells.forEach(c => tableHtml += `<td class="py-2 px-3 border border-slate-200 dark:border-slate-700">${c}</td>`);
+        tableHtml += '</tr>';
+      });
+      tableHtml += '</tbody></table></div>';
+      return tableHtml;
+    });
+
+    // Bold & Italic
+    html = html.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+    html = html.replace(/\*(.+?)\*/g, '<i>$1</i>');
+
+    // Inline code
+    html = html.replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 bg-slate-200 dark:bg-slate-700 text-sky-700 dark:text-sky-300 rounded-md font-mono text-[11px] font-bold">$1</code>');
+
+    // Headings
+    html = html.replace(/### (.+?)(?:\n|$)/g, '<h3 class="font-extrabold text-sm text-sky-700 dark:text-sky-400 mt-3 mb-1.5 flex items-center gap-1.5">$1</h3>');
+    html = html.replace(/#### (.+?)(?:\n|$)/g, '<h4 class="font-bold text-xs text-slate-800 dark:text-slate-200 mt-2 mb-1">$1</h4>');
+
+    // Line breaks
+    html = html.replace(/\n/g, '<br>');
+    return html;
+  }
+</script>
+{% endblock %}

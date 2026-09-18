@@ -299,3 +299,21 @@ class AIReportResponse(BaseModel):
     phan_3_bien_dong_bat_thuong: Dict[str, Any]
     insights_widget: List[AIInsightItem]
     markdown_report: str
+
+# --- Schema cho AI Chat Box ---
+class AIChatMessage(BaseModel):
+    role: str = Field(description="Vai trò người gửi: 'user' hoặc 'assistant' hoặc 'system'")
+    content: str = Field(description="Nội dung tin nhắn")
+
+class AIChatRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=2000, description="Tin nhắn / câu hỏi của người dùng")
+    history: Optional[List[AIChatMessage]] = Field(default=[], description="Lịch sử hội thoại trước đó")
+
+class AIChatResponse(BaseModel):
+    status: str = "success"
+    reply: str = Field(description="Nội dung phản hồi từ AI")
+    model_used: str = Field(description="Mô hình AI hoặc công cụ phân tích được sử dụng")
+    is_fallback: bool = Field(default=False, description="Đánh dấu câu trả lời từ Local Grounded Fallback Engine")
+    context_summary: Optional[Dict[str, Any]] = Field(default=None, description="Tóm tắt dữ liệu CSDL được dùng làm căn cứ")
+    suggested_questions: Optional[List[str]] = Field(default=[], description="Danh sách câu hỏi gợi ý tiếp theo")
+
