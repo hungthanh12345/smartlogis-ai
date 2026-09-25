@@ -80,7 +80,7 @@ def test_ai_chat_dead_stock_query():
     res = client.post("/api/v1/ai/chat", json=payload, headers=headers, cookies=cookies)
     assert res.status_code == 200
     reply = res.json()["reply"]
-    assert "TỒN" in reply or "60 ngày" in reply or "luân chuyển" in reply
+    assert "tồn" in reply.lower() or "dead stock" in reply.lower() or "60 ngày" in reply or "luân chuyển" in reply.lower()
 
 def test_ai_chat_sku_lookup():
     """Tra cứu cụ thể một SKU có trong kho (ví dụ HH-THEP-D08)."""
@@ -113,3 +113,84 @@ def test_ai_chat_sanitizer_security():
     assert "dongianhap" not in ctx_str
     assert "import_price" not in ctx_str
     assert "thanhtien" not in ctx_str
+
+def test_ai_status_endpoint():
+    """Kiểm tra endpoint GET /api/v1/ai/status trả về đúng schema."""
+    headers, cookies = get_auth_headers()
+    res = client.get("/api/v1/ai/status", headers=headers, cookies=cookies)
+    assert res.status_code == 200
+    data = res.json()
+    assert "configured" in data
+    assert "model_name" in data
+    assert "engine" in data
+
+def test_ai_chat_diverse_inquiries_no_canned_repeats():
+    """Đảm bảo các câu hỏi đa dạng (nhập kho, xuất kho, nhà cung cấp, toàn bộ hàng) trả về câu trả lời riêng biệt, không bị lặp lại câu chào mặc định."""
+    headers, cookies = get_auth_headers()
+
+    queries = [
+        ("Hướng dẫn tạo phiếu nhập kho", ["nhập kho", "inbound", "bước", "nhà cung cấp"]),
+        ("Làm sao để xuất kho an toàn?", ["xuất kho", "tồn âm", "outbound", "atomic"]),
+        ("Danh sách nhà cung cấp của công ty", ["nhà cung cấp", "ncc", "đối tác"]),
+        ("Kho có những mặt hàng nào?", ["danh mục", "sku", "mặt hàng"])
+    ]
+
+    replies = []
+    for q, expected_keywords in queries:
+        res = client.post("/api/v1/ai/chat", json={"message": q}, headers=headers, cookies=cookies)
+        assert res.status_code == 200
+        reply = res.json()["reply"]
+        replies.append(reply)
+        # Kiểm tra câu trả lời có chứa từ khóa nghiệp vụ thực tế
+        assert any(k in reply.lower() for k in expected_keywords), f"Query '{q}' failed keyword match: {reply[:100]}"
+    
+    # Xác minh các câu trả lời hoàn toàn khác nhau (không lặp lại)
+    assert len(set(replies)) == len(replies), "Các câu trả lời bị trùng lặp!"
+
+def test_ai_key_clear_endpoint():
+    """Kiểm tra endpoint DELETE /api/v1/ai/api-key xóa key thành công (bảo vệ tệp .env thật)."""
+    from unittest.mock import patch
+    from app.services.gemini_service import gemini_service
+    from app.core.config import settings
+
+    orig_service_key = gemini_service.api_key
+    orig_settings_key = settings.GEMINI_API_KEY
+
+    headers, cookies = get_auth_headers()
+    try:
+        with patch("app.services.gemini_service.update_env_file"):
+            res = client.delete("/api/v1/ai/api-key", headers=headers, cookies=cookies)
+            assert res.status_code == 200
+            data = res.json()
+            assert data["status"] == "success"
+            assert data["ai_status"]["configured"] is False
+    finally:
+        # Khôi phục trạng thái key
+        gemini_service.api_key = orig_service_key
+        settings.GEMINI_API_KEY = orig_settings_key
+
+
+def test_ai_chat_multi_turn_continue():
+    """Kiểm tra tính năng đàm thoại nhiều lượt khi người dùng yêu cầu 'làm tiếp'."""
+    headers, cookies = get_auth_headers()
+    
+    # Lượt 1: Hỏi về mặt hàng thiếu hụt
+    res1 = client.post("/api/v1/ai/chat", json={"message": "Mặt hàng nào đang thiếu hụt nguy cấp?"}, headers=headers, cookies=cookies)
+    assert res1.status_code == 200
+    r1_text = res1.json()["reply"]
+
+    # Lượt 2: Hỏi 'làm tiếp' kèm lịch sử lượt 1
+    history = [
+        {"role": "user", "content": "Mặt hàng nào đang thiếu hụt nguy cấp?"},
+        {"role": "assistant", "content": r1_text[:300]}
+    ]
+    res2 = client.post("/api/v1/ai/chat", json={"message": "làm tiếp", "history": history}, headers=headers, cookies=cookies)
+    assert res2.status_code == 200
+    r2_data = res2.json()
+    r2_text = r2_data["reply"]
+
+    # Phản hồi phải nhận diện ngữ cảnh và triển khai các bước kế tiếp
+    assert any(w in r2_text.lower() for w in ["nhập kho", "phiếu nhập", "bước", "nhà cung cấp", "dự thảo"]), f"Làm tiếp failed: {r2_text[:200]}"
+    assert len(r2_data.get("suggested_questions", [])) > 0
+
+

@@ -308,6 +308,7 @@ class AIChatMessage(BaseModel):
 class AIChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=2000, description="Tin nhắn / câu hỏi của người dùng")
     history: Optional[List[AIChatMessage]] = Field(default=[], description="Lịch sử hội thoại trước đó")
+    api_key: Optional[str] = Field(default=None, description="Tùy chọn API Key Gemini được truyền trực tiếp từ client")
 
 class AIChatResponse(BaseModel):
     status: str = "success"
@@ -316,4 +317,14 @@ class AIChatResponse(BaseModel):
     is_fallback: bool = Field(default=False, description="Đánh dấu câu trả lời từ Local Grounded Fallback Engine")
     context_summary: Optional[Dict[str, Any]] = Field(default=None, description="Tóm tắt dữ liệu CSDL được dùng làm căn cứ")
     suggested_questions: Optional[List[str]] = Field(default=[], description="Danh sách câu hỏi gợi ý tiếp theo")
+
+class AIKeyConfigRequest(BaseModel):
+    api_key: str = Field(min_length=10, max_length=255, description="Google Gemini API Key")
+
+class AIStatusResponse(BaseModel):
+    configured: bool
+    masked_key: Optional[str] = None
+    model_name: str
+    engine: str
+    message: str
 

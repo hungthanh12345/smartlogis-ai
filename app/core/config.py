@@ -5,6 +5,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         case_sensitive=True,
         env_file=".env",
+        env_file_encoding="utf-8",
         extra="allow"
     )
 
@@ -49,8 +50,8 @@ class Settings(BaseSettings):
     # Google Gemini AI API Configuration & Endpoints
     GEMINI_API_KEY: str = ""
     GEMINI_API_ENDPOINT: str = "https://generativelanguage.googleapis.com/v1beta"
-    GEMINI_MODEL: str = "gemini-2.0-flash"
-    GEMINI_FALLBACK_MODEL: str = "gemini-1.5-flash"
+    GEMINI_MODEL: str = "gemini-3.5-flash-lite"
+    GEMINI_FALLBACK_MODEL: str = "gemini-3.6-flash"
     AI_TIMEOUT_SECONDS: float = 20.0
     AI_MAX_RETRIES: int = 3
     

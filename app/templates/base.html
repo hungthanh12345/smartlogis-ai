@@ -506,7 +506,8 @@
   </script>
   {% endif %}
 
-  {% if user and active_page != 'ai-chat' %}
+  {% if user %}
+  {% if active_page != 'ai-chat' %}
   <!-- FLOATING AI CHAT WIDGET (Trợ lý AI nhanh trên mọi màn hình) -->
   <div id="floatingAIChatContainer" class="fixed bottom-6 right-6 z-40 flex flex-col items-end">
     <!-- Chat Drawer Popover -->
@@ -520,15 +521,21 @@
           <div class="leading-tight">
             <div class="text-xs font-bold flex items-center gap-1.5">
               <span>Trợ Lý SmartLogis AI</span>
-              <span class="text-[9px] bg-sky-300/30 text-sky-100 px-1 py-0.2 rounded font-mono font-normal">CSDL Live</span>
+              <span id="floatingAiBadge" class="text-[9px] bg-sky-300/30 text-sky-100 px-1 py-0.2 rounded font-mono font-normal">CSDL Live</span>
             </div>
             <div class="text-[10px] text-sky-100 flex items-center gap-1">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span>Đồng bộ thời gian thực</span>
+              <span id="floatingAiPulse" class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span id="floatingAiStatusText">Đồng bộ thời gian thực</span>
             </div>
           </div>
         </div>
         <div class="flex items-center gap-1">
+          <button type="button" onclick="openGeminiKeyModal()" title="Cấu hình Google Gemini API Key" class="w-7 h-7 rounded-lg hover:bg-white/20 text-white/80 hover:text-white flex items-center justify-center text-xs transition cursor-pointer">
+            <i class="fa-solid fa-key"></i>
+          </button>
+          <button type="button" onclick="clearFloatingChatHistory()" title="Xóa lịch sử trò chuyện" class="w-7 h-7 rounded-lg hover:bg-white/20 text-white/80 hover:text-white flex items-center justify-center text-xs transition cursor-pointer">
+            <i class="fa-solid fa-trash-can"></i>
+          </button>
           <a href="/ai-chat" title="Mở trang đầy đủ" class="w-7 h-7 rounded-lg hover:bg-white/20 text-white/80 hover:text-white flex items-center justify-center text-xs transition">
             <i class="fa-solid fa-up-right-from-square"></i>
           </a>
@@ -539,34 +546,40 @@
       </div>
 
       <!-- Quick prompts chips -->
-      <div class="px-3 py-2 bg-slate-50 dark:bg-slate-850 border-b border-slate-200 dark:border-slate-800 flex items-center gap-1.5 overflow-x-auto text-[11px]">
-        <button type="button" onclick="sendQuickChatMessage('Báo cáo 3 phần')" class="whitespace-nowrap px-2.5 py-1 rounded-lg bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 font-medium hover:bg-sky-100 transition cursor-pointer">
+      <div id="floatingQuickPrompts" class="px-3 py-2 bg-slate-50 dark:bg-slate-850 border-b border-slate-200 dark:border-slate-800 flex items-center gap-1.5 overflow-x-auto text-[11px] no-scrollbar">
+        <button type="button" data-prompt="📊 Sinh báo cáo điều hành kho 3 phần" onclick="sendQuickChatMessage(this.getAttribute('data-prompt'))" class="whitespace-nowrap px-2.5 py-1 rounded-lg bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 font-medium hover:bg-sky-100 transition cursor-pointer active:scale-95">
           📊 Báo cáo 3 phần
         </button>
-        <button type="button" onclick="sendQuickChatMessage('Mặt hàng nào đang thiếu hụt?')" class="whitespace-nowrap px-2.5 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 font-medium hover:bg-rose-100 transition cursor-pointer">
+        <button type="button" data-prompt="⚠️ Mặt hàng nào đang thiếu hụt nguy cấp?" onclick="sendQuickChatMessage(this.getAttribute('data-prompt'))" class="whitespace-nowrap px-2.5 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 font-medium hover:bg-rose-100 transition cursor-pointer active:scale-95">
           ⚠️ Hàng thiếu hụt
         </button>
-        <button type="button" onclick="sendQuickChatMessage('Hàng tồn kho lâu > 60 ngày')" class="whitespace-nowrap px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 font-medium hover:bg-amber-100 transition cursor-pointer">
+        <button type="button" data-prompt="🏢 Gợi ý nhà cung cấp cho các mặt hàng thiếu hụt" onclick="sendQuickChatMessage(this.getAttribute('data-prompt'))" class="whitespace-nowrap px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 font-medium hover:bg-indigo-100 transition cursor-pointer active:scale-95">
+          🏢 Gợi ý NCC
+        </button>
+        <button type="button" data-prompt="📦 Danh sách hàng tồn lâu > 60 ngày" onclick="sendQuickChatMessage(this.getAttribute('data-prompt'))" class="whitespace-nowrap px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 font-medium hover:bg-amber-100 transition cursor-pointer active:scale-95">
           📦 Hàng tồn lâu
+        </button>
+        <button type="button" data-prompt="📋 Danh mục toàn bộ hàng hóa trong kho" onclick="sendQuickChatMessage(this.getAttribute('data-prompt'))" class="whitespace-nowrap px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 font-medium hover:bg-emerald-100 transition cursor-pointer active:scale-95">
+          📋 Toàn bộ hàng
         </button>
       </div>
 
       <!-- Chat Feed -->
       <div id="floatingChatMessages" class="flex-1 p-3.5 overflow-y-auto space-y-3 text-xs">
         <!-- Tin nhắn chào đầu tiên -->
-        <div class="flex items-start gap-2.5">
+        <div class="flex items-start gap-2.5" id="floatingWelcomeMessage">
           <div class="w-7 h-7 rounded-lg bg-sky-100 dark:bg-sky-950/80 text-sky-600 dark:text-sky-400 flex items-center justify-center flex-shrink-0 text-xs mt-0.5 shadow-2xs">
             <i class="fa-solid fa-robot"></i>
           </div>
           <div class="p-3 bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-2xl rounded-tl-xs leading-relaxed max-w-[88%] shadow-2xs">
-            Xin chào <b>{{ user.HoTen }}</b>! Tôi là Trợ lý SmartLogis AI. Dữ liệu kho hiện thời đã được đồng bộ hóa. Bạn cần tra cứu mặt hàng nào hoặc yêu cầu tạo báo cáo điều hành 3 phần?
+            Xin chào <b>{{ user.HoTen }}</b>! Tôi là Trợ lý SmartLogis AI. Lịch sử hội thoại sẽ luôn được lưu giữ tự động khi bạn đổi tab hoặc chuyển trang. Bạn muốn tra cứu mặt hàng nào hay tạo báo cáo?
           </div>
         </div>
       </div>
 
       <!-- Input Bar -->
       <div class="p-2.5 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center gap-2">
-        <input type="text" id="floatingChatInput" placeholder="Nhập câu hỏi kho..." onkeydown="if(event.key==='Enter') sendFloatingChatMessage()"
+        <input type="text" id="floatingChatInput" placeholder="Nhập câu hỏi kho, SKU hoặc bất kỳ thắc mắc nào..." onkeydown="if(event.key==='Enter') sendFloatingChatMessage()"
           class="flex-1 px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20">
         <button type="button" onclick="sendFloatingChatMessage()" id="floatingChatSendBtn"
           class="w-8 h-8 rounded-xl bg-sky-600 hover:bg-sky-500 text-white flex items-center justify-center text-xs shadow-xs transition cursor-pointer flex-shrink-0">
@@ -585,10 +598,218 @@
       <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
     </button>
   </div>
+  {% endif %}
+
+  <!-- MODAL CẤU HÌNH GEMINI API KEY -->
+  <div id="geminiApiKeyModal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md shadow-2xl p-5 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 text-white flex items-center justify-center text-sm shadow-xs">
+            <i class="fa-solid fa-key"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-slate-800 dark:text-white">Cấu Hình Google Gemini API Key</h3>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400">Kết nối trực tiếp mô hình AI để mở khóa trả lời mọi câu hỏi</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeGeminiKeyModal()" class="w-7 h-7 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 flex items-center justify-center transition cursor-pointer">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Trạng thái hiện tại -->
+      <div id="modalKeyStatusBox" class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs space-y-1">
+        <div class="flex items-center justify-between">
+          <span class="text-slate-500 dark:text-slate-400">Trạng thái:</span>
+          <span id="modalCurrentStatus" class="font-bold text-sky-600 dark:text-sky-400">Đang kiểm tra...</span>
+        </div>
+        <div class="flex items-center justify-between text-[11px]">
+          <span class="text-slate-500 dark:text-slate-400">Mô hình hoạt động:</span>
+          <span id="modalCurrentModel" class="font-mono text-slate-700 dark:text-slate-300">--</span>
+        </div>
+      </div>
+
+      <!-- Ô nhập Key -->
+      <div class="space-y-1.5">
+        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-200">
+          Khóa Google Gemini API Key:
+        </label>
+        <input type="password" id="modalApiKeyInput" placeholder="Dán khóa API của bạn (ví dụ: AIzaSy...)"
+          class="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 font-mono">
+        <p class="text-[10px] text-slate-500 dark:text-slate-400">
+          Chưa có khóa? Lấy miễn phí tại: <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="text-sky-600 dark:text-sky-400 underline font-semibold">Google AI Studio</a>.
+        </p>
+      </div>
+
+      <!-- Thông báo kết quả -->
+      <div id="modalKeyFeedback" class="hidden p-2.5 rounded-xl text-xs"></div>
+
+      <!-- Các nút thao tác -->
+      <div class="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-800">
+        <button type="button" onclick="clearModalApiKey()" id="modalBtnClearKey"
+          class="px-3 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/40 text-rose-600 dark:text-rose-400 text-xs font-semibold transition cursor-pointer">
+          Xóa Key (Về Local)
+        </button>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="closeGeminiKeyModal()"
+            class="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300 text-xs font-semibold transition cursor-pointer">
+            Đóng
+          </button>
+          <button type="button" onclick="saveModalApiKey()" id="modalBtnSaveKey"
+            class="px-4 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold transition shadow-xs cursor-pointer flex items-center gap-1.5">
+            <i class="fa-solid fa-check"></i>
+            <span>Lưu & Kích Hoạt</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script>
+    // =========================================================================
+    // SMARTLOGIS AI FLOATING CHAT: BẢO LƯU LỊCH SỬ QUA TỪNG TAB & TÍNH NĂNG
+    // =========================================================================
+    const CHAT_STORAGE_KEY = 'smartlogis_chat_history';
+    const CHAT_OPEN_KEY = 'smartlogis_chat_open';
+
     let floatingChatHistory = [];
     let isFloatingChatOpen = false;
+
+    // Khởi tạo khôi phục lịch sử và trạng thái mở/đóng ngay khi tải trang
+    document.addEventListener('DOMContentLoaded', () => {
+      initFloatingChat();
+    });
+
+    function initFloatingChat() {
+      try {
+        // 1. Khôi phục trạng thái mở của drawer nếu người dùng đang mở trước đó
+        const wasOpen = localStorage.getItem(CHAT_OPEN_KEY) === 'true';
+        if (wasOpen) {
+          const drawer = document.getElementById('floatingChatDrawer');
+          if (drawer) {
+            drawer.classList.remove('hidden');
+            isFloatingChatOpen = true;
+          }
+        }
+
+        // 2. Khôi phục toàn bộ lịch sử tin nhắn
+        const stored = localStorage.getItem(CHAT_STORAGE_KEY);
+        if (stored) {
+          floatingChatHistory = JSON.parse(stored) || [];
+          renderFloatingChatHistory();
+        }
+      } catch (e) {
+        console.error('Lỗi khi tải lịch sử chat:', e);
+      }
+
+      // 3. Tải trạng thái Gemini API
+      fetchAiStatus();
+    }
+
+    function renderFloatingSuggestedChips(suggestions) {
+      if (!suggestions || !Array.isArray(suggestions) || suggestions.length === 0) return '';
+      const chipsHtml = suggestions.map(s => {
+        const cleanPrompt = String(s).trim();
+        const escaped = escapeHtmlBasic(cleanPrompt);
+        return `
+          <button type="button" data-prompt="${escaped}" onclick="sendQuickChatMessage(this.getAttribute('data-prompt'))"
+            class="whitespace-nowrap px-2.5 py-1 rounded-lg bg-white dark:bg-slate-700/80 hover:bg-sky-50 dark:hover:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 font-medium transition cursor-pointer shadow-2xs text-[10.5px] flex items-center gap-1 active:scale-95">
+            <i class="fa-solid fa-arrow-turn-down fa-rotate-90 text-[9px] text-sky-500"></i>
+            <span>${escaped}</span>
+          </button>
+        `;
+      }).join('');
+
+      return `
+        <div class="mt-2.5 pt-2 border-t border-slate-200/60 dark:border-slate-700/60">
+          <div class="text-[9.5px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+            <i class="fa-solid fa-bolt text-amber-500"></i>
+            <span>Gợi ý tiếp theo (Bấm để hỏi):</span>
+          </div>
+          <div class="flex flex-wrap gap-1.5">
+            ${chipsHtml}
+          </div>
+        </div>
+      `;
+    }
+
+    function updateFloatingQuickPromptsBar(suggestions) {
+      const bar = document.getElementById('floatingQuickPrompts');
+      if (!bar || !suggestions || !Array.isArray(suggestions) || suggestions.length === 0) return;
+      let html = `
+        <span class="text-[10px] font-bold text-slate-400 uppercase whitespace-nowrap flex items-center gap-1 pl-1">
+          <i class="fa-solid fa-bolt text-amber-500"></i> Gợi ý:
+        </span>
+      `;
+      suggestions.forEach(s => {
+        const cleanPrompt = String(s).trim();
+        const escaped = escapeHtmlBasic(cleanPrompt);
+        html += `
+          <button type="button" data-prompt="${escaped}" onclick="sendQuickChatMessage(this.getAttribute('data-prompt'))"
+            class="whitespace-nowrap px-2.5 py-1 rounded-lg bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 font-medium hover:bg-sky-100 transition cursor-pointer active:scale-95">
+            <span>${escaped}</span>
+          </button>
+        `;
+      });
+      bar.innerHTML = html;
+    }
+
+    function renderFloatingChatHistory() {
+      const container = document.getElementById('floatingChatMessages');
+      if (!container) return;
+
+      const welcomeEl = document.getElementById('floatingWelcomeMessage');
+      container.innerHTML = '';
+      if (welcomeEl) container.appendChild(welcomeEl);
+
+      let latestSuggestions = [];
+
+      floatingChatHistory.forEach(item => {
+        if (item.role === 'user') {
+          const userHtml = `
+            <div class="flex items-start justify-end gap-2.5">
+              <div class="p-3 bg-sky-600 text-white rounded-2xl rounded-tr-xs leading-relaxed max-w-[88%] shadow-2xs font-medium">
+                ${escapeHtmlBasic(item.content)}
+              </div>
+              <div class="w-7 h-7 rounded-lg bg-sky-600 text-white flex items-center justify-center flex-shrink-0 text-xs mt-0.5 shadow-2xs font-bold">
+                <i class="fa-solid fa-user"></i>
+              </div>
+            </div>
+          `;
+          container.insertAdjacentHTML('beforeend', userHtml);
+        } else if (item.role === 'assistant') {
+          const formattedReply = parseChatMarkdown(item.content);
+          const isFallback = item.is_fallback !== undefined ? item.is_fallback : (item.model_used && item.model_used.includes('Grounded'));
+          const suggestionsHtml = renderFloatingSuggestedChips(item.suggested_questions);
+          if (item.suggested_questions && item.suggested_questions.length > 0) {
+            latestSuggestions = item.suggested_questions;
+          }
+          const aiHtml = `
+            <div class="flex items-start gap-2.5">
+              <div class="w-7 h-7 rounded-lg bg-sky-100 dark:bg-sky-950/80 text-sky-600 dark:text-sky-400 flex items-center justify-center flex-shrink-0 text-xs mt-0.5 shadow-2xs">
+                <i class="fa-solid fa-robot"></i>
+              </div>
+              <div class="p-3 bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-2xl rounded-tl-xs leading-relaxed max-w-[88%] shadow-2xs space-y-1.5 overflow-x-auto">
+                ${formattedReply}
+                ${suggestionsHtml}
+                <div class="text-[9px] text-slate-400 pt-1 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                  <span>${item.model_used || 'SmartLogis Engine'}</span>
+                  ${isFallback ? '<span class="text-amber-500 font-semibold">Local Grounded DB</span>' : '<span class="text-emerald-500 font-semibold">Google Gemini LLM</span>'}
+                </div>
+              </div>
+            </div>
+          `;
+          container.insertAdjacentHTML('beforeend', aiHtml);
+        }
+      });
+
+      if (latestSuggestions.length > 0) {
+        updateFloatingQuickPromptsBar(latestSuggestions);
+      }
+
+      container.scrollTop = container.scrollHeight;
+    }
 
     function toggleFloatingChat() {
       const drawer = document.getElementById('floatingChatDrawer');
@@ -597,13 +818,44 @@
       isFloatingChatOpen = !isFloatingChatOpen;
       if (isFloatingChatOpen) {
         drawer.classList.remove('hidden');
+        localStorage.setItem(CHAT_OPEN_KEY, 'true');
+        const container = document.getElementById('floatingChatMessages');
+        if (container) container.scrollTop = container.scrollHeight;
         if (input) setTimeout(() => input.focus(), 150);
       } else {
         drawer.classList.add('hidden');
+        localStorage.setItem(CHAT_OPEN_KEY, 'false');
       }
     }
 
+    function clearFloatingChatHistory() {
+      if (!confirm('Bạn có chắc chắn muốn làm mới cuộc hội thoại hiện tại? Lịch sử cũ sẽ được xóa.')) return;
+      floatingChatHistory = [];
+      localStorage.removeItem(CHAT_STORAGE_KEY);
+      const container = document.getElementById('floatingChatMessages');
+      if (container) {
+        const welcomeEl = document.getElementById('floatingWelcomeMessage');
+        container.innerHTML = '';
+        if (welcomeEl) container.appendChild(welcomeEl);
+      }
+      updateFloatingQuickPromptsBar([
+        "📊 Sinh báo cáo điều hành kho 3 phần",
+        "⚠️ Mặt hàng nào đang thiếu hụt nguy cấp?",
+        "🏢 Gợi ý nhà cung cấp cho các mặt hàng thiếu hụt",
+        "📦 Danh sách hàng tồn lâu > 60 ngày",
+        "📋 Danh mục toàn bộ hàng hóa trong kho"
+      ]);
+    }
+
     function sendQuickChatMessage(txt) {
+      if (!txt) return;
+      const drawer = document.getElementById('floatingChatDrawer');
+      if (drawer && !isFloatingChatOpen) {
+        drawer.classList.remove('hidden');
+        isFloatingChatOpen = true;
+        localStorage.setItem(CHAT_OPEN_KEY, 'true');
+      }
+
       const input = document.getElementById('floatingChatInput');
       if (input) {
         input.value = txt;
@@ -655,16 +907,21 @@
       if (sendBtn) sendBtn.disabled = true;
 
       try {
-        const token = sessionStorage.getItem('access_token') || localStorage.getItem('access_token') || '';
+        const rawToken = sessionStorage.getItem('access_token') || localStorage.getItem('access_token') || '';
         const headers = { 'Content-Type': 'application/json' };
-        if (token) headers['Authorization'] = 'Bearer ' + token;
+        if (rawToken) {
+          headers['Authorization'] = rawToken.startsWith('Bearer ') ? rawToken : 'Bearer ' + rawToken;
+        }
+
+        // Chuẩn bị lịch sử gửi kèm
+        const historyPayload = floatingChatHistory.map(h => ({ role: h.role, content: h.content }));
 
         const res = await fetch('/api/v1/ai/chat', {
           method: 'POST',
           headers: headers,
           body: JSON.stringify({
             message: userMsg,
-            history: floatingChatHistory
+            history: historyPayload
           })
         });
 
@@ -677,11 +934,22 @@
 
         const data = await res.json();
         const replyText = data.reply || 'Xin lỗi, không có phản hồi.';
+        const suggestedQuestions = data.suggested_questions || [];
         
-        floatingChatHistory.push({ role: 'user', content: userMsg });
-        floatingChatHistory.push({ role: 'assistant', content: replyText });
+        // Lưu vào mảng và đồng bộ localStorage
+        floatingChatHistory.push({ role: 'user', content: userMsg, timestamp: Date.now() });
+        floatingChatHistory.push({
+          role: 'assistant',
+          content: replyText,
+          model_used: data.model_used,
+          is_fallback: data.is_fallback,
+          suggested_questions: suggestedQuestions,
+          timestamp: Date.now()
+        });
+        localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(floatingChatHistory));
 
         const formattedReply = parseChatMarkdown(replyText);
+        const suggestionsHtml = renderFloatingSuggestedChips(suggestedQuestions);
 
         const aiHtml = `
           <div class="flex items-start gap-2.5">
@@ -690,14 +958,20 @@
             </div>
             <div class="p-3 bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-2xl rounded-tl-xs leading-relaxed max-w-[88%] shadow-2xs space-y-1.5 overflow-x-auto">
               ${formattedReply}
+              ${suggestionsHtml}
               <div class="text-[9px] text-slate-400 pt-1 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between">
                 <span>${data.model_used || 'SmartLogis Engine'}</span>
-                ${data.is_fallback ? '<span class="text-amber-500 font-semibold">Local Grounded DB</span>' : '<span class="text-emerald-500 font-semibold">Gemini LLM</span>'}
+                ${data.is_fallback ? '<span class="text-amber-500 font-semibold">Local Grounded DB</span>' : '<span class="text-emerald-500 font-semibold">Google Gemini LLM</span>'}
               </div>
             </div>
           </div>
         `;
         container.insertAdjacentHTML('beforeend', aiHtml);
+
+        if (suggestedQuestions.length > 0) {
+          updateFloatingQuickPromptsBar(suggestedQuestions);
+        }
+
         container.scrollTop = container.scrollHeight;
 
       } catch (err) {
@@ -720,7 +994,163 @@
       }
     }
 
+    // Đồng bộ đa tab: khi tab khác gửi tin nhắn hoặc xóa chat, tự động cập nhật
+    window.addEventListener('storage', (e) => {
+      if (e.key === CHAT_STORAGE_KEY) {
+        try {
+          floatingChatHistory = JSON.parse(e.newValue || '[]') || [];
+          renderFloatingChatHistory();
+        } catch (err) {}
+      } else if (e.key === CHAT_OPEN_KEY) {
+        const shouldOpen = e.newValue === 'true';
+        const drawer = document.getElementById('floatingChatDrawer');
+        if (drawer) {
+          if (shouldOpen) {
+            drawer.classList.remove('hidden');
+            isFloatingChatOpen = true;
+          } else {
+            drawer.classList.add('hidden');
+            isFloatingChatOpen = false;
+          }
+        }
+      }
+    });
+
+    // =========================================================================
+    // QUẢN LÝ GEMINI API KEY MODAL
+    // =========================================================================
+    async function fetchAiStatus() {
+      try {
+        const token = sessionStorage.getItem('access_token') || localStorage.getItem('access_token') || '';
+        const headers = {};
+        if (token) headers['Authorization'] = 'Bearer ' + token;
+
+        const res = await fetch('/api/v1/ai/status', { headers });
+        if (!res.ok) return;
+        const data = await res.json();
+
+        const badge = document.getElementById('floatingAiBadge');
+        const pulse = document.getElementById('floatingAiPulse');
+        const statusText = document.getElementById('floatingAiStatusText');
+        const modalStatus = document.getElementById('modalCurrentStatus');
+        const modalModel = document.getElementById('modalCurrentModel');
+
+        if (data.configured) {
+          if (badge) {
+            badge.className = "text-[9px] bg-emerald-400/30 text-emerald-100 px-1.5 py-0.2 rounded font-mono font-bold";
+            badge.innerText = "Gemini Live";
+          }
+          if (statusText) statusText.innerText = "Google Gemini LLM Active";
+          if (modalStatus) modalStatus.innerHTML = `<span class="text-emerald-500 font-bold">Đã kết nối (${data.masked_key || '***'})</span>`;
+          if (modalModel) modalModel.innerText = data.model_name;
+        } else {
+          if (badge) {
+            badge.className = "text-[9px] bg-sky-300/30 text-sky-100 px-1 py-0.2 rounded font-mono font-normal";
+            badge.innerText = "Local CSDL";
+          }
+          if (statusText) statusText.innerText = "CSDL Nội Bộ (Offline Ready)";
+          if (modalStatus) modalStatus.innerHTML = `<span class="text-amber-500 font-bold">Chưa cấu hình (Đang dùng Local DB)</span>`;
+          if (modalModel) modalModel.innerText = "SmartLogis Grounded Engine";
+        }
+      } catch (e) {
+        console.warn('Không thể lấy trạng thái Gemini:', e);
+      }
+    }
+
+    function openGeminiKeyModal() {
+      const modal = document.getElementById('geminiApiKeyModal');
+      const feedback = document.getElementById('modalKeyFeedback');
+      if (feedback) feedback.classList.add('hidden');
+      if (modal) modal.classList.remove('hidden');
+      fetchAiStatus();
+    }
+
+    function closeGeminiKeyModal() {
+      const modal = document.getElementById('geminiApiKeyModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    async function saveModalApiKey() {
+      const input = document.getElementById('modalApiKeyInput');
+      const feedback = document.getElementById('modalKeyFeedback');
+      const saveBtn = document.getElementById('modalBtnSaveKey');
+      if (!input || !feedback) return;
+
+      const key = input.value.trim();
+      if (!key || key.length < 10) {
+        feedback.className = "p-2.5 rounded-xl text-xs bg-rose-50 text-rose-700 border border-rose-200";
+        feedback.innerText = "Vui lòng nhập API Key hợp lệ (tối thiểu 10 ký tự).";
+        feedback.classList.remove('hidden');
+        return;
+      }
+
+      if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Đang xác thực...</span>';
+      }
+
+      try {
+        const token = sessionStorage.getItem('access_token') || localStorage.getItem('access_token') || '';
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = 'Bearer ' + token;
+
+        const res = await fetch('/api/v1/ai/api-key', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ api_key: key })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.detail || 'Lỗi khi kích hoạt API Key');
+        }
+
+        feedback.className = "p-2.5 rounded-xl text-xs bg-emerald-50 text-emerald-700 border border-emerald-200";
+        feedback.innerText = "✅ " + data.message;
+        feedback.classList.remove('hidden');
+        input.value = '';
+
+        fetchAiStatus();
+        setTimeout(() => closeGeminiKeyModal(), 1800);
+      } catch (err) {
+        feedback.className = "p-2.5 rounded-xl text-xs bg-rose-50 text-rose-700 border border-rose-200";
+        feedback.innerText = "❌ " + err.message;
+        feedback.classList.remove('hidden');
+      } finally {
+        if (saveBtn) {
+          saveBtn.disabled = false;
+          saveBtn.innerHTML = '<i class="fa-solid fa-check"></i><span>Lưu & Kích Hoạt</span>';
+        }
+      }
+    }
+
+    async function clearModalApiKey() {
+      if (!confirm('Bạn có chắc chắn muốn xóa API Key và trở về bộ phân tích Local CSDL nội bộ?')) return;
+      const feedback = document.getElementById('modalKeyFeedback');
+      try {
+        const token = sessionStorage.getItem('access_token') || localStorage.getItem('access_token') || '';
+        const headers = {};
+        if (token) headers['Authorization'] = 'Bearer ' + token;
+
+        const res = await fetch('/api/v1/ai/api-key', {
+          method: 'DELETE',
+          headers
+        });
+        const data = await res.json();
+        if (feedback) {
+          feedback.className = "p-2.5 rounded-xl text-xs bg-amber-50 text-amber-700 border border-amber-200";
+          feedback.innerText = "ℹ️ " + data.message;
+          feedback.classList.remove('hidden');
+        }
+        fetchAiStatus();
+        setTimeout(() => closeGeminiKeyModal(), 1500);
+      } catch (err) {
+        alert('Lỗi: ' + err.message);
+      }
+    }
+
     function escapeHtmlBasic(text) {
+      if (!text) return '';
       return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
 

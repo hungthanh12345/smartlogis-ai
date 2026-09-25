@@ -28,6 +28,11 @@
 
     <!-- Right Controls -->
     <div class="flex items-center gap-2">
+      <button type="button" onclick="openGeminiKeyModal()"
+        class="px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 text-xs font-semibold flex items-center gap-1.5 transition border border-indigo-200 dark:border-indigo-800 shadow-2xs cursor-pointer">
+        <i class="fa-solid fa-key text-indigo-500"></i>
+        <span>Cấu Hình Gemini Key</span>
+      </button>
       <button type="button" onclick="clearFullChatSession()"
         class="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer border border-slate-200 dark:border-slate-700 shadow-2xs">
         <i class="fa-solid fa-trash-can text-slate-400"></i>
@@ -83,7 +88,7 @@
     </div>
 
     <!-- QUICK PROMPTS BAR -->
-    <div class="px-5 py-2.5 bg-slate-50/80 dark:bg-slate-850/80 border-t border-slate-200/80 dark:border-slate-800 flex items-center gap-2 overflow-x-auto text-xs no-scrollbar flex-shrink-0">
+    <div id="quickPromptsContainer" class="px-5 py-2.5 bg-slate-50/80 dark:bg-slate-850/80 border-t border-slate-200/80 dark:border-slate-800 flex items-center gap-2 overflow-x-auto text-xs no-scrollbar flex-shrink-0">
       <span class="text-[10px] font-bold text-slate-400 uppercase whitespace-nowrap flex items-center gap-1">
         <i class="fa-solid fa-bolt text-amber-500"></i> Gợi ý:
       </span>
@@ -141,8 +146,153 @@
 
 {% block extra_scripts %}
 <script>
+  const CHAT_STORAGE_KEY = 'smartlogis_chat_history';
   let fullChatHistory = [];
   let isAiResponding = false;
+
+  document.addEventListener('DOMContentLoaded', () => {
+    initFullChatFeed();
+  });
+
+  function initFullChatFeed() {
+    try {
+      const stored = localStorage.getItem(CHAT_STORAGE_KEY);
+      if (stored) {
+        fullChatHistory = JSON.parse(stored) || [];
+        renderAllFullChatMessages();
+      }
+    } catch (e) {
+      console.error('Lỗi khi tải lịch sử chat:', e);
+    }
+  }
+
+  function renderSuggestedChips(suggestions) {
+    if (!suggestions || !Array.isArray(suggestions) || suggestions.length === 0) return '';
+    const chipsHtml = suggestions.map(s => {
+      const cleanPrompt = String(s).trim();
+      const escaped = escapeHtmlText(cleanPrompt);
+      return `
+        <button type="button" data-prompt="${escaped}" onclick="sendPrompt(this.getAttribute('data-prompt'))"
+          class="suggestion-chip whitespace-nowrap px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-sky-50 dark:hover:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800/80 font-medium transition cursor-pointer shadow-2xs text-[11px] flex items-center gap-1.5 active:scale-95">
+          <i class="fa-solid fa-arrow-turn-down fa-rotate-90 text-[10px] text-sky-500"></i>
+          <span>${escaped}</span>
+        </button>
+      `;
+    }).join('');
+
+    return `
+      <div class="mt-3 pt-2.5 border-t border-slate-200/60 dark:border-slate-700/60">
+        <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+          <i class="fa-solid fa-bolt text-amber-500"></i>
+          <span>Gợi ý câu hỏi tiếp theo (Bấm để chạy tiếp):</span>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          ${chipsHtml}
+        </div>
+      </div>
+    `;
+  }
+
+  function updateQuickPromptsBar(suggestions) {
+    const bar = document.getElementById('quickPromptsContainer');
+    if (!bar || !suggestions || !Array.isArray(suggestions) || suggestions.length === 0) return;
+    let html = `
+      <span class="text-[10px] font-bold text-slate-400 uppercase whitespace-nowrap flex items-center gap-1">
+        <i class="fa-solid fa-bolt text-amber-500"></i> Gợi ý:
+      </span>
+    `;
+    suggestions.forEach(s => {
+      const cleanPrompt = String(s).trim();
+      const escaped = escapeHtmlText(cleanPrompt);
+      html += `
+        <button type="button" data-prompt="${escaped}" onclick="sendPrompt(this.getAttribute('data-prompt'))"
+          class="suggestion-chip whitespace-nowrap px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800/80 font-medium hover:bg-sky-50 dark:hover:bg-sky-950/50 transition cursor-pointer shadow-2xs active:scale-95">
+          <span>${escaped}</span>
+        </button>
+      `;
+    });
+    bar.innerHTML = html;
+  }
+
+  function renderAllFullChatMessages() {
+    const feed = document.getElementById('fullChatFeed');
+    if (!feed) return;
+
+    // Giữ lại tin nhắn chào đầu tiên
+    const firstChild = feed.firstElementChild;
+    feed.innerHTML = '';
+    if (firstChild) feed.appendChild(firstChild);
+
+    let latestSuggestions = [];
+
+    fullChatHistory.forEach(item => {
+      if (item.role === 'user') {
+        const userBubbleHtml = `
+          <div class="flex items-start justify-end gap-3">
+            <div class="max-w-2xl bg-gradient-to-r from-sky-600 to-indigo-600 text-white p-3.5 rounded-2xl rounded-tr-xs shadow-2xs font-medium leading-relaxed">
+              ${escapeHtmlText(item.content)}
+            </div>
+            <div class="w-8 h-8 rounded-xl bg-sky-600 text-white flex items-center justify-center flex-shrink-0 text-xs mt-0.5 shadow-2xs font-bold">
+              <i class="fa-solid fa-user"></i>
+            </div>
+          </div>
+        `;
+        feed.insertAdjacentHTML('beforeend', userBubbleHtml);
+      } else if (item.role === 'assistant') {
+        const formattedHtml = parseFullMarkdown(item.content);
+        const copyId = 'copy_' + Date.now() + Math.random().toString(36).substring(7);
+        const isFallback = item.is_fallback !== undefined ? item.is_fallback : (item.model_used && item.model_used.includes('Grounded'));
+        const suggestionsHtml = renderSuggestedChips(item.suggested_questions);
+        if (item.suggested_questions && item.suggested_questions.length > 0) {
+          latestSuggestions = item.suggested_questions;
+        }
+
+        const aiBubbleHtml = `
+          <div class="flex items-start gap-3">
+            <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 text-white flex items-center justify-center flex-shrink-0 text-sm mt-0.5 shadow-2xs">
+              <i class="fa-solid fa-robot"></i>
+            </div>
+            <div class="max-w-3xl bg-slate-50 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/60 p-4 rounded-2xl rounded-tl-xs shadow-2xs text-slate-800 dark:text-slate-100 space-y-2 leading-relaxed overflow-x-auto">
+              <div class="prose dark:prose-invert text-xs space-y-2" id="${copyId}">
+                ${formattedHtml}
+              </div>
+
+              ${suggestionsHtml}
+
+              <!-- Footer info & copy action -->
+              <div class="pt-2 mt-2 border-t border-slate-200 dark:border-slate-700/60 flex items-center justify-between text-[10px] text-slate-400">
+                <div class="flex items-center gap-2 font-mono">
+                  <span>${item.model_used || 'SmartLogis AI Engine'}</span>
+                  ${isFallback ? '<span class="text-amber-500 font-bold bg-amber-50 dark:bg-amber-950/60 px-1.5 py-0.2 rounded border border-amber-200 dark:border-amber-800">Local Grounded Engine</span>' : '<span class="text-emerald-500 font-bold bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.2 rounded border border-emerald-200 dark:border-emerald-800">Google Gemini LLM</span>'}
+                </div>
+                <button type="button" onclick="copyReplyText('${copyId}')" class="hover:text-slate-700 dark:hover:text-slate-200 flex items-center gap-1 cursor-pointer">
+                  <i class="fa-solid fa-copy"></i>
+                  <span>Sao chép</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+        feed.insertAdjacentHTML('beforeend', aiBubbleHtml);
+      }
+    });
+
+    if (latestSuggestions.length > 0) {
+      updateQuickPromptsBar(latestSuggestions);
+    }
+
+    feed.scrollTop = feed.scrollHeight;
+  }
+
+  // Lắng nghe thay đổi storage từ các tab khác
+  window.addEventListener('storage', (e) => {
+    if (e.key === CHAT_STORAGE_KEY) {
+      try {
+        fullChatHistory = JSON.parse(e.newValue || '[]') || [];
+        renderAllFullChatMessages();
+      } catch (err) {}
+    }
+  });
 
   function handleChatInputKey(e) {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -152,23 +302,39 @@
   }
 
   function sendPrompt(text) {
+    if (!text) return;
     const input = document.getElementById('chatInputMessage');
     if (input) {
       input.value = text;
-      submitFullChatMessage();
+      input.style.height = 'auto';
     }
+    // Cho phép gửi ngay, reset trạng thái bận nếu bị treo trước đó
+    if (isAiResponding) {
+      console.warn('AI đang phản hồi, vui lòng đợi trong giây lát...');
+      return;
+    }
+    submitFullChatMessage();
   }
 
   function clearFullChatSession() {
-    if (!confirm('Bạn có chắc chắn muốn làm mới cuộc hội thoại hiện tại?')) return;
+    if (!confirm('Bạn có chắc chắn muốn làm mới cuộc hội thoại hiện tại? Lịch sử cũ sẽ được xóa.')) return;
     fullChatHistory = [];
+    localStorage.removeItem(CHAT_STORAGE_KEY);
     const feed = document.getElementById('fullChatFeed');
     if (feed) {
-      // Giữ lại tin nhắn chào đầu tiên
       const firstChild = feed.firstElementChild;
       feed.innerHTML = '';
       if (firstChild) feed.appendChild(firstChild);
     }
+    // Phục hồi gợi ý ban đầu
+    updateQuickPromptsBar([
+      "📊 Sinh báo cáo điều hành kho 3 phần",
+      "⚠️ Mặt hàng nào đang thiếu hụt nguy cấp?",
+      "📦 Danh sách hàng tồn lâu > 60 ngày",
+      "🚀 Top mặt hàng xuất kho nhiều nhất (Burn-rate)",
+      "🏢 Gợi ý nhà cung cấp cho các mặt hàng thiếu hụt",
+      "🛡️ Giải thích cơ chế chống tồn âm Zero Negative Stock"
+    ]);
   }
 
   async function submitFullChatMessage() {
@@ -217,16 +383,21 @@
     feed.scrollTop = feed.scrollHeight;
 
     try {
-      const token = sessionStorage.getItem('access_token') || localStorage.getItem('access_token') || '';
+      const rawToken = sessionStorage.getItem('access_token') || localStorage.getItem('access_token') || '';
       const headers = { 'Content-Type': 'application/json' };
-      if (token) headers['Authorization'] = 'Bearer ' + token;
+      if (rawToken) {
+        headers['Authorization'] = rawToken.startsWith('Bearer ') ? rawToken : 'Bearer ' + rawToken;
+      }
+
+      // Chuẩn bị payload lịch sử
+      const historyPayload = fullChatHistory.map(h => ({ role: h.role, content: h.content }));
 
       const res = await fetch('/api/v1/ai/chat', {
         method: 'POST',
         headers: headers,
         body: JSON.stringify({
           message: query,
-          history: fullChatHistory
+          history: historyPayload
         })
       });
 
@@ -239,12 +410,23 @@
 
       const data = await res.json();
       const reply = data.reply || 'Không nhận được phản hồi hợp lệ.';
+      const suggestedQuestions = data.suggested_questions || [];
 
-      fullChatHistory.push({ role: 'user', content: query });
-      fullChatHistory.push({ role: 'assistant', content: reply });
+      // Lưu lịch sử vào mảng và localStorage kèm gợi ý câu hỏi
+      fullChatHistory.push({ role: 'user', content: query, timestamp: Date.now() });
+      fullChatHistory.push({
+        role: 'assistant',
+        content: reply,
+        model_used: data.model_used,
+        is_fallback: data.is_fallback,
+        suggested_questions: suggestedQuestions,
+        timestamp: Date.now()
+      });
+      localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(fullChatHistory));
 
       const formattedHtml = parseFullMarkdown(reply);
       const copyId = 'copy_' + Date.now();
+      const suggestionsHtml = renderSuggestedChips(suggestedQuestions);
 
       const aiBubbleHtml = `
         <div class="flex items-start gap-3">
@@ -255,6 +437,8 @@
             <div class="prose dark:prose-invert text-xs space-y-2" id="${copyId}">
               ${formattedHtml}
             </div>
+
+            ${suggestionsHtml}
 
             <!-- Footer info & copy action -->
             <div class="pt-2 mt-2 border-t border-slate-200 dark:border-slate-700/60 flex items-center justify-between text-[10px] text-slate-400">
@@ -273,6 +457,11 @@
 
       feed.insertAdjacentHTML('beforeend', aiBubbleHtml);
       feed.scrollTop = feed.scrollHeight;
+
+      // Cập nhật thanh gợi ý bên dưới
+      if (suggestedQuestions.length > 0) {
+        updateQuickPromptsBar(suggestedQuestions);
+      }
 
     } catch (err) {
       const thinkEl = document.getElementById(thinkingId);

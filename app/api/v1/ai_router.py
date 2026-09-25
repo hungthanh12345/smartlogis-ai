@@ -13,13 +13,15 @@ from app.core.database import get_db
 from app.core.security import get_current_active_user
 from app.schemas.inventory_schemas import (
     AIAdvisoryResponse, AIReportResponse,
-    AIChatRequest, AIChatResponse
+    AIChatRequest, AIChatResponse,
+    AIKeyConfigRequest, AIStatusResponse
 )
 from app.services.ai_service import (
     generate_ai_inventory_advisory,
     generate_full_ai_report,
     aggregate_warehouse_data_30d
 )
+from app.services.gemini_service import gemini_service
 from app.services.ai_chat_service import process_ai_chat_message
 
 router = APIRouter(prefix="/ai", tags=["Trợ Lý AI Gemini (Advisory & Chat)"])
@@ -89,6 +91,43 @@ def api_generate_monthly_report_legacy(
     return generate_full_ai_report(db)
 
 
+@router.get("/status", response_model=AIStatusResponse)
+def api_get_ai_status(
+    current_user = Depends(get_current_active_user)
+):
+    """Lấy trạng thái kết nối hiện tại của Google Gemini AI."""
+    return gemini_service.get_status()
+
+
+@router.post("/api-key")
+def api_set_gemini_key(
+    req: AIKeyConfigRequest,
+    current_user = Depends(get_current_active_user)
+):
+    """Cập nhật và kiểm tra Gemini API Key mới. Tự động lưu vào .env và runtime."""
+    valid, msg = gemini_service.set_api_key(req.api_key, persist_env=True)
+    if not valid:
+        raise HTTPException(status_code=400, detail=msg)
+    return {
+        "status": "success",
+        "message": msg,
+        "ai_status": gemini_service.get_status()
+    }
+
+
+@router.delete("/api-key")
+def api_clear_gemini_key(
+    current_user = Depends(get_current_active_user)
+):
+    """Xóa API Key về chế độ Local Grounded Analytical Engine."""
+    gemini_service.clear_api_key(persist_env=True)
+    return {
+        "status": "success",
+        "message": "Đã xóa API Key. Đã chuyển về SmartLogis Local Grounded Engine.",
+        "ai_status": gemini_service.get_status()
+    }
+
+
 @router.post("/chat", response_model=AIChatResponse)
 def api_ai_chat(
     req: AIChatRequest,
@@ -105,11 +144,12 @@ def api_ai_chat(
     - Hỗ trợ cơ chế Fallback nội bộ bảo đảm luôn phản hồi chính xác kể cả khi không có kết nối Gemini API.
     """
     try:
-        res = process_ai_chat_message(db, req.message, req.history)
+        res = process_ai_chat_message(db, req.message, req.history, api_key=req.api_key)
         return res
     except Exception as e:
         raise HTTPException(
             status_code=500,
             detail=f"Lỗi khi xử lý hội thoại AI: {str(e)}"
         )
+
 

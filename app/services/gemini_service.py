@@ -9,6 +9,8 @@ Các tính năng cốt lõi:
    luôn cung cấp báo cáo 3 phần chính xác dựa trên số liệu thực tế kể cả khi mất mạng.
 """
 
+import os
+import re
 import json
 import time
 import logging
@@ -23,12 +25,57 @@ from app.prompts.inventory_prompts import (
 
 logger = logging.getLogger("smartlogis.gemini")
 
-# Các model ưu tiên theo thứ tự
+# Các model chính thức của Google Gemini API (Ưu tiên các model hoạt động nhanh và ổn định)
 SUPPORTED_GEMINI_MODELS = [
     "gemini-3.5-flash-lite",
     "gemini-3.6-flash",
+    "gemini-flash-lite-latest",
+    "gemini-3.5-flash",
     "gemini-flash-latest"
 ]
+
+
+def update_env_file(key: str, value: str):
+    """Cập nhật hoặc thêm biến môi trường vào tệp .env ở thư mục gốc."""
+    env_path = os.path.join(os.getcwd(), ".env")
+    if not os.path.exists(env_path):
+        example_path = os.path.join(os.getcwd(), ".env.example")
+        if os.path.exists(example_path):
+            try:
+                import shutil
+                shutil.copyfile(example_path, env_path)
+                # Đảm bảo DATABASE_URL giữ nguyên sqlite mặc định nếu dev
+                with open(env_path, "r", encoding="utf-8") as ef:
+                    e_content = ef.read()
+                e_content = e_content.replace(
+                    'DATABASE_URL="mysql+pymysql://root:your_password@localhost:3306/smartlogis_db?charset=utf8mb4"',
+                    'DATABASE_URL="sqlite:///./smartlogis.db"'
+                ).replace('DB_TYPE="mysql"', 'DB_TYPE="sqlite"')
+                with open(env_path, "w", encoding="utf-8") as ef:
+                    ef.write(e_content)
+            except Exception:
+                pass
+
+    lines = []
+    found = False
+    if os.path.exists(env_path):
+        with open(env_path, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+
+        new_lines = []
+        for line in lines:
+            if line.strip().startswith(f"{key}=") or line.strip().startswith(f'export {key}='):
+                new_lines.append(f'{key}="{value}"\n')
+                found = True
+            else:
+                new_lines.append(line)
+        lines = new_lines
+
+    if not found:
+        lines.append(f'\n{key}="{value}"\n')
+
+    with open(env_path, "w", encoding="utf-8") as f:
+        f.writelines(lines)
 
 
 class GeminiService:
@@ -37,10 +84,85 @@ class GeminiService:
         self.timeout = getattr(settings, "AI_TIMEOUT_SECONDS", 20.0)
         self.max_retries = getattr(settings, "AI_MAX_RETRIES", 3)
 
-
     def is_configured(self) -> bool:
         """Kiểm tra xem API Key đã được cấu hình hợp lệ chưa."""
         return bool(self.api_key and len(self.api_key.strip()) > 10)
+
+    def test_api_key(self, api_key: str) -> tuple:
+        """Kiểm tra tính hợp lệ của Gemini API Key qua REST API."""
+        key = (api_key or "").strip()
+        if not key or len(key) < 10:
+            return False, "Khóa API không hợp lệ (độ dài tối thiểu 10 ký tự)."
+
+        base_endpoint = getattr(settings, "GEMINI_API_ENDPOINT", "https://generativelanguage.googleapis.com/v1beta").rstrip("/")
+        primary_model = getattr(settings, "GEMINI_MODEL", "gemini-3.5-flash-lite")
+        url = f"{base_endpoint}/models/{primary_model}:generateContent?key={key}"
+        payload = {
+            "contents": [{"parts": [{"text": "Hello"}]}],
+            "generationConfig": {"maxOutputTokens": 20}
+        }
+        try:
+            with httpx.Client(timeout=10.0) as client:
+                res = client.post(url, json=payload)
+                if res.status_code == 200:
+                    return True, f"API Key hợp lệ! Mô hình {primary_model} đã sẵn sàng."
+                elif res.status_code in [400, 401, 403]:
+                    try:
+                        err_data = res.json().get("error", {})
+                        err_msg = err_data.get("message", "API Key không hợp lệ hoặc bị vô hiệu hóa.")
+                    except Exception:
+                        err_msg = res.text[:200]
+                    return False, f"Lỗi xác thực API Key ({res.status_code}): {err_msg}"
+                elif res.status_code == 429:
+                    return True, "API Key hợp lệ nhưng đang bị giới hạn tốc độ tạm thời (Quota/Rate Limit)."
+                else:
+                    return False, f"Gemini API phản hồi mã lỗi {res.status_code}: {res.text[:150]}"
+        except Exception as e:
+            return False, f"Không thể kết nối đến máy chủ Google Gemini: {str(e)}"
+
+    def set_api_key(self, api_key: str, persist_env: bool = True) -> tuple:
+        """Cập nhật API Key mới, kiểm tra và lưu vào cấu hình runtime và .env."""
+        valid, msg = self.test_api_key(api_key)
+        if not valid:
+            return False, msg
+
+        cleaned_key = api_key.strip()
+        self.api_key = cleaned_key
+        settings.GEMINI_API_KEY = cleaned_key
+
+        if persist_env:
+            try:
+                update_env_file("GEMINI_API_KEY", cleaned_key)
+            except Exception as e:
+                logger.warning(f"[GeminiService] Không thể ghi .env: {e}")
+
+        return True, msg
+
+    def clear_api_key(self, persist_env: bool = True):
+        """Xóa API Key về chế độ Local Grounded Engine."""
+        self.api_key = ""
+        settings.GEMINI_API_KEY = ""
+        if persist_env:
+            try:
+                update_env_file("GEMINI_API_KEY", "")
+            except Exception as e:
+                logger.warning(f"[GeminiService] Không thể xóa .env: {e}")
+
+    def get_status(self) -> dict:
+        """Lấy trạng thái kết nối Gemini hiện tại."""
+        configured = self.is_configured()
+        masked = None
+        primary_model = getattr(settings, "GEMINI_MODEL", "gemini-3.5-flash-lite")
+        if configured:
+            k = self.api_key
+            masked = k[:6] + "..." + k[-4:] if len(k) > 10 else "***"
+        return {
+            "configured": configured,
+            "masked_key": masked,
+            "model_name": primary_model if configured else "SmartLogis Grounded Analytical Engine",
+            "engine": f"Google Gemini LLM ({primary_model})" if configured else "SmartLogis Grounded Analytical Engine (Local CSDL)",
+            "message": f"Đang kết nối Google Gemini API Live ({primary_model})" if configured else "Đang sử dụng Bộ Phân Tích CSDL Kho Nội Bộ (Offline/Fallback)"
+        }
 
     def generate_inventory_report(
         self,
@@ -62,7 +184,7 @@ class GeminiService:
             return self._generate_grounded_fallback(warehouse_data, reason="API Key chưa được cấu hình")
 
         user_prompt = build_inventory_user_prompt(warehouse_data, output_format=output_format)
-        
+
         # Thử gọi qua các models hỗ trợ kèm cơ chế retry
         for model_name in SUPPORTED_GEMINI_MODELS:
             result = self._call_gemini_with_retry(model_name, user_prompt)
@@ -80,23 +202,36 @@ class GeminiService:
         logger.error("[GeminiService] Tất cả các model Gemini đều không khả dụng. Kích hoạt Local Grounded Fallback Engine.")
         return self._generate_grounded_fallback(warehouse_data, reason="Gemini API Timeout hoặc Quota Limit")
 
-    def _call_gemini_with_retry(self, model_name: str, user_prompt: str) -> Optional[str]:
+    def _call_gemini_with_retry(
+        self,
+        model_name: str,
+        user_prompt: str,
+        system_prompt: Optional[str] = None,
+        temperature: float = 0.2,
+        api_key: Optional[str] = None
+    ) -> Optional[str]:
         """
         Gọi Gemini REST API kèm cơ chế Retry với Exponential Backoff.
         """
+        key_to_use = (api_key or self.api_key).strip()
+        if not key_to_use:
+            return None
+
         base_endpoint = getattr(settings, "GEMINI_API_ENDPOINT", "https://generativelanguage.googleapis.com/v1beta").rstrip("/")
-        url = f"{base_endpoint}/models/{model_name}:generateContent?key={self.api_key}"
+        url = f"{base_endpoint}/models/{model_name}:generateContent?key={key_to_use}"
+        
+        parts_text = f"{system_prompt}\n\n{user_prompt}" if system_prompt else f"{SYSTEM_PROMPT_ANTI_HALLUCINATION}\n\n{user_prompt}"
         payload = {
             "contents": [
                 {
                     "role": "user",
                     "parts": [
-                        {"text": f"{SYSTEM_PROMPT_ANTI_HALLUCINATION}\n\n{user_prompt}"}
+                        {"text": parts_text}
                     ]
                 }
             ],
             "generationConfig": {
-                "temperature": 0.15,
+                "temperature": temperature,
                 "topP": 0.85,
                 "maxOutputTokens": 4096
             }
@@ -113,8 +248,9 @@ class GeminiService:
                         candidates = res_json.get("candidates", [])
                         if candidates:
                             parts = candidates[0].get("content", {}).get("parts", [])
-                            if parts:
-                                return parts[0].get("text", "")
+                            text_parts = [p.get("text", "") for p in parts if isinstance(p, dict) and "text" in p]
+                            if text_parts:
+                                return "".join(text_parts)
                     
                     elif response.status_code == 429:
                         logger.warning(f"[GeminiService] Gặp mã 429 Rate Limit (Thử lần {attempt}/{self.max_retries}). Chờ backoff...")
@@ -123,6 +259,10 @@ class GeminiService:
                     elif response.status_code in [400, 401, 403]:
                         logger.error(f"[GeminiService] Lỗi xác thực API Key (Mã {response.status_code}): {response.text[:150]}")
                         return None  # Không retry nếu key không hợp lệ
+                    
+                    elif response.status_code == 404:
+                        logger.warning(f"[GeminiService] Model {model_name} không tồn tại hoặc đã lỗi thời (404). Chuyển sang model tiếp theo...")
+                        break
                     
                     else:
                         logger.warning(f"[GeminiService] Model {model_name} trả về mã {response.status_code}: {response.text[:150]}")
@@ -152,24 +292,35 @@ class GeminiService:
             cleaned_text = cleaned_text[:-3]
         cleaned_text = cleaned_text.strip()
 
+        candidates_to_try = [cleaned_text]
+        json_match = re.search(r'\{[\s\S]*\}', cleaned_text)
+        if json_match and json_match.group(0) != cleaned_text:
+            candidates_to_try.append(json_match.group(0))
+
         try:
-            parsed = json.loads(cleaned_text)
-            # Kiểm tra xem có đủ các trường trọng yếu không
-            if "phan_1_tong_quan" in parsed and "phan_2_canh_bao_va_de_xuat_nhap" in parsed:
-                # Nếu thiếu markdown_report, tự sinh từ dữ liệu
-                if not parsed.get("markdown_report"):
-                    parsed["markdown_report"] = self._render_markdown_from_json(parsed)
-                return parsed
+            for cand in candidates_to_try:
+                try:
+                    parsed = json.loads(cand)
+                    # Kiểm tra xem có đủ các trường trọng yếu không
+                    if "phan_1_tong_quan" in parsed and "phan_2_canh_bao_va_de_xuat_nhap" in parsed:
+                        # Nếu thiếu markdown_report, tự sinh từ dữ liệu
+                        if not parsed.get("markdown_report"):
+                            parsed["markdown_report"] = self._render_markdown_from_json(parsed)
+                        return parsed
+                except Exception:
+                    pass
         except Exception:
-            # Nếu Gemini trả về text thường hoặc Markdown thuần
-            logger.info("[GeminiService] Gemini trả về định dạng văn bản Markdown thay vì JSON.")
-            return {
-                "phan_1_tong_quan": {
-                    "tong_so_sku": warehouse_data.get("metadata", {}).get("total_skus", 0),
-                    "so_sku_canh_bao_ton_min": len(warehouse_data.get("low_stock_alerts", [])),
-                    "so_sku_u_dong_60_ngay": len(warehouse_data.get("dead_stock_items", [])),
-                    "danh_gia_chung": "Báo cáo phân tích từ Google Gemini LLM."
-                },
+            pass
+
+        # Nếu Gemini trả về text thường hoặc Markdown thuần
+        logger.info("[GeminiService] Gemini trả về định dạng văn bản Markdown thay vì JSON.")
+        return {
+            "phan_1_tong_quan": {
+                "tong_so_sku": warehouse_data.get("metadata", {}).get("total_skus", 0),
+                "so_sku_canh_bao_ton_min": len(warehouse_data.get("low_stock_alerts", [])),
+                "so_sku_u_dong_60_ngay": len(warehouse_data.get("dead_stock_items", [])),
+                "danh_gia_chung": "Báo cáo phân tích từ Google Gemini LLM."
+            },
                 "phan_2_canh_bao_va_de_xuat_nhap": warehouse_data.get("low_stock_alerts", [])[:10],
                 "phan_3_bien_dong_bat_thuong": {
                     "xuat_dot_bien": warehouse_data.get("high_burn_rate_items", []),
