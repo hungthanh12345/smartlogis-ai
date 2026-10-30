@@ -2,7 +2,7 @@
 """
 Gemini AI Service - Quản lý tích hợp Google Gemini API
 Các tính năng cốt lõi:
-1. Kết nối Gemini API với danh sách Models linh hoạt (gemini-3.5-flash-lite, gemini-3.6-flash).
+1. Kết nối Gemini API với danh sách Models linh hoạt (gemini-2.0-flash, gemini-1.5-flash).
 2. Cơ chế Retry tự động với Exponential Backoff khi Timeout hoặc Rate Limit (429).
 3. Bắt lỗi sai API Key, quá hạn mức Quota và kích hoạt Fallback Grounded Engine.
 4. Cơ chế Fallback CSDL Nội Bộ (Local Grounded Engine): Đảm bảo 100% không crash hệ thống,
@@ -27,62 +27,70 @@ logger = logging.getLogger("smartlogis.gemini")
 
 # Các model chính thức của Google Gemini API (Ưu tiên các model hoạt động nhanh và ổn định)
 SUPPORTED_GEMINI_MODELS = [
-    "gemini-3.5-flash-lite",
-    "gemini-3.6-flash",
-    "gemini-flash-lite-latest",
-    "gemini-3.5-flash",
-    "gemini-flash-latest"
+    "gemini-2.0-flash",
+    "gemini-1.5-flash",
+    "gemini-2.5-flash",
+    "gemini-1.5-pro",
+    "gemini-1.5-flash-8b"
 ]
 
 
 def update_env_file(key: str, value: str):
-    """Cập nhật hoặc thêm biến môi trường vào tệp .env ở thư mục gốc."""
-    env_path = os.path.join(os.getcwd(), ".env")
-    if not os.path.exists(env_path):
-        example_path = os.path.join(os.getcwd(), ".env.example")
-        if os.path.exists(example_path):
-            try:
-                import shutil
-                shutil.copyfile(example_path, env_path)
-                # Đảm bảo DATABASE_URL giữ nguyên sqlite mặc định nếu dev
-                with open(env_path, "r", encoding="utf-8") as ef:
-                    e_content = ef.read()
-                e_content = e_content.replace(
-                    'DATABASE_URL="mysql+pymysql://root:your_password@localhost:3306/smartlogis_db?charset=utf8mb4"',
-                    'DATABASE_URL="sqlite:///./smartlogis.db"'
-                ).replace('DB_TYPE="mysql"', 'DB_TYPE="sqlite"')
-                with open(env_path, "w", encoding="utf-8") as ef:
-                    ef.write(e_content)
-            except Exception:
-                pass
-
-    lines = []
-    found = False
-    if os.path.exists(env_path):
-        with open(env_path, "r", encoding="utf-8") as f:
-            lines = f.readlines()
-
-        new_lines = []
-        for line in lines:
-            if line.strip().startswith(f"{key}=") or line.strip().startswith(f'export {key}='):
-                new_lines.append(f'{key}="{value}"\n')
-                found = True
-            else:
-                new_lines.append(line)
-        lines = new_lines
-
-    if not found:
-        lines.append(f'\n{key}="{value}"\n')
-
-    with open(env_path, "w", encoding="utf-8") as f:
-        f.writelines(lines)
+    """Cập nhật biến môi trường đồng thời vào cả backend/.env và root .env."""
+    curr_dir = os.path.dirname(os.path.abspath(__file__))
+    backend_dir = os.path.dirname(os.path.dirname(curr_dir))
+    root_dir = os.path.dirname(backend_dir)
+    target_paths = list(dict.fromkeys([
+        os.path.join(backend_dir, ".env"),
+        os.path.join(root_dir, ".env"),
+        os.path.join(os.getcwd(), ".env"),
+        os.path.join(os.getcwd(), "backend", ".env")
+    ]))
+    nl = chr(10)
+    for env_path in target_paths:
+        if not os.path.exists(env_path):
+            continue
+        try:
+            with open(env_path, "r", encoding="utf-8") as f:
+                lines = f.readlines()
+            new_lines = []
+            found = False
+            for line in lines:
+                if line.strip().startswith(f"{key}=") or line.strip().startswith(f"export {key}="):
+                    new_lines.append(f'{key}="{value}"' + nl)
+                    found = True
+                else:
+                    new_lines.append(line)
+            if not found:
+                new_lines.append(nl + f'{key}="{value}"' + nl)
+            with open(env_path, "w", encoding="utf-8") as f:
+                f.writelines(new_lines)
+            logger.info(f"Đã cập nhật {key} vào {env_path}")
+        except Exception as e:
+            logger.warning(f"Không thể cập nhật {key} vào {env_path}: {e}")
 
 
 class GeminiService:
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key or settings.GEMINI_API_KEY or ""
-        self.timeout = getattr(settings, "AI_TIMEOUT_SECONDS", 20.0)
-        self.max_retries = getattr(settings, "AI_MAX_RETRIES", 3)
+        self.last_error_was_network = False
+        # Circuit-breaker: True nghĩa là mạng tới Gemini đang hoạt động, False nghĩa là đã có lỗi mạng/timeout gần đây
+        self._network_ok: Optional[bool] = None
+
+    @property
+    def timeout(self) -> float:
+        """Đọc timeout mới nhất từ settings mỗi lần gọi (không cần restart khi đổi .env)."""
+        return float(getattr(settings, "AI_TIMEOUT_SECONDS", 5.0))
+
+    @property
+    def max_retries(self) -> int:
+        if hasattr(self, "_max_retries") and self._max_retries is not None:
+            return self._max_retries
+        return int(getattr(settings, "AI_MAX_RETRIES", 1))
+
+    @max_retries.setter
+    def max_retries(self, value: int):
+        self._max_retries = int(value)
 
     def is_configured(self) -> bool:
         """Kiểm tra xem API Key đã được cấu hình hợp lệ chưa."""
@@ -95,7 +103,7 @@ class GeminiService:
             return False, "Khóa API không hợp lệ (độ dài tối thiểu 10 ký tự)."
 
         base_endpoint = getattr(settings, "GEMINI_API_ENDPOINT", "https://generativelanguage.googleapis.com/v1beta").rstrip("/")
-        primary_model = getattr(settings, "GEMINI_MODEL", "gemini-3.5-flash-lite")
+        primary_model = getattr(settings, "GEMINI_MODEL", "gemini-2.0-flash")
         url = f"{base_endpoint}/models/{primary_model}:generateContent?key={key}"
         payload = {
             "contents": [{"parts": [{"text": "Hello"}]}],
@@ -152,7 +160,7 @@ class GeminiService:
         """Lấy trạng thái kết nối Gemini hiện tại."""
         configured = self.is_configured()
         masked = None
-        primary_model = getattr(settings, "GEMINI_MODEL", "gemini-3.5-flash-lite")
+        primary_model = getattr(settings, "GEMINI_MODEL", "gemini-2.0-flash")
         if configured:
             k = self.api_key
             masked = k[:6] + "..." + k[-4:] if len(k) > 10 else "***"
@@ -183,19 +191,26 @@ class GeminiService:
             logger.warning("[GeminiService] API Key chưa được cấu hình. Kích hoạt Grounded Fallback Engine.")
             return self._generate_grounded_fallback(warehouse_data, reason="API Key chưa được cấu hình")
 
+        # Circuit-breaker: nếu mạng đã bị lỗi ở lần trước, bỏ qua hoàn toàn để không block request
+        if self._network_ok is False:
+            logger.info("[GeminiService] Circuit-breaker đang mở (đã gặp lỗi mạng trước đó). Dùng Grounded Fallback Engine ngay.")
+            return self._generate_grounded_fallback(warehouse_data, reason="Circuit-breaker: Gemini API không khả dụng")
+
         user_prompt = build_inventory_user_prompt(warehouse_data, output_format=output_format)
 
         # Thử gọi qua các models hỗ trợ kèm cơ chế retry
         for model_name in SUPPORTED_GEMINI_MODELS:
             result = self._call_gemini_with_retry(model_name, user_prompt)
             if result is not None:
+                self._network_ok = True
                 parsed_content = self._parse_gemini_response(result, warehouse_data)
                 if parsed_content:
                     parsed_content["model_used"] = f"Google Gemini API ({model_name})"
                     parsed_content["is_fallback"] = False
                     return parsed_content
             if getattr(self, "last_error_was_network", False):
-                logger.warning("[GeminiService] Mạng/Timeout không phản hồi. Chuyển ngay sang Local Grounded Fallback Engine.")
+                self._network_ok = False
+                logger.warning("[GeminiService] Mạng/Timeout không phản hồi. Circuit-breaker đóng, chuyển ngay sang Local Grounded Fallback Engine.")
                 break
 
         # Nếu tất cả các model và retries đều không thành công -> Kích hoạt Fallback

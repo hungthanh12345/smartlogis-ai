@@ -34,8 +34,20 @@ certbot/conf/*.key
 certbot/conf/*.crt
 certbot/conf/archive/
 certbot/conf/keys/
+backend/certbot/conf/live/
+backend/certbot/conf/*.key
+backend/certbot/conf/*.crt
+backend/certbot/conf/archive/
+backend/certbot/conf/keys/
+**/certbot/conf/live/
+**/certbot/conf/*.key
+**/certbot/conf/*.crt
+**/certbot/conf/archive/
+**/certbot/conf/keys/
 !certbot/conf/.gitkeep
 !certbot/www/.gitkeep
+!**/certbot/conf/.gitkeep
+!**/certbot/www/.gitkeep
 
 
 git-exercises/

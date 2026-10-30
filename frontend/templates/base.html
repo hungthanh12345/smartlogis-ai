@@ -530,9 +530,6 @@
           </div>
         </div>
         <div class="flex items-center gap-1">
-          <button type="button" onclick="openGeminiKeyModal()" title="Cấu hình Google Gemini API Key" class="w-7 h-7 rounded-lg hover:bg-white/20 text-white/80 hover:text-white flex items-center justify-center text-xs transition cursor-pointer">
-            <i class="fa-solid fa-key"></i>
-          </button>
           <button type="button" onclick="clearFloatingChatHistory()" title="Xóa lịch sử trò chuyện" class="w-7 h-7 rounded-lg hover:bg-white/20 text-white/80 hover:text-white flex items-center justify-center text-xs transition cursor-pointer">
             <i class="fa-solid fa-trash-can"></i>
           </button>
@@ -599,72 +596,6 @@
     </button>
   </div>
   {% endif %}
-
-  <!-- MODAL CẤU HÌNH GEMINI API KEY -->
-  <div id="geminiApiKeyModal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md shadow-2xl p-5 space-y-4 animate-in fade-in zoom-in-95 duration-150">
-      <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
-        <div class="flex items-center gap-2.5">
-          <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 text-white flex items-center justify-center text-sm shadow-xs">
-            <i class="fa-solid fa-key"></i>
-          </div>
-          <div>
-            <h3 class="text-sm font-bold text-slate-800 dark:text-white">Cấu Hình Google Gemini API Key</h3>
-            <p class="text-[11px] text-slate-500 dark:text-slate-400">Kết nối trực tiếp mô hình AI để mở khóa trả lời mọi câu hỏi</p>
-          </div>
-        </div>
-        <button type="button" onclick="closeGeminiKeyModal()" class="w-7 h-7 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 flex items-center justify-center transition cursor-pointer">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
-      </div>
-
-      <!-- Trạng thái hiện tại -->
-      <div id="modalKeyStatusBox" class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs space-y-1">
-        <div class="flex items-center justify-between">
-          <span class="text-slate-500 dark:text-slate-400">Trạng thái:</span>
-          <span id="modalCurrentStatus" class="font-bold text-sky-600 dark:text-sky-400">Đang kiểm tra...</span>
-        </div>
-        <div class="flex items-center justify-between text-[11px]">
-          <span class="text-slate-500 dark:text-slate-400">Mô hình hoạt động:</span>
-          <span id="modalCurrentModel" class="font-mono text-slate-700 dark:text-slate-300">--</span>
-        </div>
-      </div>
-
-      <!-- Ô nhập Key -->
-      <div class="space-y-1.5">
-        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-200">
-          Khóa Google Gemini API Key:
-        </label>
-        <input type="password" id="modalApiKeyInput" placeholder="Dán khóa API của bạn (ví dụ: AIzaSy...)"
-          class="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 font-mono">
-        <p class="text-[10px] text-slate-500 dark:text-slate-400">
-          Chưa có khóa? Lấy miễn phí tại: <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="text-sky-600 dark:text-sky-400 underline font-semibold">Google AI Studio</a>.
-        </p>
-      </div>
-
-      <!-- Thông báo kết quả -->
-      <div id="modalKeyFeedback" class="hidden p-2.5 rounded-xl text-xs"></div>
-
-      <!-- Các nút thao tác -->
-      <div class="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-800">
-        <button type="button" onclick="clearModalApiKey()" id="modalBtnClearKey"
-          class="px-3 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/40 text-rose-600 dark:text-rose-400 text-xs font-semibold transition cursor-pointer">
-          Xóa Key (Về Local)
-        </button>
-        <div class="flex items-center gap-2">
-          <button type="button" onclick="closeGeminiKeyModal()"
-            class="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300 text-xs font-semibold transition cursor-pointer">
-            Đóng
-          </button>
-          <button type="button" onclick="saveModalApiKey()" id="modalBtnSaveKey"
-            class="px-4 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold transition shadow-xs cursor-pointer flex items-center gap-1.5">
-            <i class="fa-solid fa-check"></i>
-            <span>Lưu & Kích Hoạt</span>
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
 
   <script>
     // =========================================================================
@@ -1032,8 +963,6 @@
         const badge = document.getElementById('floatingAiBadge');
         const pulse = document.getElementById('floatingAiPulse');
         const statusText = document.getElementById('floatingAiStatusText');
-        const modalStatus = document.getElementById('modalCurrentStatus');
-        const modalModel = document.getElementById('modalCurrentModel');
 
         if (data.configured) {
           if (badge) {
@@ -1041,114 +970,22 @@
             badge.innerText = "Gemini Live";
           }
           if (statusText) statusText.innerText = "Google Gemini LLM Active";
-          if (modalStatus) modalStatus.innerHTML = `<span class="text-emerald-500 font-bold">Đã kết nối (${data.masked_key || '***'})</span>`;
-          if (modalModel) modalModel.innerText = data.model_name;
         } else {
           if (badge) {
             badge.className = "text-[9px] bg-sky-300/30 text-sky-100 px-1 py-0.2 rounded font-mono font-normal";
             badge.innerText = "Local CSDL";
           }
           if (statusText) statusText.innerText = "CSDL Nội Bộ (Offline Ready)";
-          if (modalStatus) modalStatus.innerHTML = `<span class="text-amber-500 font-bold">Chưa cấu hình (Đang dùng Local DB)</span>`;
-          if (modalModel) modalModel.innerText = "SmartLogis Grounded Engine";
         }
       } catch (e) {
         console.warn('Không thể lấy trạng thái Gemini:', e);
       }
     }
 
-    function openGeminiKeyModal() {
-      const modal = document.getElementById('geminiApiKeyModal');
-      const feedback = document.getElementById('modalKeyFeedback');
-      if (feedback) feedback.classList.add('hidden');
-      if (modal) modal.classList.remove('hidden');
-      fetchAiStatus();
-    }
-
-    function closeGeminiKeyModal() {
-      const modal = document.getElementById('geminiApiKeyModal');
-      if (modal) modal.classList.add('hidden');
-    }
-
-    async function saveModalApiKey() {
-      const input = document.getElementById('modalApiKeyInput');
-      const feedback = document.getElementById('modalKeyFeedback');
-      const saveBtn = document.getElementById('modalBtnSaveKey');
-      if (!input || !feedback) return;
-
-      const key = input.value.trim();
-      if (!key || key.length < 10) {
-        feedback.className = "p-2.5 rounded-xl text-xs bg-rose-50 text-rose-700 border border-rose-200";
-        feedback.innerText = "Vui lòng nhập API Key hợp lệ (tối thiểu 10 ký tự).";
-        feedback.classList.remove('hidden');
-        return;
-      }
-
-      if (saveBtn) {
-        saveBtn.disabled = true;
-        saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Đang xác thực...</span>';
-      }
-
-      try {
-        const token = sessionStorage.getItem('access_token') || localStorage.getItem('access_token') || '';
-        const headers = { 'Content-Type': 'application/json' };
-        if (token) headers['Authorization'] = 'Bearer ' + token;
-
-        const res = await fetch('/api/v1/ai/api-key', {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({ api_key: key })
-        });
-
-        const data = await res.json();
-        if (!res.ok) {
-          throw new Error(data.detail || 'Lỗi khi kích hoạt API Key');
-        }
-
-        feedback.className = "p-2.5 rounded-xl text-xs bg-emerald-50 text-emerald-700 border border-emerald-200";
-        feedback.innerText = "✅ " + data.message;
-        feedback.classList.remove('hidden');
-        input.value = '';
-
-        fetchAiStatus();
-        setTimeout(() => closeGeminiKeyModal(), 1800);
-      } catch (err) {
-        feedback.className = "p-2.5 rounded-xl text-xs bg-rose-50 text-rose-700 border border-rose-200";
-        feedback.innerText = "❌ " + err.message;
-        feedback.classList.remove('hidden');
-      } finally {
-        if (saveBtn) {
-          saveBtn.disabled = false;
-          saveBtn.innerHTML = '<i class="fa-solid fa-check"></i><span>Lưu & Kích Hoạt</span>';
-        }
-      }
-    }
-
-    async function clearModalApiKey() {
-      if (!confirm('Bạn có chắc chắn muốn xóa API Key và trở về bộ phân tích Local CSDL nội bộ?')) return;
-      const feedback = document.getElementById('modalKeyFeedback');
-      try {
-        const token = sessionStorage.getItem('access_token') || localStorage.getItem('access_token') || '';
-        const headers = {};
-        if (token) headers['Authorization'] = 'Bearer ' + token;
-
-        const res = await fetch('/api/v1/ai/api-key', {
-          method: 'DELETE',
-          headers
-        });
-        const data = await res.json();
-        if (feedback) {
-          feedback.className = "p-2.5 rounded-xl text-xs bg-amber-50 text-amber-700 border border-amber-200";
-          feedback.innerText = "ℹ️ " + data.message;
-          feedback.classList.remove('hidden');
-        }
-        fetchAiStatus();
-        setTimeout(() => closeGeminiKeyModal(), 1500);
-      } catch (err) {
-        alert('Lỗi: ' + err.message);
-      }
-    }
-
+    function openGeminiKeyModal() {}
+    function closeGeminiKeyModal() {}
+    function saveModalApiKey() {}
+    function clearModalApiKey() {}
     function escapeHtmlBasic(text) {
       if (!text) return '';
       return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");

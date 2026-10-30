@@ -18,14 +18,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Cài đặt thư viện Python từ requirements.txt
-COPY requirements.txt .
+COPY backend/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
 
 # Copy toàn bộ mã nguồn vào container
 COPY . .
 
-# Mở cổng dịch vụ 8000
+# Chuyển thư mục làm việc vào backend để khởi chạy
+WORKDIR /app/backend
 EXPOSE 8000
 
 # Khởi chạy ứng dụng thông qua Uvicorn ASGI Server

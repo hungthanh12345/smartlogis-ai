@@ -1,7 +1,7 @@
 import io
 from datetime import datetime
 from typing import List, Optional
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload, subqueryload
 from sqlalchemy import func
 from fastapi import HTTPException, status
 from app.core.datetime_utils import utc_now
@@ -276,12 +276,32 @@ def get_the_kho_by_item(db: Session, ma_hh: str, limit: int = 100, from_date: Op
     return filtered_records
 
 def get_all_phieu_nhap(db: Session, limit: int = 100, skip: int = 0) -> list:
-    """Lấy danh sách phiếu nhập kho sắp xếp theo ngày nhập mới nhất."""
-    return db.query(PhieuNhap).order_by(PhieuNhap.NgayNhap.desc()).offset(skip).limit(limit).all()
+    """Lấy danh sách phiếu nhập kho sắp xếp theo ngày nhập mới nhất (eager load chi tiết để tránh N+1)."""
+    return (
+        db.query(PhieuNhap)
+        .options(
+            joinedload(PhieuNhap.nha_cung_cap),
+            joinedload(PhieuNhap.nguoi_dung),
+            subqueryload(PhieuNhap.chi_tiet),
+        )
+        .order_by(PhieuNhap.NgayNhap.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
 
 def get_phieu_nhap_by_id(db: Session, ma_pn: str) -> PhieuNhap:
     """Lấy chi tiết một phiếu nhập kho kèm chi tiết các dòng hàng."""
-    pn = db.query(PhieuNhap).filter(PhieuNhap.MaPN == ma_pn).first()
+    pn = (
+        db.query(PhieuNhap)
+        .options(
+            joinedload(PhieuNhap.nha_cung_cap),
+            joinedload(PhieuNhap.nguoi_dung),
+            subqueryload(PhieuNhap.chi_tiet),
+        )
+        .filter(PhieuNhap.MaPN == ma_pn)
+        .first()
+    )
     if not pn:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -290,12 +310,30 @@ def get_phieu_nhap_by_id(db: Session, ma_pn: str) -> PhieuNhap:
     return pn
 
 def get_all_phieu_xuat(db: Session, limit: int = 100, skip: int = 0) -> list:
-    """Lấy danh sách phiếu xuất kho sắp xếp theo ngày xuất mới nhất."""
-    return db.query(PhieuXuat).order_by(PhieuXuat.NgayXuat.desc()).offset(skip).limit(limit).all()
+    """Lấy danh sách phiếu xuất kho sắp xếp theo ngày xuất mới nhất (eager load để tránh N+1)."""
+    return (
+        db.query(PhieuXuat)
+        .options(
+            joinedload(PhieuXuat.nguoi_dung),
+            subqueryload(PhieuXuat.chi_tiet),
+        )
+        .order_by(PhieuXuat.NgayXuat.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
 
 def get_phieu_xuat_by_id(db: Session, ma_px: str) -> PhieuXuat:
     """Lấy chi tiết một phiếu xuất kho kèm chi tiết các dòng hàng."""
-    px = db.query(PhieuXuat).filter(PhieuXuat.MaPX == ma_px).first()
+    px = (
+        db.query(PhieuXuat)
+        .options(
+            joinedload(PhieuXuat.nguoi_dung),
+            subqueryload(PhieuXuat.chi_tiet),
+        )
+        .filter(PhieuXuat.MaPX == ma_px)
+        .first()
+    )
     if not px:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -308,14 +346,21 @@ def get_phieu_xuat_by_id(db: Session, ma_px: str) -> PhieuXuat:
 # =============================================================================
 
 def get_all_hang_hoa(db: Session, search: Optional[str] = None, ma_nhom: Optional[str] = None):
-    """Lấy danh sách hàng hóa kèm số lượng tồn kho thực tế, hỗ trợ lọc và tìm kiếm."""
-    query = db.query(HangHoa)
+    """Lấy danh sách hàng hóa kèm tồn kho thực tế (joinedload để tránh N+1 queries cho 92+ SKUs)."""
+    query = (
+        db.query(HangHoa)
+        .options(
+            joinedload(HangHoa.ton_kho),
+            joinedload(HangHoa.nhom_hang),
+            joinedload(HangHoa.don_vi_tinh),
+        )
+    )
     if ma_nhom and ma_nhom != "ALL":
         query = query.filter(HangHoa.MaNhom == ma_nhom)
     if search:
         search_fmt = f"%{search}%"
         query = query.filter((HangHoa.MaHH.ilike(search_fmt)) | (HangHoa.TenHH.ilike(search_fmt)))
-    
+
     items = query.all()
     results = []
     for item in items:
@@ -439,8 +484,15 @@ def delete_hang_hoa(db: Session, ma_hh: str) -> bool:
 # =============================================================================
 
 def get_all_suppliers(db: Session):
-    """Lấy danh sách toàn bộ nhà cung cấp kèm thống kê số phiếu nhập và tổng tiền."""
-    suppliers = db.query(NhaCungCap).order_by(NhaCungCap.TenNCC.asc()).all()
+    """Lấy danh sách toàn bộ nhà cung cấp kèm thống kê (subqueryload để tránh N+1 queries)."""
+    suppliers = (
+        db.query(NhaCungCap)
+        .options(
+            subqueryload(NhaCungCap.phieu_nhap).subqueryload(PhieuNhap.chi_tiet),
+        )
+        .order_by(NhaCungCap.TenNCC.asc())
+        .all()
+    )
     results = []
     for s in suppliers:
         pns = s.phieu_nhap or []
@@ -453,7 +505,7 @@ def get_all_suppliers(db: Session):
         if pns:
             latest_pn = max(pns, key=lambda p: p.NgayNhap)
             latest_date = latest_pn.NgayNhap.strftime("%d/%m/%Y")
-        
+
         results.append({
             "MaNCC": s.MaNCC,
             "TenNCC": s.TenNCC,

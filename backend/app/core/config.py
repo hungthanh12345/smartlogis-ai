@@ -1,10 +1,22 @@
 import os
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_curr_dir = os.path.dirname(os.path.abspath(__file__))
+_backend_dir = os.path.dirname(os.path.dirname(_curr_dir))
+_root_dir = os.path.dirname(_backend_dir)
+_env_files = tuple(dict.fromkeys([
+    os.path.join(_backend_dir, ".env"),
+    os.path.join(_root_dir, ".env"),
+    os.path.join(os.getcwd(), ".env"),
+    os.path.join(os.getcwd(), "backend", ".env"),
+    ".env"
+]))
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         case_sensitive=True,
-        env_file=".env",
+        env_file=_env_files,
         env_file_encoding="utf-8",
         extra="allow"
     )
@@ -15,6 +27,13 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     DEBUG: bool = True
     
+    @field_validator("DEBUG", mode="before")
+    @classmethod
+    def parse_debug_bool(cls, v):
+        if isinstance(v, str):
+            return v.lower() in ("true", "1", "yes", "t", "dev", "development")
+        return bool(v)
+
     # Server & Network Endpoints
     APP_HOST: str = "0.0.0.0"
     APP_PORT: int = 8000
@@ -50,8 +69,8 @@ class Settings(BaseSettings):
     # Google Gemini AI API Configuration & Endpoints
     GEMINI_API_KEY: str = ""
     GEMINI_API_ENDPOINT: str = "https://generativelanguage.googleapis.com/v1beta"
-    GEMINI_MODEL: str = "gemini-3.5-flash-lite"
-    GEMINI_FALLBACK_MODEL: str = "gemini-3.6-flash"
+    GEMINI_MODEL: str = "gemini-2.0-flash"
+    GEMINI_FALLBACK_MODEL: str = "gemini-1.5-flash"
     AI_TIMEOUT_SECONDS: float = 20.0
     AI_MAX_RETRIES: int = 3
     
@@ -61,4 +80,3 @@ class Settings(BaseSettings):
     PGADMIN_DEFAULT_PASSWORD: str = "adminpassword"
 
 settings = Settings()
-

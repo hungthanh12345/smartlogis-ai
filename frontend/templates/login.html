@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="vi" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Đăng Nhập - SmartLogis AI</title>
+
+  <!-- Script khởi tạo Theme tức thời chống giật FOUC -->
+  <script>
+    (function() {
+      try {
+        const theme = localStorage.getItem('smartlogis_theme');
+        if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      } catch (e) {}
+    })();
+  </script>
+
+  <!-- Google Fonts: Be Vietnam Pro & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            slate: {
+              750: '#293548',
+              850: '#1e293b',
+              900: '#0f172a',
+              950: '#0f172a',
+            },
+            brand: {
+              50: '#f0f9ff',
+              100: '#e0f2fe',
+              500: '#0ea5e9',
+              600: '#0284c7',
+              700: '#0369a1',
+            }
+          },
+          fontFamily: {
+            sans: ['"Be Vietnam Pro"', '"Plus Jakarta Sans"', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous">
+  <link rel="stylesheet" href="/static/css/style.css?v=20260909_6">
+</head>
+<body class="min-h-screen bg-slate-100/80 dark:bg-slate-900 text-slate-800 dark:text-slate-100 flex items-center justify-center p-4 sm:p-6 antialiased transition-colors duration-200 selection:bg-sky-500 selection:text-white">
+
+  <!-- ========================================================================= -->
+  <!-- GIAO DIỆN ĐĂNG NHẬP Ở TRUNG TÂM MÀN HÌNH (MINIMALIST & CENTERED) -->
+  <!-- ========================================================================= -->
+  <div class="w-full max-w-md">
+    
+    <!-- Thanh điều hướng nhỏ gọn phía trên form: Về trang chủ & Chuyển đổi Dark/Light mode -->
+    <div class="flex items-center justify-between mb-4 px-1">
+      <a href="/" id="btnBackToLanding"
+        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-xs font-semibold shadow-xs transition hover:text-sky-600 dark:hover:text-sky-400 cursor-pointer"
+        title="Quay về Trang chủ">
+        <i class="fa-solid fa-arrow-left text-xs"></i>
+        <span>Trang chủ</span>
+      </a>
+
+      <button type="button" id="themeToggleBtn" onclick="toggleDarkMode()"
+        class="theme-toggle-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-800 text-slate-600 dark:text-amber-300 border border-slate-200 dark:border-slate-700 text-xs font-semibold shadow-xs transition cursor-pointer"
+        title="Chuyển đổi Giao diện Sáng / Tối">
+        <i class="fa-solid fa-moon text-sky-600 dark:text-amber-300 text-xs"></i>
+        <span class="hidden sm:inline">Giao diện</span>
+      </button>
+    </div>
+
+    <!-- Khối thẻ Đăng Nhập chính (Login Card) -->
+    <div class="bg-white dark:bg-slate-850 rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-200/80 dark:border-slate-800 p-8 sm:p-10 transition-colors">
+      
+      <!-- Logo và Tiêu đề -->
+      <div class="text-center mb-8">
+        <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-sky-600 text-white text-2xl shadow-lg shadow-sky-600/30 mb-3">
+          <i class="fa-solid fa-boxes-stacked"></i>
+        </div>
+        <h1 class="text-2xl font-black text-slate-900 dark:text-white tracking-tight">SmartLogis AI</h1>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">Đăng nhập hệ thống quản lý kho vận</p>
+      </div>
+
+      <!-- Hộp thông báo lỗi -->
+      <div id="error-box" class="hidden mb-5 p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/70 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2.5">
+        <i class="fa-solid fa-circle-exclamation text-rose-500 text-sm flex-shrink-0"></i>
+        <span id="error-message" class="leading-tight font-medium"></span>
+      </div>
+
+      <!-- Form Đăng Nhập -->
+      <form id="login-form" onsubmit="handleLoginSubmit(event)" class="space-y-4">
+        
+        <!-- Tên Đăng Nhập -->
+        <div>
+          <label for="username" class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Tên Đăng Nhập</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400 text-sm pointer-events-none">
+              <i class="fa-regular fa-user"></i>
+            </span>
+            <input type="text" id="username" required placeholder="Nhập tên đăng nhập" autofocus
+              class="w-full pl-10 pr-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:bg-white dark:focus:bg-slate-800 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition">
+          </div>
+        </div>
+
+        <!-- Mật Khẩu kèm Icon Con Mắt Xem / Ẩn -->
+        <div>
+          <label for="password" class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Mật Khẩu</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400 text-sm pointer-events-none">
+              <i class="fa-solid fa-lock"></i>
+            </span>
+            <input type="password" id="password" required placeholder="Nhập mật khẩu"
+              class="w-full pl-10 pr-10 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:bg-white dark:focus:bg-slate-800 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition">
+            
+            <!-- Nút Con Mắt Xem/Ẩn Mật Khẩu -->
+            <button type="button" id="togglePasswordBtn" onclick="togglePasswordVisibility()"
+              class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition cursor-pointer"
+              title="Hiện / Ẩn mật khẩu">
+              <i id="passwordEyeIcon" class="fa-regular fa-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Nút Đăng Nhập -->
+        <button type="submit" id="btn-login"
+          style="background-color: #0284c7; color: #ffffff;"
+          class="w-full py-3 bg-sky-600 hover:bg-sky-500 active:bg-sky-700 text-white font-bold rounded-xl text-sm transition shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer mt-2">
+          <span>Đăng Nhập</span>
+          <i class="fa-solid fa-arrow-right text-xs"></i>
+        </button>
+      </form>
+
+      <!-- Footer chân form tối giản -->
+      <div class="mt-6 pt-5 border-t border-slate-100 dark:border-slate-800 text-center">
+        <p class="text-[11px] text-slate-400 dark:text-slate-500">&copy; 2026 SmartLogis AI. Hệ thống bảo mật 256-bit.</p>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="/static/js/app.js?v=20260918_v9"></script>
+  <script>
+    // Tính năng Toggle xem / ẩn mật khẩu bằng icon con mắt
+    function togglePasswordVisibility() {
+      const passwordInput = document.getElementById('password');
+      const eyeIcon = document.getElementById('passwordEyeIcon');
+      if (!passwordInput || !eyeIcon) return;
+
+      if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        eyeIcon.classList.remove('fa-eye');
+        eyeIcon.classList.add('fa-eye-slash');
+        eyeIcon.setAttribute('title', 'Ẩn mật khẩu');
+      } else {
+        passwordInput.type = 'password';
+        eyeIcon.classList.remove('fa-eye-slash');
+        eyeIcon.classList.add('fa-eye');
+        eyeIcon.setAttribute('title', 'Hiện mật khẩu');
+      }
+    }
+
+    // Xử lý gửi biểu mẫu đăng nhập
+    async function handleLoginSubmit(e) {
+      e.preventDefault();
+      const u = document.getElementById('username').value.trim();
+      const p = document.getElementById('password').value;
+      const errorBox = document.getElementById('error-box');
+      const errorMsg = document.getElementById('error-message');
+      const btn = document.getElementById('btn-login');
+
+      errorBox.classList.add('hidden');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Đang xác thực...</span>';
+
+      try {
+        const res = await fetch('/api/v1/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ TenDangNhap: u, MatKhau: p })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.detail || 'Đăng nhập thất bại. Vui lòng kiểm tra lại tài khoản hoặc mật khẩu.');
+        }
+        const sid = data.sid || ('ses_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9));
+        
+        // 1. Cập nhật phiên hoạt động toàn cục trên localStorage
+        localStorage.setItem('access_token', data.access_token);
+        localStorage.setItem('user_info', JSON.stringify(data.user));
+        localStorage.setItem('smartlogis_active_user', data.user.TenDangNhap);
+        localStorage.setItem('smartlogis_active_role', data.user.VaiTro);
+        localStorage.setItem('smartlogis_active_session_id', sid);
+        localStorage.setItem('smartlogis_login_timestamp', Date.now().toString());
+
+        // 2. Ghi nhận phiên của riêng tab này vào sessionStorage (Tab Isolation)
+        sessionStorage.setItem('access_token', data.access_token);
+        sessionStorage.setItem('smartlogis_tab_user', data.user.TenDangNhap);
+        sessionStorage.setItem('smartlogis_tab_role', data.user.VaiTro);
+        sessionStorage.setItem('smartlogis_tab_session_id', sid);
+        if (data.user.HoTen) {
+          sessionStorage.setItem('smartlogis_tab_fullname', data.user.HoTen);
+        }
+
+        // 3. Đảm bảo cookie được đồng bộ ngay cho phiên điều hướng này
+        document.cookie = `access_token=Bearer ${data.access_token}; path=/; SameSite=Lax; max-age=86400`;
+
+        // 4. Nếu đăng nhập tài khoản Admin -> Phát tín hiệu BroadcastChannel đá các tab Admin cũ ra ngoài
+        if (typeof BroadcastChannel !== 'undefined' && data.user && data.user.VaiTro === 'Admin') {
+          try {
+            const adminChannel = new BroadcastChannel('smartlogis_admin_tab_channel');
+            adminChannel.postMessage({
+              type: 'NEW_ADMIN_TAB_ACTIVE',
+              senderTabId: 'login_' + Date.now(),
+              username: data.user.TenDangNhap,
+              timestamp: Date.now()
+            });
+            setTimeout(() => { try { adminChannel.close(); } catch(e) {} }, 100);
+          } catch(e) {}
+        }
+
+        window.location.href = '/dashboard';
+      } catch (err) {
+        errorBox.classList.remove('hidden');
+        errorMsg.innerText = err.message;
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>Đăng Nhập</span> <i class="fa-solid fa-arrow-right text-xs"></i>';
+      }
+    }
+
+    // Tự động khởi tạo giao diện theme khi trang tải xong và kiểm tra lý do chuyển hướng
+    document.addEventListener('DOMContentLoaded', () => {
+      if (typeof initTheme === 'function') {
+        initTheme();
+      }
+
+      const params = new URLSearchParams(window.location.search);
+      const reason = params.get('reason');
+      if (reason) {
+        const errorBox = document.getElementById('error-box');
+        const errorMsg = document.getElementById('error-message');
+        if (errorBox && errorMsg) {
+          errorBox.classList.remove('hidden');
+          if (reason === 'session_conflict') {
+            errorMsg.innerText = 'Phiên làm việc đã kết thúc do phát hiện đăng nhập mới trên một tab/thiết bị khác. Vui lòng đăng nhập lại.';
+          } else if (reason === 'logged_out') {
+            errorMsg.innerText = 'Bạn đã đăng xuất tài khoản từ một tab khác.';
+          } else if (reason === 'admin_duplicate_tab') {
+            errorMsg.innerText = 'Phiên Admin đã kết thúc do phát hiện một tab Admin mới được mở. Hệ thống chỉ cho phép duy nhất 1 tab Admin hoạt động.';
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>

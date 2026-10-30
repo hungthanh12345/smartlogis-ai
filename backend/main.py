@@ -1,6 +1,15 @@
 # main.py - Điểm khởi chạy ứng dụng SmartLogis AI
+import sys
 import os
 import json
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT_DIR = os.path.dirname(BASE_DIR)
+
+for p in [BASE_DIR, ROOT_DIR]:
+    if p not in sys.path:
+        sys.path.insert(0, p)
+
 from fastapi import FastAPI, Request, Depends
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -79,9 +88,25 @@ async def add_anti_cache_headers(request: Request, call_next):
     return response
 
 # Gắn thư mục static và templates
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "app", "static")), name="static")
-templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "app", "templates"))
+# Gắn thư mục static và templates (từ frontend/ hoặc fallback)
+FRONTEND_DIR = os.path.join(ROOT_DIR, 'frontend')
+if not os.path.exists(FRONTEND_DIR):
+    FRONTEND_DIR = os.path.join(BASE_DIR, 'frontend')
+
+static_dir = os.path.join(FRONTEND_DIR, 'static')
+if not os.path.exists(static_dir):
+    static_dir = os.path.join(BASE_DIR, 'static')
+if not os.path.exists(static_dir):
+    static_dir = os.path.join(BASE_DIR, 'app', 'static')
+
+templates_dir = os.path.join(FRONTEND_DIR, 'templates')
+if not os.path.exists(templates_dir):
+    templates_dir = os.path.join(BASE_DIR, 'templates')
+if not os.path.exists(templates_dir):
+    templates_dir = os.path.join(BASE_DIR, 'app', 'templates')
+
+app.mount('/static', StaticFiles(directory=static_dir), name='static')
+templates = Jinja2Templates(directory=templates_dir)
 
 # Gắn các API Router v1
 app.include_router(auth_router.router, prefix=settings.API_V1_STR)

@@ -43,7 +43,9 @@ def test_2_protected_routes_strictly_redirect_unauthenticated():
 
 def test_3_websocket_client_badge_removed():
     """2. Tab switch count badge removed from websocket.js"""
-    ws_file = root_dir / "app" / "static" / "js" / "websocket.js"
+    ws_file = (root_dir.parent / "frontend" / "static" / "js" / "websocket.js")
+    if not ws_file.exists():
+        ws_file = root_dir / "app" / "static" / "js" / "websocket.js"
     content = ws_file.read_text(encoding="utf-8")
     assert "(${count} thiết bị)" not in content, "Found (${count} thiết bị) in websocket.js!"
     assert "updateActiveClientsCount" in content, "Missing updateActiveClientsCount function in websocket.js"
@@ -154,6 +156,7 @@ def test_7_scripts_reload_dir_applied():
     """9. Web tự reset nhưng data tự tăng -> Đã cấu hình --reload-dir app ở tất cả script"""
     files_to_check = [
         root_dir / "run_app.bat",
+        root_dir.parent / "run_app.bat",
         root_dir / "main.py"
     ]
     for f in files_to_check:

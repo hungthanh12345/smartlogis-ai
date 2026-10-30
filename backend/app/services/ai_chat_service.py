@@ -63,12 +63,22 @@ def safe_eval_ast(node):
 
 def solve_math_expression(query: str) -> Optional[tuple]:
     """
-    Nhận diện và giải chính xác các biểu thức số học (ví dụ: '1 + 1 = ?', '10 * 5', '100 / 4', '10% của 500000').
-    Trả về (biểu thức sạch, kết quả số) hoặc None nếu không phải phép tính.
+    Nhận diện và giải chính xác các biểu thức số học:
+    '1+1', '1+1 bằng mấy', '1 cộng 1 bằng mấy', '1 + 1 = ?', '10 * 5', '100 / 4', '10% của 500000'.
     """
     clean = query.strip()
-    clean = re.sub(r'^(tính|tính giúp|kết quả của|cho biết|cho hỏi|kết quả|giải giúp)\s+', '', clean, flags=re.I)
+    # Loại bỏ tiền tố hỏi phép tính
+    clean = re.sub(r'^(?:tính|tính giúp|kết quả của|cho biết|cho hỏi|kết quả|giải giúp|hỏi|cho mình hỏi|bạn tính|tính hộ|bao nhiêu là)\s+', '', clean, flags=re.I).strip()
+    
+    # Loại bỏ hậu tố hỏi kết quả: "bằng mấy", "bằng bao nhiêu", "la may", "la bao nhieu", "=?", "= ?", "?"
+    clean = re.sub(r'\s*(?:bằng|bang|là|la|ra)\s*(?:mấy|may|bao nhiêu|bao nhieu|\?)+$', '', clean, flags=re.I).strip()
     clean = re.sub(r'[\s=\?]+$', '', clean).strip()
+
+    # Thay thế từ ngữ toán học tiếng Việt thành toán tử chuẩn
+    clean = re.sub(r'\b(?:cộng|cong)\b', '+', clean, flags=re.I)
+    clean = re.sub(r'\b(?:trừ|tru)\b', '-', clean, flags=re.I)
+    clean = re.sub(r'\b(?:nhân|nhan)\b', '*', clean, flags=re.I)
+    clean = re.sub(r'\b(?:chia cho|chia)\b', '/', clean, flags=re.I)
 
     # Kiểm tra phép tính phần trăm: e.g. 10% của 500000, 15% * 200, 5% cua 1000
     pct_m = re.match(r'^([\d\.]+)\s*%\s*(?:của|cua|\*)\s*([\d\.]+)$', clean, re.I)
@@ -83,14 +93,14 @@ def solve_math_expression(query: str) -> Optional[tuple]:
         except Exception:
             pass
 
-    clean_eval = clean.replace('^', '**').replace('x', '*').replace('X', '*').replace(':', '/').replace(',', '')
+    clean_eval = clean.replace('^', '**').replace('x', '*').replace('X', '*').replace(':', '/').replace(',', '').strip()
     if not re.search(r'\d', clean_eval):
         return None
     # Chỉ cho phép các ký tự toán học số học an toàn
-    if not re.fullmatch(r'[\d\s\+\-\*\/\%\(\)\.]+', clean_eval):
+    if not re.fullmatch(r'[\d\s\+\-\*/\%\(\)\.]+', clean_eval):
         return None
     # Phải chứa ít nhất 1 toán tử
-    if not re.search(r'[\+\-\*\/\%]', clean_eval):
+    if not re.search(r'[\+\-\*/\%]', clean_eval):
         return None
 
     try:
@@ -112,23 +122,20 @@ def remove_accents(input_str: str) -> str:
     return res.replace('đ', 'd').replace('Đ', 'D').lower().strip()
 
 
-SYSTEM_CHAT_PROMPT = """Bạn là Trợ Lý AI Kho Thông Minh SmartLogis AI (SmartLogis Conversational Warehouse Assistant) v2.0 Enterprise.
-Bạn có 2 nhiệm vụ chính:
-1. ĐỐI VỚI CÂU HỎI VỀ KHO BÃI, TỒN KHO, VẬN HÀNH DỰ ÁN SMARTLOGIS AI:
-   - Luôn sử dụng chính xác dữ liệu CSDL thời gian thực được cung cấp trong JSON context.
-   - Tuyệt đối không bịa đặt số lượng tồn, mã SKU, tên hàng hay số liệu không có trong hệ thống (Strict Anti-Hallucination).
-   - Nắm vững 5 trụ cột kiến trúc SmartLogis AI:
-     + Chống tồn âm 2 tầng (Zero Negative Stock): Khóa nguyên tử Atomic SQL Decrement (WHERE SoLuongTon >= total_xuat) + CHECK constraint CSDL (SoLuongTon >= 0).
-     + Giao dịch ACID: Phiếu nhập/xuất Master-Detail thực hiện All-or-Nothing, rollback 100% khi có lỗi.
-     + Phân quyền RBAC 3 vai trò: Admin (toàn quyền), Thủ kho kiêm Kế toán (nhập/xuất/báo cáo), Nhân viên kho (chỉ tra cứu danh mục).
-     + Sổ Thẻ kho: Duy trì số dư lũy kế bất biến Tồn(N) = Tồn(N-1) +/- Lượng biến động.
-     + Data Sanitizer: Khử nhạy cảm 100% giá vốn bảo vệ bí mật kinh doanh.
+SYSTEM_CHAT_PROMPT = """Bạn là Trợ lý AI Thông minh của Hệ thống Quản trị Kho SmartLogis AI (SmartLogis Conversational Assistant) v2.0 Enterprise.
 
-2. ĐỐI VỚI MỌI CÂU HỎI MỞ RỘNG KHÁC (Logistics, Quản trị chuỗi cung ứng, Lập trình, Kỹ thuật, Trò chuyện, Giải đáp thắc mắc tổng quát...):
-   - Bạn được tự do sử dụng toàn bộ kiến thức sâu rộng của Google Gemini để trả lời đầy đủ, thông minh, hữu ích và tận tình nhất. Không từ chối những câu hỏi nằm ngoài kho bãi nếu người dùng muốn hỏi hoặc tìm hiểu thêm.
-
-3. PHONG CÁCH GIAO TIẾP:
-   - Trả lời bằng tiếng Việt thân thiện, chuyên nghiệp, cấu trúc rõ ràng bằng Markdown (dùng bảng biểu, bullet points, in đậm khi cần).
+Nguyên tắc phản hồi:
+1. Giao tiếp tự nhiên, linh hoạt và chuẩn xác:
+   - Nếu người dùng chào hỏi, trò chuyện thông thường hoặc hỏi các câu đố/toán học (ví dụ: "1+1 bằng mấy"), hãy trả lời ngắn gọn, chính xác và tự nhiên (ví dụ: "1 + 1 = 2"). Tuyệt đối không gán ghép các quy tắc kho vào những câu hỏi không liên quan.
+2. Khi được hỏi về dữ liệu kho, vật tư, số dư, nhà cung cấp, hoặc quy trình vận hành dự án:
+   - Hãy dựa vào Context Dữ Liệu Kho (JSON) được cung cấp kèm theo để trả lời chi tiết, chính xác từng số liệu thực tế (SKU, số lượng tồn, ngưỡng tối thiểu, cảnh báo tồn lâu).
+   - Nắm vững 3 vai trò RBAC: Admin (toàn quyền), Thủ kho (nhập/xuất kho ACID, Thẻ kho, đối soát NCC), Nhân viên kho (chỉ đọc, bị chặn lập phiếu HTTP 403).
+   - Hướng dẫn rõ ràng các menu giao diện Web SSR (/inbound, /outbound, /the-kho, /hang-hoa, /nha-cung-cap) và cơ chế bảo vệ giao dịch ACID, Zero Negative Stock 2 tầng.
+3. Tuân thủ bảo mật & chống ảo giác:
+   - Tuyệt đối không suy đoán hoặc bịa đặt số liệu không có trong context.
+   - Tuyệt đối không tiết lộ các trường giá vốn nhạy cảm (DonGiaNhap, ThanhTien, GiaVon).
+4. Phong cách:
+   - Trình bày bằng tiếng Việt thân thiện, cấu trúc rõ ràng bằng Markdown (bảng biểu, bullet points, in đậm khi cần).
 """
 
 
@@ -287,10 +294,7 @@ def generate_local_grounded_chat_response(
     if math_res:
         expr_str, val = math_res
         val_str = f"{val:,}" if isinstance(val, int) else f"{val:,.2f}".rstrip("0").rstrip(".")
-        reply = f"""### 🔢 KẾT QUẢ PHÉP TÍNH:
-> **{expr_str} = {val_str}**
-
-*(Được tính toán tự động và chính xác bởi Bộ máy Số học SmartLogis Engine)*"""
+        reply = f"**{expr_str} = {val_str}**"
         return {
             "reply": reply,
             "suggested_questions": [
@@ -763,7 +767,7 @@ Hệ thống **SmartLogis AI** đang kết nối trực tuyến và theo dõi s�
                 f"- **Thời gian dự trữ khả dụng**: Khoảng **{days_p} ngày** hoạt động.",
                 f"- **Quy tắc lũy kế bất biến**: $$\\text{{Tồn}}(N) = \\text{{Tồn}}(N-1) + \\text{{Nhập}}(N) - \\text{{Xuất}}(N)$$",
                 "",
-                f"🔗 Bạn có thể xem chi tiết từng chứng từ Nhập / Xuất của mặt hàng này tại menu: **[Tra Cứu Thẻ Kho (`/card-ledger?ma_hh={ma_p}`)](/card-ledger)**."
+                f"🔗 Bạn có thể xem chi tiết từng chứng từ Nhập / Xuất của mặt hàng này tại menu: **[Tra Cứu Thẻ Kho (`/the-kho?ma_hh={ma_p}`)](/the-kho)**."
             ]
             return {
                 "reply": "\n".join(lines),
@@ -825,17 +829,26 @@ Hệ thống **SmartLogis AI** đang kết nối trực tuyến và theo dõi s�
         }
 
     # =========================================================================
-    # 10. HƯỚNG DẪN QUY TRÌNH XUẤT KHO & CHỐNG TỒN ÂM (Chỉ khi hỏi rõ cách làm)
+    # 10. HƯỚNG DẪN QUY TRÌNH XUẤT KHO & KIỂM SOÁT CHỐNG TỒN ÂM (ZERO NEGATIVE STOCK)
     # =========================================================================
-    is_outbound_guide = any(k in q_no_accent for k in [
-        "huong dan xuat", "cach xuat", "cach tao phieu xuat", "quy trinh xuat", "lam sao de xuat", "cach lap phieu xuat"
-    ])
+    is_outbound_guide = (
+        any(k in q_no_accent for k in [
+            "huong dan xuat", "cach xuat", "cach tao phieu xuat", "quy trinh xuat",
+            "lam sao de xuat", "cach lap phieu xuat", "xuat kho nhu the nao", "xuat hang the nao",
+            "xuat kieu gi", "xuat lam sao", "lam sao de xuat kho"
+        ]) or (
+            "xuat" in q_no_accent and any(k in q_no_accent for k in [
+                "an toan", "ton am", "chong ton am", "zero negative", "khong du", "het hang",
+                "xu ly", "quy trinh", "cac buoc", "lap phieu", "tao phieu"
+            ])
+        )
+    )
     if is_outbound_guide:
         reply = r"""### 📤 HƯỚNG DẪN LẬP PHIẾU XUẤT KHO (OUTBOUND & ZERO NEGATIVE STOCK)
 
 Quy trình xuất kho tại **SmartLogis AI** được bảo vệ nghiêm ngặt chống thất thoát và sai lệch số liệu:
 
-1. **Truy cập Giao diện:** Chọn menu **[Phiếu Xuất Kho](/outbound)** từ thanh bên trái.
+1. **Truy cập Giao diện:** Chọn menu **[Phiếu Xuất Kho](/outbound)** từ thanh điều hướng bên trái.
 2. **Chọn Mặt Hàng & Nhập Số Lượng Xuất:**
    - Hệ thống hiển thị trực quan **Số lượng tồn thực tế** của từng SKU.
    - Nếu bạn nhập số lượng xuất **vượt quá tồn kho**, hệ thống sẽ cảnh báo đỏ và chặn ngay tại giao diện!
@@ -843,7 +856,7 @@ Quy trình xuất kho tại **SmartLogis AI** được bảo vệ nghiêm ngặt
    - **Tầng Backend:** Câu lệnh SQL Atomic Decrement:
      `UPDATE ton_kho SET SoLuongTon = SoLuongTon - :xuat WHERE MaHH = :ma AND SoLuongTon >= :xuat`
      Nếu tồn kho không đủ (do nhiều luồng cùng xuất), thao tác bị hủy lập tức.
-   - **Tầng CSDL:** Ràng buộc `CHECK (SoLuongTon >= 0)` ngăn chặn tuyệt đối tồn âm ở cấp độ database.
+   - **Tầng CSDL:** Ràng buộc phần cứng `CHECK (SoLuongTon >= 0)` ngăn chặn tuyệt đối tồn âm ở cấp độ database.
 4. **Giao dịch ACID:** Toàn bộ phiếu xuất được thực hiện **All-or-Nothing**, nếu lỗi 1 dòng hàng sẽ rollback 100%."""
         return {
             "reply": reply,
@@ -855,31 +868,74 @@ Quy trình xuất kho tại **SmartLogis AI** được bảo vệ nghiêm ngặt
         }
 
     # =========================================================================
-    # 11. HƯỚNG DẪN QUY TRÌNH NHẬP KHO (Chỉ khi hỏi rõ cách làm)
+    # 11. HƯỚNG DẪN QUY TRÌNH NHẬP KHO & XỬ LÝ KHI HÀNG HẾT / THIẾU HỤT
     # =========================================================================
-    is_inbound_guide = any(k in q_no_accent for k in [
-        "huong dan nhap", "cach nhap", "cach tao phieu nhap", "quy trinh nhap", "lam sao de nhap", "cach lap phieu nhap"
-    ])
-    if is_inbound_guide:
-        reply = r"""### 📥 HƯỚNG DẪN LẬP PHIẾU NHẬP KHO (INBOUND TRANSACTION)
+    is_inbound_inquiry = (
+        any(k in q_no_accent for k in [
+            "huong dan nhap", "cach nhap", "cach tao phieu nhap", "quy trinh nhap",
+            "lam sao de nhap", "cach lap phieu nhap", "nhap kho nhu the nao", "nhap hang the nao",
+            "muon nhap thi", "muon nhap hang", "muon nhap kho", "nhap kieu gi", "nhap lam sao"
+        ]) or (
+            "nhap" in q_no_accent and any(k in q_no_accent for k in [
+                "het roi", "het hang", "mat hang het", "muon nhap", "xu ly", "lam the nao",
+                "the nao", "lam sao", "cac buoc", "lap phieu", "tao phieu", "bo sung"
+            ])
+        ) or any(k in q_no_accent for k in [
+            "mat hang het", "hang het roi", "het roi ma", "het roi muon nhap"
+        ])
+    )
+    if is_inbound_inquiry:
+        lines = [
+            "### 📥 QUY TRÌNH XỬ LÝ NHẬP KHO KHI MẶT HÀNG ĐÃ HẾT HOẶC CẦN BỔ SUNG",
+            "Khi có mặt hàng đã hết tồn kho (hoặc chạm ngưỡng tồn tối thiểu) và bạn muốn nhập thêm hàng vào kho, quy trình chuẩn hóa trong **SmartLogis AI** gồm **5 bước nghiệp vụ chi tiết**:",
+            "",
+            "#### 1️⃣ Bước 1: Xác định Quyền Hạn Thực Hiện (Phân quyền RBAC)",
+            "- **Vai trò được phép:** Chỉ tài khoản **Quản trị viên (`admin`)** hoặc **Thủ kho kiêm Kế toán (`thukho`)** mới có quyền lập và duyệt Phiếu Nhập Kho.",
+            "- *Lưu ý:* Tài khoản **Nhân viên kho (`nhanvien`)** chỉ có quyền Xem (Read-only), nếu thao tác sẽ bị hệ thống từ chối (HTTP 403 Forbidden).",
+            "",
+            "#### 2️⃣ Bước 2: Truy Cập Phân Hệ Nhập Kho (Inbound)",
+            "- Trên thanh menu bên trái, nhấn chọn **[Phiếu Nhập Kho](/inbound)**.",
+            "",
+            "#### 3️⃣ Bước 3: Lựa Chọn Đối Tác Cung Ứng (Nhà Cung Cấp)",
+            "- Tại ô **Nhà Cung Cấp**, chọn đối tác tương ứng từ danh sách (ví dụ: *Công ty Thép Hòa Phát*, *Nhựa Tiền Phong*, *Vicem Bút Sơn*...).",
+            "- *Trường hợp đối tác mới:* Quản trị viên/Thủ kho vào menu **[Nhà Cung Cấp](/nha-cung-cap)** để thêm mới thông tin trước khi lập phiếu.",
+            "",
+            "#### 4️⃣ Bước 4: Thêm Mặt Hàng Cần Nhập & Điền Số Lượng",
+            "- Chọn mã SKU mặt hàng đã hết từ danh sách thả xuống.",
+            "- Nhập **Số lượng nhập** (bắt buộc $> 0$) theo số lượng thực tế giao nhận.",
+            "- Nhập **Đơn giá nhập** (VNĐ) để hệ thống tự động tính Thành tiền.",
+            "- Bạn có thể bấm nút **+ Thêm dòng hàng** để nhập cùng lúc nhiều mặt hàng trên một chứng từ.",
+            "",
+            "#### 5️⃣ Bước 5: Hoàn Tất & Cơ Chế Bảo Toàn Giao Dịch ACID Tự Động",
+            "- Nhấn nút **Hoàn Tất & Lưu Phiếu Nhập Kho**.",
+            "- **Cơ chế xử lý tức thời tại Backend:**",
+            "  1. **Transaction ACID All-or-Nothing:** Lưu đồng thời thông tin phiếu (`phieu_nhap`) và chi tiết hàng hóa (`chi_tiet_phieu_nhap`). Nếu xảy ra lỗi bất kỳ, giao dịch tự động rollback 100%.",
+            "  2. **Cập nhật Tồn Kho Khả Dụng:** Số lượng tồn kho `SoLuongTon` của mặt hàng được cộng dồn ngay lập tức.",
+            "  3. **Ghi Sổ Thẻ Kho Lũy Kế:** Hệ thống tự động ghi thêm 1 bản ghi giao dịch `NHAP` vào **[Sổ Thẻ Kho](/the-kho)** với công thức bất biến: $\text{Tồn Sau} = \text{Tồn Trước} + \text{Số Lượng Nhập}$.",
+            "  4. **Realtime WebSocket Sync:** Đồng bộ biến động kho tức thì tới toàn bộ máy tính bàn, laptop và thiết bị di động đang kết nối."
+        ]
 
-Để lập phiếu nhập kho chuẩn hóa trong **SmartLogis AI**, bạn thực hiện các bước sau:
+        if low_stocks:
+            lines.extend([
+                "",
+                f"⚠️ **GỢI Ý TỪ CSDL: Hiện có {len(low_stocks)} mặt hàng đang chạm hoặc dưới tồn tối thiểu cần ưu tiên nhập:**",
+                "| Mã SKU | Tên Hàng Hóa | Tồn Hiện Tại | Ngưỡng Min | Đề Xuất Nhập Bù | Nhà Cung Cấp Đề Xuất |",
+                "| :--- | :--- | :---: | :---: | :---: | :--- |"
+            ])
+            for it in low_stocks[:5]:
+                sup = get_supplier_for_item(it["ma_hh"], it["ten_hh"], suppliers)
+                lines.append(
+                    f"| `{it['ma_hh']}` | **{it['ten_hh']}** | {it['ton_hien_tai']} {it['don_vi_tinh']} | "
+                    f"{it['ton_toi_thieu']} | **+{it.get('de_xuat_nhap_them', 0)} {it['don_vi_tinh']}** | {sup.get('ten_ncc', '--')} |"
+                )
 
-1. **Truy cập Giao diện:** Chọn menu **[Phiếu Nhập Kho](/inbound)** từ thanh điều hướng bên trái.
-2. **Chọn Nhà Cung Cấp:** Chọn đối tác cung cấp nguyên vật tư từ danh sách có sẵn.
-3. **Thêm Danh Sách Hàng Hóa:**
-   - Chọn mặt hàng (SKU) cần nhập.
-   - Nhập **Số lượng nhập** (bắt buộc $> 0$) và **Đơn giá nhập** (nếu có quyền Thủ kho/Admin).
-   - Có thể bấm **Thêm dòng hàng** để nhập nhiều mặt hàng cùng lúc trên 1 phiếu.
-4. **Xác nhận Lưu Phiếu:**
-   - Bấm **Hoàn Tất & Lưu Phiếu Nhập Kho**.
-   - **Cơ chế bảo vệ ACID:** Toàn bộ thông tin đầu phiếu và các chi tiết hàng hóa được đóng gói trong một Transaction duy nhất (All-or-Nothing). Số lượng tồn kho và Sổ Thẻ kho sẽ được cập nhật đồng bộ tức thời!"""
         return {
-            "reply": reply,
+            "reply": "\n".join(lines),
             "suggested_questions": [
-                "Mặt hàng nào đang cần nhập hàng gấp?",
+                "Lập danh sách phiếu nhập cho các mặt hàng nguy cấp",
                 "Gợi ý nhà cung cấp cho các mặt hàng thiếu hụt",
-                "Giải thích cơ chế bảo vệ giao dịch ACID"
+                "Giải thích cơ chế bảo vệ giao dịch ACID",
+                "Xem sổ thẻ kho để theo dõi lịch sử xuất nhập"
             ]
         }
 
@@ -897,7 +953,7 @@ Trong **SmartLogis AI**, Sổ Thẻ kho là tài liệu pháp lý kế toán qua
   1. Ghi nhận thời gian thực mọi biến động Nhập / Xuất theo từng giây.
   2. Truy vết chính xác mã chứng từ (`PN-...`, `PX-...`), người thực hiện, và số dư tồn sau từng giao dịch.
   3. Cơ chế đối chiếu tự động giúp phát hiện ngay lập tức bất kỳ sai lệch nào.
-- **Cách tra cứu:** Bạn vào menu **[Tra Cứu Thẻ Kho](/card-ledger)**, chọn mặt hàng và khoảng thời gian để xem chi tiết hoặc in báo cáo."""
+- **Cách tra cứu:** Bạn vào menu **[Tra Cứu Thẻ Kho](/the-kho)**, chọn mặt hàng và khoảng thời gian để xem chi tiết hoặc in báo cáo."""
         return {
             "reply": reply,
             "suggested_questions": [
@@ -956,7 +1012,7 @@ Trong **SmartLogis AI**, Sổ Thẻ kho là tài liệu pháp lý kế toán qua
             lines.append(f"| `{s['ma_ncc']}` | **{s['ten_ncc']}** | {s['so_dien_thoai']} | {s['dia_chi']} |")
         lines.extend([
             "",
-            "💡 Bạn có thể quản lý danh sách nhà cung cấp đầy đủ tại menu **[Nhà Cung Cấp](/suppliers)**."
+            "💡 Bạn có thể quản lý danh sách nhà cung cấp đầy đủ tại menu **[Nhà Cung Cấp](/nha-cung-cap)**."
         ])
         return {
             "reply": "\n".join(lines),
@@ -1082,40 +1138,75 @@ Tôi được thiết kế chuyên biệt để đồng hành cùng thủ kho, k
         }
 
     # =========================================================================
-    # 21. CHÀO HỎI (ÁP DỤNG QUY TẮC KHỚP TỪ ĐỘC LẬP - TRÁNH LỖI PHIẾU/KHI/CHI)
+    # 21. CHÀO HỎI & CÂU LỆNH KIỂM THỬ (TEST / HI / HELLO / ABC)
     # =========================================================================
     is_pure_greeting = (
-        bool(re.search(r'\b(xin chao|chao ban|chao bot|chao ai|chao em)\b', q_no_accent)) or
-        bool(re.fullmatch(r'[\s!?.~]*(hi|hello|alo|chao)[\s!?.~]*', q_no_accent))
+        bool(re.search(r'(xin chao|chao ban|chao bot|chao ai|chao em|hello|hi|alo|chao)', q_no_accent)) or
+        len(q_no_accent.strip()) <= 3 or
+        q_no_accent.strip() in ["abc", "test", "demo", "start", "alo", "123", "alo alo", "test bot"]
     )
     if is_pure_greeting:
         return {
-            "reply": f"""Xin chào bạn! Tôi là **Trợ Lý AI Vận Hành Kho SmartLogis AI**. Rất sẵn sàng hỗ trợ bạn hôm nay!
+            "reply": f"""Xin chào bạn! Tôi là **Trợ Lý AI Vận Hành Kho SmartLogis AI** (v2.0 Enterprise).
 
-Tôi có thể hỗ trợ bạn nhanh các nội dung:
-- 📊 **Báo cáo 3 phần:** Tổng quan kho, cảnh báo thiếu hụt và biến động bất thường.
-- ⚠️ **Hàng thiếu hụt:** Rà soát ngay {len(low_stocks)} SKU chạm hoặc dưới tồn tối thiểu.
-- 🏢 **Gợi ý nhà cung cấp:** Tìm đối tác cung ứng nhanh cho các mặt hàng thiếu.
-- 📦 **Hàng tồn lâu:** Danh sách các mặt hàng ứ đọng > 60 ngày cần giải phóng.
-- 🔍 **Tra cứu chi tiết:** Nhập mã SKU hoặc tên hàng hóa (ví dụ: *Thép phi 8*, *Xi măng Bút Sơn*...).
-- 🔢 **Tính toán nhanh:** Nhập trực tiếp phép tính bất kỳ (ví dụ: `1 + 1 = ?`, `10 * 5`...).""",
+Hệ thống đang kết nối trực tuyến với CSDL vận hành kho thời gian thực:
+- 📊 **{meta.get('tong_sku', 0)} SKU** vật tư xây dựng ({max(0, meta.get('tong_sku', 0) - len(low_stocks))} SKU an toàn, {len(low_stocks)} SKU chạm/dưới tồn min).
+- 🏢 **{len(suppliers)} đối tác cung ứng** liên kết.
+- 🛡️ Hệ thống bảo toàn giao dịch ACID và cơ chế chống tồn âm 2 tầng (**Zero Negative Stock**).
+
+Bạn có thể hỏi tôi bất kỳ nội dung nào:
+1. **Quy trình nhập / xuất kho:** Cách lập chứng từ, xử lý khi hàng hết, kiểm soát tồn âm.
+2. **Tra cứu vật tư:** Số lượng tồn khả dụng, ngưỡng min, tốc độ tiêu thụ (Burn-rate).
+3. **Cảnh báo tồn kho:** Danh sách mặt hàng nguy cấp hoặc tồn lâu > 60 ngày.
+4. **Báo cáo điều hành:** Sinh báo cáo 3 phần toàn diện theo thời gian thực.""",
             "suggested_questions": default_suggested
         }
 
     # =========================================================================
-    # 22. PHẢN HỒI KHI CÂU HỎI MỞ RỘNG (CSDL NỘI BỘ VẪN HỖ TRỢ TỐI ĐA)
+    # 22. PHẢN HỒI THÔNG MINH CHO CÂU HỎI MỞ RỘNG (KNOWLEDGE ENGINE NỘI BỘ)
     # =========================================================================
-    return {
-        "reply": f"""Tôi đã tiếp nhận câu hỏi của bạn: *"**{query}**"*.
+    is_warehouse_topic = any(k in q_no_accent for k in [
+        "kho", "ton", "sku", "vat tu", "hang hoa", "nhap", "xuat", "the kho", "ncc",
+        "nha cung cap", "bao cao", "sanitizer", "acid", "burn", "dead stock", "dieu hanh",
+        "smartlogis", "kiem ke", "dinh muc", "luu kho", "cong no", "giao dich", "du an"
+    ])
 
-Hiện tại hệ thống đang chạy ở chế độ **Local Grounded Conversational Engine (CSDL Nội Bộ)**:
-- 📊 Đang kết nối trực tiếp số liệu của **{meta.get('tong_sku', 0)} SKU** vật tư và **{meta.get('tong_nha_cung_cap', 0)} nhà cung cấp**.
-- ⚠️ Ghi nhận **{len(low_stocks)} mặt hàng** chạm/dưới tồn min và **{len(dead_stocks)} mặt hàng** tồn lâu > 60 ngày.
-- 🛡️ Sẵn sàng trả lời các câu hỏi về: Tra cứu hàng hóa, tính toán số học, báo cáo 3 phần, quy trình xuất nhập kho và cơ chế chống tồn âm Zero Negative Stock.
+    if is_warehouse_topic:
+        reply_lines = [
+            "### 💡 TƯ VẤN QUẢN TRỊ KHO & VẬN HÀNH DỰ ÁN SMARTLOGIS AI",
+            f'Đối với câu hỏi của bạn: **"{query}"**',
+            "",
+            "Trong công tác quản trị kho vận vật tư công trình của **SmartLogis AI**, hệ thống khuyến nghị các nguyên tắc cốt lõi sau:",
+            "",
+            "1. **Định lượng & Kiểm soát số dư:** Mọi biến động vật tư cần được phản ánh vào chứng từ chuẩn hóa (Phiếu Nhập tại **[/inbound](/inbound)** hoặc Phiếu Xuất tại **[/outbound](/outbound)**).",
+            "2. **Minh bạch hóa sổ cái Thẻ kho:** Số dư lũy kế phải được cập nhật tức thì vào **[Sổ Thẻ Kho](/the-kho)** để đảm bảo tính bất biến kế toán.",
+            "3. **Kiểm soát Tồn an toàn (Safety Stock):** Luôn theo dõi sát các mặt hàng có tốc độ xuất cao (High Burn-rate) để kịp thời kích hoạt chu kỳ đặt hàng bổ sung.",
+            "",
+            f"📊 **Hiện trạng kho thời gian thực:**",
+            f"- Tổng danh mục quản lý: **{meta.get('tong_sku', 0)} SKU** vật tư.",
+            f"- Trạng thái an toàn: **{max(0, meta.get('tong_sku', 0) - len(low_stocks))} SKU** đạt ngưỡng chuẩn.",
+            f"- Cần chú ý nhập bù: **{len(low_stocks)} SKU** đang chạm hoặc dưới tồn tối thiểu.",
+            "",
+            "💡 *Bạn có thể chọn một trong các thao tác nhanh bên dưới để xem số liệu phân tích chi tiết:*"
+        ]
+        return {
+            "reply": "\n".join(reply_lines),
+            "suggested_questions": [
+                "📊 Sinh báo cáo điều hành kho 3 phần",
+                "⚠️ Mặt hàng nào đang thiếu hụt nguy cấp?",
+                "📥 Hướng dẫn tạo phiếu nhập kho",
+                "🛡️ Giải thích cơ chế chống tồn âm Zero Negative Stock"
+            ]
+        }
+    else:
+        # Câu hỏi trò chuyện / đàm thoại đời sống bình thường: Trả lời tự nhiên, thân thiện
+        reply = f"""Tôi là **Trợ Lý AI SmartLogis AI**. Rất vui được hỗ trợ bạn!
 
-💡 **Mẹo:** Bạn có thể bấm vào các câu hỏi gợi ý bên dưới hoặc bấm biểu tượng 🔑 **(Cấu hình Gemini API Key)** ở góc trên để mở khóa khả năng trả lời tự do mọi câu hỏi mở rộng!""",
-        "suggested_questions": default_suggested
-    }
+Hệ thống được thiết kế chuyên biệt để hỗ trợ quản trị kho vận vật tư công trình, tính toán số liệu và kiểm soát thẻ kho. Bạn có thể hỏi tôi bất kỳ câu hỏi nào về tình trạng tồn kho, tra cứu SKU, cảnh báo hàng sắp hết hoặc hướng dẫn lập phiếu nhập/xuất kho!"""
+        return {
+            "reply": reply,
+            "suggested_questions": default_suggested
+        }
 
 
 def extract_smart_suggestions(reply_text: str, query: str, context: Dict[str, Any]) -> List[str]:
